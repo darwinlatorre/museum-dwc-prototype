@@ -1,6 +1,6 @@
 # Museum collection workbench
 
-Angular 22, PrimeNG 22 and TanStack Query 5 provide a local-file data quality workbench. The API stores catalog and versioned profile metadata only. File bytes and record values never go to the API.
+Angular 21.2.25, PrimeNG 21.1.10 and TanStack Query 5.104.5 provide a local-file data quality workbench. The API stores catalog and versioned profile metadata only. File bytes and record values never go to the API.
 
 ## Run
 
@@ -35,4 +35,12 @@ API contract: `GET /api/catalog`, `GET /api/profiles`, `POST /api/profiles`, `PU
 - `analysis/export.ts`: JSON and formula-neutralized CSV diagnostics.
 - `api.ts`: metadata-only boundary; TanStack Query manages server reads, mutation invalidation and errors.
 
-The narrow `@angular/build` Vite override keeps Vite on the patched 8.3.x-compatible line without changing Angular or adding parser dependencies.
+## Dependency versions and licensing
+
+PrimeNG is pinned to **21.1.10**, the latest stable MIT community release verified against npm registry versions and the distributed `node_modules/primeng/LICENSE.md`. That file explicitly grants the MIT License for community versions; its separate commercial LTS terms apply to versions with an `-lts` suffix, which this project does not use. Every stable 22.x release available at migration time (22.0.0 and 22.1.0–22.1.3) instead carries the key-required PrimeUI license. No license key, notice-hiding CSS, or vendor patch is used.
+
+`@primeuix/themes` is pinned to **2.0.3**: its installed `LICENSE` is MIT, as are the installed PrimeUI styled/styles/utils/motion dependencies. Themes 3.0.0–3.1.0 carry the PrimeUI license and are not used. Preserve the distributed copyright and permission notices when redistributing MIT dependencies.
+
+Angular runtime/compiler/forms packages are aligned at **21.2.25**, CDK at **21.2.14**, and CLI/build at **21.2.27**, satisfying PrimeNG's Angular 21 peers. The build package requires TypeScript `>=5.9 <6.0` and Vitest `^4.0.8`, so these are pinned to **5.9.3** and **4.1.12** respectively. Angular 21 signal forms are experimental; the profile editor uses their compatible disabled-rule callback without changing its read-only published-profile behavior. The former Vite 8 override is removed: Angular build and Vitest now resolve their compatible **Vite 7.3.6** dependency.
+
+TanStack Query **5.104.5** and the actual XLSX reader, `read-excel-file` **9.3.12**, are unchanged. Commit the lockfile alongside version changes and use `npm ci` to reproduce this dependency set. Dependency audit and browser acceptance are separate verification steps; a successful install/build does not establish an audit result.

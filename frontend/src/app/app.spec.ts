@@ -4,7 +4,7 @@ import { App } from './app';
 import { Api } from './api';
 
 describe('Collection workspace', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     // This shell test starts with loaded metadata; no timer race with Query notifications.
     client.setQueryData(['catalog'], []);
@@ -17,6 +17,7 @@ describe('Collection workspace', () => {
         { provide: Api, useValue: { catalog: async () => [], profiles: async () => [] } },
       ],
     });
+    await TestBed.compileComponents();
   });
 
   it('shows accessible navigation and local import guidance', async () => {

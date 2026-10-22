@@ -188,7 +188,7 @@ export class Profiles {
   model = signal<ProfileInput>(empty());
   locked = computed(() => this.mode() === 'edit' && this.selected()?.status === 'PUBLISHED');
   editor = form(this.model, (s) => {
-    disabled(s, { when: () => this.locked() });
+    disabled(s, () => this.locked());
     required(s.name);
     required(s.version);
     applyEach(s.rules, (r) => {

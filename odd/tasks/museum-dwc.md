@@ -13,11 +13,15 @@ S7. «Diseñar una interfaz profesional con estructura y experiencia de usuario 
 S8. «Implementar en Spring Boot para administrar los perfiles y sus reglas, utilizando PostgreSQL y Flyway. La validación inicial será local en Angular, dejando preparada la importación segura y su posterior validación en el backend.» «Tecnologías recomendadas: Angular, PrimeNG, TanStack Query, Spring Boot, PostgreSQL y Flyway. Preparar la arquitectura para integrar Keycloak posteriormente.»
 S9. «El MVP estará terminado cuando permita analizar un archivo localmente, detectar los campos faltantes para SiB 4.1 y Museo 1.0, mostrar los errores, descargar el diagnóstico y crear un nuevo perfil de validación sin cambios de código.» «Entregar código funcional, migraciones, pruebas y README con instrucciones de ejecución.»
 
+S10. «Migrar a una versión MIT compatible».
+S11. «Autorizar una nueva ejecución, limitada a 5 minutos».
+
 ## Tasks
 T1 | S1-S3 | inline: source evidence, catalog and seed profiles | done | RED: missing seed files; GREEN: python3 scripts/test_seeds.py 3/3; commit 3422f39.
 T2 | S4,S8,S9 | delegated backend: independent versioned profile management, migrations and API tests | done | Risk: item 1 (published data immutability), item 4 (concurrent publication); full suite20 PASS, independent recheck11 PASS; commit 8c76b3d.
 T3 | S5-S7,S9 | delegated frontend: independent local file analysis and profile UI against fixed API contract | done | Risk: item 5 (XLSX parser dependency); parent full suite49 PASS/build PASS and independent49 PASS; commit e7e54ac. License/audit delivery decision remains T4.
-T4 | S1-S9 | inline integration, README and functional verification; independent verifier for named risks | blocked | CSV/XLSX, downloads and GUI create/edit/duplicate/publish observed. Waiting for human: valid PrimeUI license path or compatible MIT migration; new audit authorization or explicit acceptance of unavailable audit proof. README/VERIFICATION.md prepared; feature not closed.
+T4 | S1-S11 | inline integration, README and functional verification; independent verifier for named risks | in_progress | CSV/XLSX, downloads and GUI create/edit/duplicate/publish observed. Docs/evidence commit 9e6bb65. After T5: one new audit limited300s explicitly authorized, final browser checks. Feature not closed.
+T5 | S10,S5-S9 | delegated at context backstop: align Angular/PrimeNG to verified MIT-compatible versions, preserve behavior and verify | done | Risk: item5 (dependency migration); baseline9e6bb65; MIT license/21 direct dependency lock coherence independently verified; parent49 PASS/build PASS; independent49 PASS; browser CSV diagnosis identical and published editor disabled; commit pending.
 
 ## Log
 L1. Original request:
@@ -70,3 +74,5 @@ L9. Backend correction evidence: focused RED11 failures (numeric enum3 + publish
 
 L10. Frontend partial delivery:48 pure testsPASS, deferred component testFAIL, buildPASS. Parent reproduced component RED then fixed only deterministic defer activation; full suite49PASS, independent verifier49PASS, final formatted-source suite49PASS/buildPASS. Initial bundle693.41kB produces unchanged500kB warning (below1MB failure threshold). Dependency lock coherence verified, but install/audit each timed out120s; no automatic retries.
 L11. Real Chromium integration: CSV two profiles29ERROR+1WARNING; JSON/CSV downloads30 issues; HAR only2GET worker-bundle requests, no file upload. XLSX With errors and Complete sheets read; Complete zero issues after real keyboard selection. One30s expected-state wait failed because automation select changed DOM but not Angular model; diagnosed separately, no app workaround. Created/published Browser acceptance profile1.0 viaGUI, duplicated1.1 and edited draft; public API confirms independent versions/revisions/content. PrimeNG22 license notice visible; installed LICENSE requires valid key including community. No bypass. Release awaits human license choice and audit-proof decision. Details VERIFICATION.md.
+
+L12. Human decisions verbatim: «Migrar a una versión MIT compatible»; «Autorizar una nueva ejecución, limitada a 5 minutos». Reopen final integration after newT5 dependency/license migration; retain verified backend/catalog work. One new npm audit allowed only after migration, hard300s limit, no automatic retry.
