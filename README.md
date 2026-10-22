@@ -4,7 +4,9 @@ A first module for the Museo de Historia Natural, Universidad del Cauca. Analyze
 
 **Development MVP, not a production deployment.** Authentication and record import are intentionally not enabled. Keep both servers on loopback. The application does not certify SiB publication, taxonomy, permit compliance or GGBN extensions.
 
-**Delivery decisions still open:** the preinstalled PrimeNG 22 package requires a valid PrimeUI license key (including Community eligibility/registration). Without one it displays `Invalid PrimeUI License`; this project does not remove or bypass the mechanism. See `frontend/node_modules/primeng/LICENSE.md` and https://primeui.dev/licenses/community. Supply a valid license through the supported vendor configuration, or explicitly approve a compatible MIT-licensed version migration. Dependency audit clearance is also unproven: the attempted `npm audit` timed out after 120 seconds. Vite is pinned via a narrow override to 8.3.5, but version/lock coherence is not audit clearance.
+**UI licensing:** this project uses the MIT-licensed PrimeNG **21.1.10 community release** and PrimeUI themes **2.0.3**, aligned with Angular **21.2.25** (CLI/build21.2.27). It does not use commercial/LTS variants or require a PrimeUI key. The user authorized migration from the preinstalled key-required22 series; no vendor license mechanism was patched or hidden. Keep the dependency license notices when redistributing. See `frontend/node_modules/primeng/LICENSE.md` and the pinned lockfile.
+
+**Dependency audit remains unavailable:** the original audit timed out after120s. The single fresh audit explicitly authorized by the user also timed out: `timeout 300s npm audit --json` exited124 after five minutes without output. No further retry ran. Passing tests/build and coherent versions do not establish audit clearance; accept this verification gap explicitly or obtain a completed audit from another environment before treating the delivery as closed. Full evidence: [VERIFICATION.md](VERIFICATION.md).
 
 ## Run locally
 
