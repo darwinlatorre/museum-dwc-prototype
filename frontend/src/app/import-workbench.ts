@@ -14,13 +14,14 @@ import {
   WorkerResponse,
 } from './analysis/model';
 import { normalize } from './analysis/normalizer';
-import { suggestions } from './analysis/validator';
+import { ColumnMapping } from './import/column-mapping';
+import { RecordContext } from './import/record-context';
 import { csvReport, jsonReport } from './analysis/export';
 import { label, profileDescription } from './localization';
 
 @Component({
   selector: 'app-import',
-  imports: [FormField, TableModule, ButtonModule],
+  imports: [FormField, TableModule, ButtonModule, ColumnMapping, RecordContext],
   templateUrl: './import-workbench.html',
 })
 export class ImportWorkbench implements OnDestroy {
@@ -48,7 +49,16 @@ export class ImportWorkbench implements OnDestroy {
   options = signal({ trim: false, emptyMarkers: false });
   optionForm = form(this.options);
   context = signal<Context>({ collection: false, permit: false, marine: false, sampling: false });
-  contextForm = form(this.context);
+  otherContext = signal(false);
+  setContext(context: Context) {
+    this.otherContext.set(false);
+    this.context.set(context);
+  }
+  setOtherContext(other: boolean) {
+    this.otherContext.set(other);
+    if (other) this.context.set({ collection: false, permit: false, marine: false, sampling: false });
+    this.invalidate();
+  }
   busy = signal(false);
   error = signal('');
   issues = signal<Issue[] | undefined>(undefined);
@@ -172,12 +182,6 @@ export class ImportWorkbench implements OnDestroy {
   map(header: string, value: string) {
     this.invalidate();
     this.mapping.update((m) => ({ ...m, [header]: value }));
-  }
-  suggest(header: string) {
-    return suggestions(header, this.terms());
-  }
-  value(event: Event) {
-    return (event.target as HTMLInputElement).value;
   }
   checked(event: Event) {
     return (event.target as HTMLInputElement).checked;

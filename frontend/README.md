@@ -17,9 +17,16 @@ Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al ba
 
 1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una hoja.
 2. Elegir uno o varios perfiles publicados. Los borradores no se ejecutan.
-3. Mapear los encabezados a campos Darwin Core. Los nombres exactos se reconocen sin cambios; las equivalencias sugeridas requieren una selección o confirmación escrita. No se permiten dos columnas de origen con el mismo destino.
+3. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Abrir la flecha para buscar; usar las flechas del teclado y Enter para elegir. También se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias separadas muestran su selección. «Limpiar» deja el destino sin asignar y desmarca la sugerencia. Los nombres exactos se reconocen sin cambios. No se permiten dos columnas de origen con el mismo destino.
 4. Si se desea, activar el recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. Revisar los cambios de los primeros 20 registros. Ambas opciones están desactivadas inicialmente y solo cambian una copia de trabajo.
-5. Indicar los contextos de colección, permiso, marino y muestreo; validar localmente. La condición técnica `permitAndCollection` requiere permiso y colección a la vez.
+5. Indicar los contextos y validar localmente:
+   - Asociados a un permiso de recolección o acceso a recursos genéticos.
+   - Colección biológica.
+   - Eventos de muestreo.
+   - Marinos.
+   - Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados.
+
+   Los cuatro primeros son combinables. Otros desmarca los cuatro y cualquiera de ellos desmarca Otros. No agrega condiciones al contrato de validación. La condición técnica `permitAndCollection` sigue requiriendo permiso y colección a la vez.
 6. Filtrar y paginar el diagnóstico; descargar todas las incidencias como JSON o CSV. Cada una conserva campo, fila de origen, descripción, severidad, perfil y versión. En CSV se antepone un apóstrofo a las celdas que podrían ejecutarse como fórmulas de hoja de cálculo.
 
 ### Límites y conservación del origen
@@ -48,7 +55,7 @@ Los términos Darwin Core, URI, nombres científicos y valores de los archivos p
 
 ## Administrar perfiles
 
-Crear un perfil y agregar reglas con campo, comprobación, condición, severidad, mensaje y fuente. Guardar como borrador, editarlo o publicarlo explícitamente. Las versiones publicadas son de solo lectura: se duplican en otra versión para evolucionar las reglas.
+Crear un perfil abre un diálogo modal con datos del perfil y grupos de reglas: campo, comprobación, condición, severidad, mensaje y fuente. Guardar como borrador, editarlo o publicarlo explícitamente. Escape o «Cerrar editor» cierran el diálogo sin guardar; el foco vuelve al control que lo abrió. Un error al guardar mantiene el diálogo, el contenido y el mensaje de error. Las versiones publicadas son de solo lectura, incluido el selector de campos: se duplican en otra versión para evolucionar las reglas.
 
 Solo se informa éxito cuando responde correctamente la API. Los errores permanecen visibles; no hay persistencia local ni éxito simulado como reemplazo de una solicitud fallida. El backend rechaza cambios concurrentes mediante `revision`; actualizar los datos del servidor antes de volver a guardar.
 
@@ -62,6 +69,12 @@ Contrato de API:
 
 No se usa ningún endpoint de carga de archivos.
 
+## Consultar el catálogo
+
+La búsqueda, la categoría y el estado se combinan. «Restablecer filtros» vuelve a mostrar todos los términos. Las categorías muestran el último segmento de su URI solo como etiqueta; el filtro conserva el valor canónico. «Sin categoría» indica ausencia, no una clasificación oficial nueva. Los estados y las definiciones siguen siendo los de la fuente.
+
+Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fila y mensaje, además del color. Las descargas siguen incluyendo el diagnóstico completo aunque la tabla esté filtrada. El pie ocupa el fondo de la ventana cuando hay poco contenido y sigue al contenido cuando la página crece; no se superpone.
+
 ## Arquitectura
 
 | Módulo | Responsabilidad |
@@ -73,6 +86,11 @@ No se usa ningún endpoint de carga de archivos.
 | `analysis/analysis.worker.ts` | Lectura y validación local; cancelación por terminación e identificadores que descartan respuestas antiguas |
 | `analysis/export.ts` | JSON y CSV con neutralización de fórmulas |
 | `api.ts` | Límite exclusivo de metadatos; TanStack Query administra lecturas, invalidación y errores |
+| `shared/dwc-picker.ts` | Selector PrimeNG compartido; adaptador CVA interno a señales de Angular 21, sin estado de selección duplicado |
+| `import/column-mapping.ts` | Presentación de encabezados y sugerencias; emite cambios al helper `map` del workbench |
+| `import/record-context.ts` | Controles de contexto; el workbench conserva el estado y el contrato de cuatro booleanos |
+
+El workbench conserva la orquestación del worker, invalidación, destinos únicos y exportación; permanece montado al navegar. Los componentes de presentación no reimplementan parser, normalización, validación ni exportación.
 
 La localización debe conservar estos límites y no introducir escrituras en datos originales o publicaciones históricas.
 

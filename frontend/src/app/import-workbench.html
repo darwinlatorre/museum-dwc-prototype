@@ -95,38 +95,8 @@
         Se reconocen los nombres exactos. Las sugerencias no se aplican hasta que las seleccione.
         Deje las columnas desconocidas sin cambios para incluirlas como advertencias.
       </p>
-      <datalist id="mapping-terms">
-        @for (term of terms(); track term.name) {
-          <option [value]="term.name"></option>
-        }</datalist
-      ><p-table [value]="dataset.headers" [paginator]="true" [rows]="12">
-        <ng-template #header
-          ><tr>
-            <th>Encabezado de origen</th>
-            <th>Campo Darwin Core de destino</th>
-            <th>Posible equivalencia</th>
-          </tr></ng-template
-        >
-        <ng-template #body let-header
-          ><tr>
-            <td>{{ header }}</td>
-            <td>
-              <input
-                [attr.aria-label]="'Mapear ' + header"
-                list="mapping-terms"
-                [value]="mapping()[header] || ''"
-                [placeholder]="header"
-                (input)="map(header, value($event))"
-              />
-            </td>
-            <td>
-              @for (suggestion of suggest(header); track suggestion) {
-                <button (click)="map(header, suggestion)">Usar {{ suggestion }}</button>
-              }
-            </td>
-          </tr></ng-template
-        >
-      </p-table>
+      <app-column-mapping [headers]="dataset.headers" [terms]="terms()" [mapping]="mapping()"
+        (mapped)="map($event.header, $event.value)" />
       @if (!mappingValid()) {
         <p role="alert" class="error">Cada campo de destino puede usarse una sola vez.</p>
       }
@@ -190,30 +160,8 @@
         Active solo los contextos que correspondan a este archivo. Las reglas condicionales no
         deducen el contexto a partir de los valores de las celdas.
       </p>
-      <div class="context-grid">
-        <label
-          ><input type="checkbox" [formField]="contextForm.collection" /><span
-            ><strong>Depósito en colección</strong
-            ><small>Registros depositados en una colección biológica.</small></span
-          ></label
-        >
-        <label
-          ><input type="checkbox" [formField]="contextForm.permit" /><span
-            ><strong>Permiso</strong
-            ><small>Registros sujetos a requisitos de un permiso de recolección.</small></span
-          ></label
-        >
-        <label
-          ><input type="checkbox" [formField]="contextForm.marine" /><span
-            ><strong>Marino</strong><small>Registros biológicos marinos.</small></span
-          ></label
-        >
-        <label
-          ><input type="checkbox" [formField]="contextForm.sampling" /><span
-            ><strong>Muestreo</strong><small>Registros de eventos de muestreo.</small></span
-          ></label
-        >
-      </div>
+      <app-record-context [context]="context()" [other]="otherContext()"
+        (contextChanged)="setContext($event)" (otherChanged)="setOtherContext($event)" />
       <p>
         Las reglas con la condición «Permiso y depósito en colección» se aplican solo cuando ambos
         contextos están activos. Las fechas y coordenadas siempre se verifican cuando tienen valor.
@@ -281,15 +229,16 @@
             </tr></ng-template
           >
           <ng-template #body let-issue
-            ><tr>
+            ><tr [class.issue-error]="issue.severity === 'ERROR'" [class.issue-warning]="issue.severity === 'WARNING'">
               <td>
-                <span class="badge" [class.danger]="issue.severity === 'ERROR'">{{
-                  label(issue.severity)
-                }}</span>
+                <span class="badge" [class.danger]="issue.severity === 'ERROR'">
+                  <span aria-hidden="true">{{ issue.severity === 'ERROR' ? '!' : '△' }}</span>
+                  {{ label(issue.severity) }}
+                </span>
               </td>
               <td>{{ issue.field }}</td>
               <td>{{ issue.row ?? 'Encabezado' }}</td>
-              <td>{{ issue.description }}</td>
+              <td><strong class="issue-message">{{ issue.description }}</strong></td>
               <td>{{ issue.profile }} {{ issue.version }}</td>
             </tr></ng-template
           >

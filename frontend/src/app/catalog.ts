@@ -28,10 +28,17 @@ import { Term } from './analysis/model';
         >Categoría<select [formField]="filters.category">
           <option value="">Todas las categorías</option>
           @for (category of categories(); track category) {
-            <option [value]="category">{{ category }}</option>
+            <option [value]="category">{{ categoryLabel(category) }}</option>
           }
         </select></label
       >
+      <label>Estado<select [formField]="filters.status">
+        <option value="">Todos los estados</option>
+        @for (status of statuses(); track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select></label>
+      <button type="button" (click)="reset()">Restablecer filtros</button>
     </div>
     <p-table
       [value]="filtered()"
@@ -57,7 +64,7 @@ import { Term } from './analysis/model';
             ><a [href]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
           </td>
           <td class="definition" lang="en">{{ term.definition }}</td>
-          <td>{{ term.category }}</td>
+          <td>{{ categoryLabel(term.category) }}</td>
           <td>{{ term.status }}</td>
         </tr></ng-template
       >
@@ -71,13 +78,24 @@ import { Term } from './analysis/model';
 })
 export class Catalog {
   terms = input.required<Term[]>();
-  model = signal({ search: '', category: '' });
+  model = signal({ search: '', category: '', status: '' });
   filters = form(this.model);
-  categories = computed(() => [...new Set(this.terms().map((t) => t.category))].sort());
+  // The sentinel is presentation-only: an absent category is never written to metadata.
+  readonly absentCategory = '__absent_category__';
+  categoryLabel(category: string) {
+    if (!category || category === this.absentCategory) return 'Sin categoría';
+    return category.split(/[/#]/).filter(Boolean).at(-1) || category;
+  }
+  reset() {
+    this.model.set({ search: '', category: '', status: '' });
+  }
+  categories = computed(() => [...new Set(this.terms().map((t) => t.category || this.absentCategory))].sort());
+  statuses = computed(() => [...new Set(this.terms().map((t) => t.status))].sort());
   filtered = computed(() =>
     this.terms().filter(
       (t) =>
-        (!this.model().category || t.category === this.model().category) &&
+        (!this.model().category || (t.category || this.absentCategory) === this.model().category) &&
+        (!this.model().status || t.status === this.model().status) &&
         Object.values(t).join(' ').toLowerCase().includes(this.model().search.toLowerCase()),
     ),
   );

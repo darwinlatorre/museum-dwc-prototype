@@ -3,6 +3,8 @@ import { form, FormField, required, applyEach, disabled } from '@angular/forms/s
 import { injectMutation, injectQueryClient } from '@tanstack/angular-query-experimental';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { DwcPicker } from './shared/dwc-picker';
 import { Api } from './api';
 import { Profile, ProfileInput, Rule, Term } from './analysis/model';
 import { label, profileDescription, ruleMessage } from './localization';
@@ -10,7 +12,7 @@ import { label, profileDescription, ruleMessage } from './localization';
 const empty = (): ProfileInput => ({ name: '', version: '', description: '', rules: [] });
 @Component({
   selector: 'app-profiles',
-  imports: [FormField, TableModule, ButtonModule],
+  imports: [FormField, TableModule, ButtonModule, DialogModule, DwcPicker],
   template: `
     <div class="section-heading">
       <div>
@@ -73,28 +75,24 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
         </tr></ng-template
       ></p-table
     >
-    @if (mutation.error()) {
+    @if (mutation.error() && !open()) {
       <p role="alert" class="error">{{ mutation.error()?.message }}</p>
     }
     @if (notice()) {
       <p role="status" class="notice">{{ notice() }}</p>
     }
-    @if (open()) {
-      <section class="editor" aria-labelledby="editor-title">
-        <div class="section-heading">
-          <h3 id="editor-title">
-            {{
-              mode() === 'duplicate'
-                ? 'Duplicar perfil'
-                : selected()?.status === 'PUBLISHED'
-                  ? 'Perfil publicado'
-                  : selected()
-                    ? 'Editar borrador'
-                    : 'Nuevo perfil'
-            }}
-          </h3>
-          <button (click)="open.set(false)">Cerrar editor</button>
-        </div>
+    <p-dialog [visible]="open()" (visibleChange)="open.set($event)" (onHide)="restoreFocus()"
+      [header]="editorTitle()" [modal]="true" [draggable]="false" [resizable]="false"
+      [style]="{ width: '64rem', maxWidth: 'calc(100vw - 2rem)' }"
+      [closeOnEscape]="true" [dismissableMask]="false" closeAriaLabel="Cerrar editor">
+      <section class="editor">
+        @if (mutation.error()) {
+          <p role="alert" class="error">{{ mutation.error()?.message }}</p>
+        }
+        @if (locked()) {
+          <p class="notice">Versión publicada: todos los campos son de solo lectura. Duplique el perfil para editarlo.</p>
+        }
+        <h3>Datos del perfil</h3>
         @if (mode() === 'duplicate') {
           <p>Todas las reglas se copiarán a un nuevo borrador. Elija su nombre y versión.</p>
         }
@@ -123,9 +121,11 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
                 <fieldset>
                   <legend>Regla {{ i + 1 }}</legend>
                   <div class="form-grid">
-                    <label
-                      >Campo Darwin Core<input [formField]="rule.field" list="dwc-fields"
-                    /></label>
+                    <div>
+                      <span class="field-label">Campo Darwin Core</span>
+                      <app-dwc-picker [terms]="terms()" [formField]="rule.field"
+                        [label]="'Campo Darwin Core de la regla ' + (i + 1)" />
+                    </div>
                     <label
                       >Validación<select [formField]="rule.kind">
                         <option value="required">Valor y columna obligatorios</option>
@@ -183,13 +183,8 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
             </div>
           }
         </form>
-        <datalist id="dwc-fields">
-          @for (term of terms(); track term.name) {
-            <option [value]="term.name"></option>
-          }
-        </datalist>
       </section>
-    }
+    </p-dialog>
   `,
 })
 export class Profiles {
@@ -204,6 +199,13 @@ export class Profiles {
   mode = signal<'edit' | 'duplicate'>('edit');
   open = signal(false);
   notice = signal('');
+  private opener?: HTMLElement;
+  readonly editorTitle = computed(() => this.mode() === 'duplicate'
+    ? 'Duplicar perfil'
+    : this.locked() ? 'Perfil publicado' : this.selected() ? 'Editar borrador' : 'Nuevo perfil');
+  restoreFocus() {
+    if (this.opener?.isConnected) this.opener.focus();
+  }
   search = signal({ text: '' });
   searchForm = form(this.search);
   filtered = computed(() =>
@@ -234,6 +236,7 @@ export class Profiles {
     },
   }));
   create() {
+    this.opener = document.activeElement as HTMLElement;
     this.selected.set(undefined);
     this.mode.set('edit');
     this.model.set(empty());
@@ -242,6 +245,7 @@ export class Profiles {
     this.mutation.reset();
   }
   edit(profile: Profile) {
+    this.opener = document.activeElement as HTMLElement;
     this.selected.set(profile);
     this.mode.set('edit');
     this.model.set(
