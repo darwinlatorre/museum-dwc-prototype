@@ -28,6 +28,6 @@ Term-specific explanations: https://biodiversidad.co/elementos-darwin-core. This
 
 ## Attribution and licenses
 
-Darwin Core vocabulary: Biodiversity Information Standards (TDWG), https://dwc.tdwg.org/, published under CC0 (see the upstream repository license). The catalog preserves official English definitions and canonical URIs, including Dublin Core imports. `status` is derived from `term_deprecated` (current/deprecated), not from obligation.
+Darwin Core vocabulary: Biodiversity Information Standards (TDWG), https://dwc.tdwg.org/, published under CC BY 4.0 (https://raw.githubusercontent.com/tdwg/dwc/master/LICENSE). The catalog preserves official English definitions and canonical URIs, including Dublin Core imports. `status` is derived from `term_deprecated` (current/deprecated), not from obligation.
 
 SiB workbook and extracted instruction data: Plata C, Ortiz R, Marentes E, Velásquez J, Diaz J, Escobar D, Castro C, Leuro N, Sánchez L. 2024. *Plantilla para la publicación de registros biológicos*. Sistema de Información sobre Biodiversidad de Colombia, versión 4.1, Bogotá, D.C. Workbook and derived SiB profile data are attributed and shared under **CC BY-SA 4.0**, https://creativecommons.org/licenses/by-sa/4.0/. Museum requirements are supplied by this project's requester, not by TDWG or SiB.

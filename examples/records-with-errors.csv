@@ -1,0 +1,3 @@
+catalogNumber,scientificName,eventDate,decimalLatitude,decimalLongitude,unknownField
+MHN-001,Panthera onca,2024-02-30,91,-76.61,Review me
+MHN-002,,2024-02-29,2.44,-181,Unknown column

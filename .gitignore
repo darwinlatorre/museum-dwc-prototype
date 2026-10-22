@@ -9,3 +9,4 @@ target/
 *.log
 .playwright-cli/
 .agent-browser/
+.browser/

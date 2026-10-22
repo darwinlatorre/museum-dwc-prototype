@@ -16,8 +16,8 @@ S9. «El MVP estará terminado cuando permita analizar un archivo localmente, de
 ## Tasks
 T1 | S1-S3 | inline: source evidence, catalog and seed profiles | done | RED: missing seed files; GREEN: python3 scripts/test_seeds.py 3/3; commit 3422f39.
 T2 | S4,S8,S9 | delegated backend: independent versioned profile management, migrations and API tests | done | Risk: item 1 (published data immutability), item 4 (concurrent publication); full suite20 PASS, independent recheck11 PASS; commit 8c76b3d.
-T3 | S5-S7,S9 | delegated frontend: independent local file analysis and profile UI against fixed API contract | done | Risk: item 5 (XLSX parser dependency); parent full suite49 PASS/build PASS and independent49 PASS; commit pending. License/audit delivery decision remains T4.
-T4 | S1-S9 | inline integration, README and functional verification; independent verifier for named risks | in_progress | CSV/XLSX, downloads and GUI create/edit/duplicate/publish observed; license and npm audit decisions open; commit pending.
+T3 | S5-S7,S9 | delegated frontend: independent local file analysis and profile UI against fixed API contract | done | Risk: item 5 (XLSX parser dependency); parent full suite49 PASS/build PASS and independent49 PASS; commit e7e54ac. License/audit delivery decision remains T4.
+T4 | S1-S9 | inline integration, README and functional verification; independent verifier for named risks | blocked | CSV/XLSX, downloads and GUI create/edit/duplicate/publish observed. Waiting for human: valid PrimeUI license path or compatible MIT migration; new audit authorization or explicit acceptance of unavailable audit proof. README/VERIFICATION.md prepared; feature not closed.
 
 ## Log
 L1. Original request:
