@@ -28,9 +28,9 @@ describe('Collection workspace', () => {
     await blocks[0].render(DeferBlockState.Complete);
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('h1')?.textContent).toContain('Collection data quality');
-    expect(root.querySelector('nav')?.getAttribute('aria-label')).toBe('Main navigation');
-    expect(root.textContent).toContain('Your file stays on this device');
+    expect(root.querySelector('h1')?.textContent).toContain('Calidad de los datos de colecciones');
+    expect(root.querySelector('nav')?.getAttribute('aria-label')).toBe('Navegación principal');
+    expect(root.textContent).toContain('El archivo permanece en este dispositivo');
     expect(root.querySelector('input[type=file]')?.getAttribute('accept')).toBe('.csv,.xlsx');
   });
 });

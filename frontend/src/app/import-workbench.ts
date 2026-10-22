@@ -16,6 +16,7 @@ import {
 import { normalize } from './analysis/normalizer';
 import { suggestions } from './analysis/validator';
 import { csvReport, jsonReport } from './analysis/export';
+import { label, profileDescription } from './localization';
 
 @Component({
   selector: 'app-import',
@@ -23,16 +24,18 @@ import { csvReport, jsonReport } from './analysis/export';
   templateUrl: './import-workbench.html',
 })
 export class ImportWorkbench implements OnDestroy {
+  label = label;
+  profileDescription = profileDescription;
   profiles = input.required<Profile[]>();
   terms = input.required<Term[]>();
   published = computed(() => this.profiles().filter((p) => p.status === 'PUBLISHED'));
   stages = [
-    'Select file',
-    'Choose profiles',
-    'Map columns',
-    'Normalize',
-    'Context & validate',
-    'Diagnosis',
+    'Seleccionar archivo',
+    'Elegir perfiles',
+    'Mapear columnas',
+    'Normalizar',
+    'Contexto y validación',
+    'Diagnóstico',
   ];
   step = signal(0);
   file = signal<File | undefined>(undefined);
@@ -99,7 +102,7 @@ export class ImportWorkbench implements OnDestroy {
   }
   cancel() {
     this.invalidate();
-    this.error.set('Processing cancelled. No data was uploaded.');
+    this.error.set('Procesamiento cancelado. No se enviaron datos al servidor.');
   }
   private dispatch(request: WorkerRequest) {
     this.worker?.terminate();
@@ -130,7 +133,9 @@ export class ImportWorkbench implements OnDestroy {
     worker.onerror = () => {
       if (request.id === this.generation) {
         this.busy.set(false);
-        this.error.set('The local worker could not process this file. Try a smaller CSV.');
+        this.error.set(
+          'El proceso local no pudo analizar este archivo. Pruebe con un CSV más pequeño.',
+        );
         worker.terminate();
       }
     };
@@ -147,7 +152,7 @@ export class ImportWorkbench implements OnDestroy {
     this.file.set(file);
     if (!file) return;
     if (file.size > LIMITS.bytes) {
-      this.error.set('File limit exceeded (10 MiB).');
+      this.error.set('Se superó el límite del archivo (10 MiB).');
       return;
     }
     // Defer until reactive invalidation of previous inputs is complete.
@@ -201,7 +206,7 @@ export class ImportWorkbench implements OnDestroy {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `museum-diagnosis.${kind}`;
+    a.download = `diagnostico-museo.${kind}`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

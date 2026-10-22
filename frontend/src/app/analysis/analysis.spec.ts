@@ -41,6 +41,65 @@ const terms: Term[] = [
 const run = (text: string, rules: Rule[] = [], ctx = context) =>
   validate(parseCsv(text), {}, [profile(rules)], terms, ctx);
 
+describe('Spanish presentation preserves contracts and data', () => {
+  it('reports exact Spanish parser errors without changing the source', () => {
+    const source = 'a,a\n1,2';
+    expect(() => parseCsv(source)).toThrow(
+      'Los encabezados deben ser únicos y no estar vacíos (sin distinguir mayúsculas ni espacios al inicio o al final).',
+    );
+    expect(source).toBe('a,a\n1,2');
+    expect(() => parseCsv('')).toThrow('El archivo está vacío.');
+  });
+  it('localizes historical seeded messages only for presentation and preserves arbitrary messages', () => {
+    const seeded = {
+      ...profile(
+        [
+          {
+            ...rule(),
+            message: 'catalogNumber is required for this context.',
+            source: 'Museo de Historia Natural, Universidad del Cauca — requested profile 1.0',
+          },
+        ],
+        'Museo',
+      ),
+      id: 'ea25b7e8-9d05-5427-8e0d-c0200785fb2d',
+    };
+    const before = structuredClone(seeded);
+    const data = parseCsv('catalogNumber\n""');
+    const issues = validate(data, {}, [seeded], terms, context);
+    expect(issues).toEqual([
+      {
+        field: 'catalogNumber',
+        row: 2,
+        description: 'catalogNumber es obligatorio en este contexto.',
+        severity: 'ERROR',
+        profile: 'Museo',
+        version: '1.0',
+      },
+    ]);
+    expect(JSON.parse(jsonReport(issues))).toEqual(issues);
+    expect(seeded).toEqual(before);
+    const custom = { ...seeded, id: 'custom', name: 'My profile' };
+    expect(validate(data, {}, [custom], terms, context)[0].description).toBe(
+      'catalogNumber is required for this context.',
+    );
+    expect(run('catalogNumber\n""', [rule()])[0].description).toBe('Catalog number required');
+  });
+  it('uses Spanish system diagnostics with unchanged technical identifiers', () => {
+    expect(run('Catalog Number\nA')[0]).toEqual({
+      field: 'Catalog Number',
+      row: null,
+      severity: 'WARNING',
+      profile: 'Sistema',
+      version: '1',
+      description: 'Columna desconocida. Posible equivalencia: catalogNumber.',
+    });
+    expect(run('eventDate\n2023-02-29')[0].description).toBe(
+      'Use una fecha válida con el formato YYYY-MM-DD.',
+    );
+  });
+});
+
 describe('local parser', () => {
   it('preserves quotes, embedded newlines, blank source lines and physical row numbers', () => {
     expect(parseCsv('catalogNumber,note\r\n\r\n"A,1","line\n""two"""\r\nB,end')).toEqual({
@@ -169,7 +228,7 @@ describe('validation', () => {
     expect(run('Catalog Number\nA')[0]).toMatchObject({
       field: 'Catalog Number',
       severity: 'WARNING',
-      profile: 'System',
+      profile: 'Sistema',
       row: null,
     });
     expect(run('Catalog Number\nA')[0].description).toContain('catalogNumber');

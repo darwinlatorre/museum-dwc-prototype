@@ -1,4 +1,5 @@
 import { Condition, Context, Dataset, Issue, LIMITS, Profile, Term } from './model';
+import { ruleMessage } from '../localization';
 const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 export function suggestions(header: string, terms: Term[]): string[] {
   const needle = key(header);
@@ -54,12 +55,12 @@ export function validate(
 ): Issue[] {
   const headers = data.headers.map((h) => mapping[h] || h);
   if (new Set(headers).size !== headers.length)
-    throw new Error('Two source columns cannot map to the same field.');
+    throw new Error('Dos columnas de origen no pueden asignarse al mismo campo.');
   const issues: Issue[] = [];
   const add = (issue: Issue) => {
     if (issues.length >= LIMITS.issues)
       throw new Error(
-        'Diagnostic limit exceeded (100,000). Choose fewer profiles or a smaller file.',
+        'Se superó el límite de incidencias (100.000). Seleccione menos perfiles o un archivo más pequeño.',
       );
     issues.push(issue);
   };
@@ -70,9 +71,9 @@ export function validate(
         field: data.headers[i],
         row: null,
         severity: 'WARNING',
-        profile: 'System',
+        profile: 'Sistema',
         version: '1',
-        description: `Unknown column.${proposed.length ? ' Possible equivalence: ' + proposed.join(', ') + '.' : ' No Darwin Core equivalence found.'}`,
+        description: `Columna desconocida.${proposed.length ? ' Posible equivalencia: ' + proposed.join(', ') + '.' : ' No se encontró una equivalencia Darwin Core.'}`,
       });
     }
   });
@@ -84,7 +85,7 @@ export function validate(
         add({
           field: rule.field,
           row,
-          description: rule.message || `Invalid ${rule.field}.`,
+          description: ruleMessage(profile, rule) || `Valor no válido para ${rule.field}.`,
           severity: rule.severity,
           profile: profile.name,
           version: profile.version,
@@ -108,7 +109,7 @@ export function validate(
     }
   // Baseline integrity is independent of optional profile rules.
   const base = (field: string, row: number, description: string) =>
-    add({ field, row, description, severity: 'ERROR', profile: 'System', version: '1' });
+    add({ field, row, description, severity: 'ERROR', profile: 'Sistema', version: '1' });
   for (const row of data.rows) {
     const get = (field: string) => row.values[headers.indexOf(field)] ?? '';
     for (const field of ['eventDate', 'decimalLatitude', 'decimalLongitude']) {
@@ -123,8 +124,8 @@ export function validate(
           field,
           row.row,
           field === 'eventDate'
-            ? 'Use a valid calendar date in YYYY-MM-DD format.'
-            : `Use a finite decimal number between ${field === 'decimalLatitude' ? '-90 and 90' : '-180 and 180'}.`,
+            ? 'Use una fecha válida con el formato YYYY-MM-DD.'
+            : `Use un número decimal finito entre ${field === 'decimalLatitude' ? '-90 y 90' : '-180 y 180'}.`,
         );
     }
     const y = get('year'),
@@ -136,18 +137,22 @@ export function validate(
       ['day', d, 31],
     ] as const) {
       if (value.trim() && (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > max))
-        base(field, row.row, `Use a whole ${field} between 1 and ${max}.`);
+        base(field, row.row, `Use un número entero para ${field} entre 1 y ${max}.`);
     }
     if (y && m && d && !calendar(Number(y), Number(m), Number(d)))
-      base('day', row.row, 'Year, month and day do not form a valid calendar date.');
+      base('day', row.row, 'El año, el mes y el día no forman una fecha válida.');
     else if (m && d && !calendar(y ? Number(y) : 2000, Number(m), Number(d)))
-      base('day', row.row, 'Day is not valid for the selected month.');
+      base('day', row.row, 'El día no es válido para el mes seleccionado.');
     const event = get('eventDate');
     if (event && date(event)) {
       const parts = event.split('-').map(Number);
       [y, m, d].forEach((v, i) => {
         if (v.trim() && Number(v) !== parts[i])
-          base(['year', 'month', 'day'][i], row.row, 'Date component does not match eventDate.');
+          base(
+            ['year', 'month', 'day'][i],
+            row.row,
+            'El componente de fecha no coincide con eventDate.',
+          );
       });
     }
   }

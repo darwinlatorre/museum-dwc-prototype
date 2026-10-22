@@ -5,6 +5,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { Api } from './api';
 import { Profile, ProfileInput, Rule, Term } from './analysis/model';
+import { label, profileDescription, ruleMessage } from './localization';
 
 const empty = (): ProfileInput => ({ name: '', version: '', description: '', rules: [] });
 @Component({
@@ -13,16 +14,18 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
   template: `
     <div class="section-heading">
       <div>
-        <h2>Validation profiles</h2>
-        <p>Published versions are immutable. Duplicate a version to evolve its rules.</p>
+        <h2>Perfiles de validación</h2>
+        <p>
+          Las versiones publicadas son inmutables. Duplique una versión para modificar sus reglas.
+        </p>
       </div>
-      <p-button label="Create profile" (onClick)="create()" />
+      <p-button label="Crear perfil" (onClick)="create()" />
     </div>
     <label class="search"
-      >Find a profile<input
+      >Buscar un perfil<input
         type="search"
         [formField]="searchForm.text"
-        placeholder="Name, version or status"
+        placeholder="Nombre, versión o estado"
     /></label>
     <p-table
       [value]="filtered()"
@@ -32,39 +35,41 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
     >
       <ng-template #header
         ><tr>
-          <th>Profile</th>
-          <th>Version</th>
-          <th>Status</th>
-          <th>Rules</th>
-          <th>Actions</th>
+          <th>Perfil</th>
+          <th>Versión</th>
+          <th>Estado</th>
+          <th>Reglas</th>
+          <th>Acciones</th>
         </tr></ng-template
       >
       <ng-template #body let-profile
         ><tr>
           <td>
             <strong>{{ profile.name }}</strong
-            ><small>{{ profile.description }}</small>
+            ><small>{{ profileDescription(profile) }}</small>
           </td>
           <td>{{ profile.version }}</td>
           <td>
             <span class="badge" [class.published]="profile.status === 'PUBLISHED'">{{
-              profile.status
+              label(profile.status)
             }}</span>
           </td>
           <td>{{ profile.rules.length }}</td>
           <td class="actions">
             <button (click)="edit(profile)">
-              {{ profile.status === 'DRAFT' ? 'Edit draft' : 'View rules' }}</button
-            ><button (click)="duplicate(profile)">Duplicate</button>
+              {{ profile.status === 'DRAFT' ? 'Editar borrador' : 'Ver reglas' }}</button
+            ><button (click)="duplicate(profile)">Duplicar</button>
             @if (profile.status === 'DRAFT') {
-              <button [disabled]="mutation.isPending()" (click)="publish(profile)">Publish</button>
+              <button [disabled]="mutation.isPending()" (click)="publish(profile)">Publicar</button>
             }
           </td>
         </tr></ng-template
       >
       <ng-template #emptymessage
         ><tr>
-          <td colspan="5">No profiles. Create a draft to define collection requirements.</td>
+          <td colspan="5">
+            No hay perfiles. Cree un borrador para definir los requisitos de la colección.
+          </td>
         </tr></ng-template
       ></p-table
     >
@@ -80,83 +85,101 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
           <h3 id="editor-title">
             {{
               mode() === 'duplicate'
-                ? 'Duplicate profile'
+                ? 'Duplicar perfil'
                 : selected()?.status === 'PUBLISHED'
-                  ? 'Published profile'
+                  ? 'Perfil publicado'
                   : selected()
-                    ? 'Edit draft'
-                    : 'New profile'
+                    ? 'Editar borrador'
+                    : 'Nuevo perfil'
             }}
           </h3>
-          <button (click)="open.set(false)">Close editor</button>
+          <button (click)="open.set(false)">Cerrar editor</button>
         </div>
         @if (mode() === 'duplicate') {
-          <p>All rules will be copied to a new draft. Choose its name and version.</p>
+          <p>Todas las reglas se copiarán a un nuevo borrador. Elija su nombre y versión.</p>
         }
         <form (submit)="save(); $event.preventDefault()">
           <div class="form-grid">
-            <label>Name<input [formField]="editor.name" /></label
-            ><label>Version<input [formField]="editor.version" /></label>
+            <label>Nombre<input [formField]="editor.name" /></label
+            ><label>Versión<input [formField]="editor.version" /></label>
           </div>
           @if (mode() !== 'duplicate') {
-            <label>Description<textarea [formField]="editor.description"></textarea></label>
-            <h4>Rules</h4>
+            <label
+              >Descripción
+              @if (locked()) {
+                <textarea [value]="profileDescription(selected()!)" disabled></textarea>
+              } @else {
+                <textarea [formField]="editor.description"></textarea>
+              }
+            </label>
+            <h4>Reglas</h4>
             <p>
-              Required checks column presence and nonempty values. Required column checks only the
-              header. Conditions use explicit import context.
+              La regla de valor obligatorio comprueba la presencia de la columna y los valores no
+              vacíos. La regla de columna obligatoria comprueba solo el encabezado. Las condiciones
+              usan el contexto declarado al importar.
             </p>
             <div class="rule-list">
               @for (rule of editor.rules; track $index; let i = $index) {
                 <fieldset>
-                  <legend>Rule {{ i + 1 }}</legend>
+                  <legend>Regla {{ i + 1 }}</legend>
                   <div class="form-grid">
                     <label
-                      >Darwin Core field<input [formField]="rule.field" list="dwc-fields"
+                      >Campo Darwin Core<input [formField]="rule.field" list="dwc-fields"
                     /></label>
                     <label
-                      >Check<select [formField]="rule.kind">
-                        <option value="required">Required value + column</option>
-                        <option value="requiredColumn">Required column only</option>
-                        <option value="date">Calendar date</option>
-                        <option value="latitude">Latitude</option>
-                        <option value="longitude">Longitude</option>
+                      >Validación<select [formField]="rule.kind">
+                        <option value="required">Valor y columna obligatorios</option>
+                        <option value="requiredColumn">Solo columna obligatoria</option>
+                        <option value="date">Fecha del calendario</option>
+                        <option value="latitude">Latitud</option>
+                        <option value="longitude">Longitud</option>
                       </select></label
                     >
                     <label
-                      >Condition<select [formField]="rule.condition">
+                      >Condición<select [formField]="rule.condition">
                         @for (condition of conditions; track condition) {
-                          <option [value]="condition">{{ condition }}</option>
+                          <option [value]="condition">{{ label(condition) }}</option>
                         }
                       </select></label
                     >
                     <label
-                      >Severity<select [formField]="rule.severity">
+                      >Severidad<select [formField]="rule.severity">
                         <option value="ERROR">Error</option>
-                        <option value="WARNING">Warning</option>
+                        <option value="WARNING">Advertencia</option>
                       </select></label
                     >
-                    <label>Diagnostic message<input [formField]="rule.message" /></label
-                    ><label>Evidence / source<input [formField]="rule.source" /></label>
+                    <label
+                      >Mensaje de diagnóstico
+                      @if (locked()) {
+                        <input [value]="ruleMessage(selected()!, model().rules[i])" disabled />
+                      } @else {
+                        <input [formField]="rule.message" />
+                      }</label
+                    ><label
+                      >Evidencia / fuente (texto original)<input [formField]="rule.source"
+                    /></label>
                   </div>
                   @if (!locked()) {
-                    <button type="button" (click)="removeRule(i)">Remove rule</button>
+                    <button type="button" (click)="removeRule(i)">Eliminar regla</button>
                   }
                 </fieldset>
               } @empty {
-                <p>No rules yet. Add only the fields this profile actually requires.</p>
+                <p>
+                  Aún no hay reglas. Agregue solo los campos que este perfil realmente requiere.
+                </p>
               }
             </div>
             @if (!locked()) {
-              <button type="button" (click)="addRule()">Add rule</button>
+              <button type="button" (click)="addRule()">Agregar regla</button>
             }
           }
           @if (!locked()) {
             <div class="editor-footer">
               <p-button
                 type="submit"
-                [label]="mode() === 'duplicate' ? 'Create duplicate' : 'Save draft'"
+                [label]="mode() === 'duplicate' ? 'Crear duplicado' : 'Guardar borrador'"
                 [disabled]="editor().invalid() || mutation.isPending()"
-              /><span>Publishing is a separate action.</span>
+              /><span>La publicación es una acción independiente.</span>
             </div>
           }
         </form>
@@ -170,6 +193,9 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
   `,
 })
 export class Profiles {
+  label = label;
+  profileDescription = profileDescription;
+  ruleMessage = ruleMessage;
   profiles = input.required<Profile[]>();
   terms = input.required<Term[]>();
   api = inject(Api);
@@ -182,7 +208,9 @@ export class Profiles {
   searchForm = form(this.search);
   filtered = computed(() =>
     this.profiles().filter((p) =>
-      `${p.name} ${p.version} ${p.status}`.toLowerCase().includes(this.search().text.toLowerCase()),
+      `${p.name} ${p.version} ${label(p.status)}`
+        .toLowerCase()
+        .includes(this.search().text.toLowerCase()),
     ),
   );
   model = signal<ProfileInput>(empty());
@@ -201,7 +229,7 @@ export class Profiles {
     mutationFn: (action: () => Promise<Profile>) => action(),
     onSuccess: () => {
       this.open.set(false);
-      this.notice.set('Profile saved on the server.');
+      this.notice.set('Perfil guardado en el servidor.');
       void this.client.invalidateQueries({ queryKey: ['profiles'] });
     },
   }));
@@ -265,9 +293,7 @@ export class Profiles {
     );
   }
   publish(profile: Profile) {
-    if (
-      confirm(`Publish ${profile.name} ${profile.version}? This version can no longer be edited.`)
-    )
+    if (confirm(`¿Publicar ${profile.name} ${profile.version}? Esta versión ya no podrá editarse.`))
       this.mutation.mutate(() => this.api.publish(profile));
   }
 }

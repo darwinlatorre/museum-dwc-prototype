@@ -10,11 +10,15 @@ export class Api {
       signal,
       headers: body ? { 'Content-Type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
+    }).catch(() => {
+      throw new Error(
+        'No se pudo conectar con el servidor. Actualice los datos antes de volver a intentarlo.',
+      );
     });
     if (!response.ok) {
       const text = await response.text();
       throw new Error(
-        `API ${response.status}: ${text.slice(0, 500) || response.statusText}. Changes were not saved. Refresh before retrying.`,
+        `API ${response.status}: ${text.slice(0, 500) || 'Error del servidor'}. No se guardaron los cambios. Actualice los datos antes de volver a intentarlo.`,
       );
     }
     return response.json() as Promise<T>;

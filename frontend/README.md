@@ -1,46 +1,89 @@
-# Museum collection workbench
+# Área de trabajo de las colecciones del museo
 
-Angular 21.2.25, PrimeNG 21.1.10 and TanStack Query 5.104.5 provide a local-file data quality workbench. The API stores catalog and versioned profile metadata only. File bytes and record values never go to the API.
+Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** ofrecen una interfaz de gestión para revisar la calidad de archivos locales. La API almacena exclusivamente metadatos de catálogo y perfiles versionados. Los bytes del archivo y sus registros no se envían al servidor.
 
-## Run
+## Ejecución
 
-From `frontend/`, run `npm ci` then `npm start`. Open http://localhost:4200. The development server proxies `/api` to http://localhost:8080; start the backend first. Run `npm test -- --watch=false` and `npm run build` for verification. Production hosting must serve `dist/frontend/browser` and reverse-proxy `/api` to the backend on the same origin. Use a trusted local environment: authentication is not implemented or simulated; the metadata API can later sit behind an OIDC/Keycloak boundary.
+Desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
 
-## Analyze a collection
+```bash
+npm test -- --watch=false
+npm run build
+```
 
-1. Select UTF-8 comma-separated CSV or XLSX. Choose a worksheet explicitly for XLSX.
-2. Choose one or more published profiles. Drafts cannot run.
-3. Map headers to Darwin Core fields. Exact names work without mapping; suggested equivalences require a click or typed confirmation. Duplicate targets are rejected.
-4. Optionally trim surrounding whitespace and/or treat `NULL` and `N/A` as empty. Review the first 20 records' changes. Both options default off. Only a working copy changes.
-5. Declare collection, permit, marine and sampling context, then validate locally. `permitAndCollection` requires both booleans.
-6. Filter and paginate the diagnostic; download all issues as JSON or CSV. Downloads retain field, original source row, description, severity, profile and version. CSV cells beginning with spreadsheet formula triggers are prefixed with an apostrophe.
+Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al backend desde el mismo origen. Este MVP debe permanecer en un entorno local confiable: no implementa ni simula autenticación. La integración OIDC/Keycloak se incorporará posteriormente al límite de metadatos.
 
-Limits: 10 MiB input, 50,000 data rows, 500 columns, 100,000 issues. Malformed quoting, inconsistent CSV widths, empty headers and case/space-equivalent duplicate headers are rejected. CSV source rows count physical lines, including multiline quoted fields and blank lines. XLSX source rows refer to worksheet positions. Spreadsheet date cells become ISO calendar dates for validation. Sparse spreadsheet rows are padded, never shifted. Terminate processing with **Cancel processing**; changes to mappings, selected profiles, normalization, context or refreshed metadata invalidate previous diagnostics. Processing is single-file, one worksheet at a time. XLSX decompression is not streaming: compressed workbooks may consume more memory than their input size; cancel or choose a smaller CSV if needed.
+## Analizar una colección
 
-Basic integrity checks always validate populated `eventDate` as exact `YYYY-MM-DD`, populated year/month/day as integer calendar components (including leap years and cross-field consistency), and decimal coordinates as finite numbers in ±90/±180. Empty optional values are allowed. Profile rules decide column and value requirements; `requiredColumn` never requires a nonblank cell. Unknown columns generate system warnings with possible equivalences. Diagnostics are quality guidance, not SiB certification. Extension-specific validations beyond the configured rule kinds are outside this MVP.
+1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una hoja.
+2. Elegir uno o varios perfiles publicados. Los borradores no se ejecutan.
+3. Mapear los encabezados a campos Darwin Core. Los nombres exactos se reconocen sin cambios; las equivalencias sugeridas requieren una selección o confirmación escrita. No se permiten dos columnas de origen con el mismo destino.
+4. Si se desea, activar el recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. Revisar los cambios de los primeros 20 registros. Ambas opciones están desactivadas inicialmente y solo cambian una copia de trabajo.
+5. Indicar los contextos de colección, permiso, marino y muestreo; validar localmente. La condición técnica `permitAndCollection` requiere permiso y colección a la vez.
+6. Filtrar y paginar el diagnóstico; descargar todas las incidencias como JSON o CSV. Cada una conserva campo, fila de origen, descripción, severidad, perfil y versión. En CSV se antepone un apóstrofo a las celdas que podrían ejecutarse como fórmulas de hoja de cálculo.
 
-## Manage profiles
+### Límites y conservación del origen
 
-Create a profile and add field, check, condition, severity, message and evidence/source rules. Save a draft, edit it, or publish it explicitly. Published versions are read-only: duplicate them with a new version to evolve rules. Changes are persisted only after successful API responses. API errors remain visible; no local persistence or fake success replaces a failed request. Concurrent changes are rejected by the backend using `revision`; reload server state before retrying.
+Se permiten hasta **10 MiB**, **50 000 registros**, **500 columnas** y **100 000 incidencias**. Se rechazan comillas mal formadas, filas CSV de ancho inconsistente, encabezados vacíos y duplicados equivalentes al ignorar mayúsculas o espacios.
 
-API contract: `GET /api/catalog`, `GET /api/profiles`, `POST /api/profiles`, `PUT /api/profiles/{id}`, `POST /api/profiles/{id}/duplicate` with `{name,version}`, and `POST /api/profiles/{id}/publish`. Create bodies contain `{name,version,description,rules}`; updates additionally send `revision`. No file upload endpoint is used.
+Las filas de CSV corresponden a líneas físicas, incluidas las filas vacías y las celdas entrecomilladas con saltos de línea. Las de XLSX corresponden a la posición original de la hoja. Las celdas de fecha de Excel se representan como fechas ISO para validarlas. Los huecos de filas y columnas se completan, sin desplazar registros.
 
-## Architecture
+Se puede cancelar el proceso terminando el worker. Un cambio de mapeo, perfiles, normalización, contexto o metadatos invalida el diagnóstico anterior. Se procesa un archivo y una hoja por vez. La descompresión de XLSX **no es incremental**: un archivo comprimido puede consumir más memoria que su tamaño. Si sucede, cancelar o utilizar un CSV más pequeño; el límite de entrada no garantiza el uso máximo de memoria.
 
-- `analysis/model.ts`: shared UI/worker/profile contract and bounded limits.
-- `analysis/parser.ts`: strict CSV and spreadsheet matrix conversion.
-- `analysis/normalizer.ts`: immutable opt-in transformations with change records.
-- `analysis/validator.ts`: independent profile rules and baseline integrity checks.
-- `analysis/analysis.worker.ts`: local XLSX/CSV parsing and validation, cancelled by terminating the worker; generation IDs suppress stale responses.
-- `analysis/export.ts`: JSON and formula-neutralized CSV diagnostics.
-- `api.ts`: metadata-only boundary; TanStack Query manages server reads, mutation invalidation and errors.
+### Comprobaciones básicas
 
-## Dependency versions and licensing
+Siempre se comprueban los valores no vacíos de:
 
-PrimeNG is pinned to **21.1.10**, the latest stable MIT community release verified against npm registry versions and the distributed `node_modules/primeng/LICENSE.md`. That file explicitly grants the MIT License for community versions; its separate commercial LTS terms apply to versions with an `-lts` suffix, which this project does not use. Every stable 22.x release available at migration time (22.0.0 and 22.1.0–22.1.3) instead carries the key-required PrimeUI license. No license key, notice-hiding CSS, or vendor patch is used.
+- `eventDate`: fecha de calendario exacta `YYYY-MM-DD`.
+- `year`, `month`, `day`: enteros válidos, años bisiestos y coherencia entre componentes y `eventDate`.
+- `decimalLatitude`, `decimalLongitude`: números finitos dentro de ±90 y ±180, respectivamente.
 
-`@primeuix/themes` is pinned to **2.0.3**: its installed `LICENSE` is MIT, as are the installed PrimeUI styled/styles/utils/motion dependencies. Themes 3.0.0–3.1.0 carry the PrimeUI license and are not used. Preserve the distributed copyright and permission notices when redistributing MIT dependencies.
+Los valores opcionales vacíos se permiten. Los perfiles deciden qué columnas y valores son obligatorios; `requiredColumn` no exige contenido no vacío. Las columnas desconocidas generan advertencias del sistema con posibles equivalencias. Estos resultados orientan la calidad y **no certifican una publicación SiB**. No se validan extensiones fuera de los tipos de regla configurados.
 
-Angular runtime/compiler/forms packages are aligned at **21.2.25**, CDK at **21.2.14**, and CLI/build at **21.2.27**, satisfying PrimeNG's Angular 21 peers. The build package requires TypeScript `>=5.9 <6.0` and Vitest `^4.0.8`, so these are pinned to **5.9.3** and **4.1.12** respectively. Angular 21 signal forms are experimental; the profile editor uses their compatible disabled-rule callback without changing its read-only published-profile behavior. The former Vite 8 override is removed: Angular build and Vitest now resolve their compatible **Vite 7.3.6** dependency.
+## Idioma de la interfaz y los datos
 
-TanStack Query **5.104.5** and the actual XLSX reader, `read-excel-file` **9.3.12**, are unchanged. Commit the lockfile alongside version changes and use `npm ci` to reproduce this dependency set. Dependency audit and browser acceptance are separate verification steps; a successful install/build does not establish an audit result.
+Los textos de la interfaz, mensajes del sistema, ayudas y etiquetas del diagnóstico se presentan en español. Los valores técnicos `DRAFT`, `PUBLISHED`, `ERROR`, `WARNING`, tipos y condiciones conservan su contrato; sus etiquetas se traducen para mostrarlos. Las claves JSON no se renombran.
+
+Los términos Darwin Core, URI, nombres científicos y valores de los archivos permanecen intactos. Las definiciones oficiales TDWG se muestran como citas originales con el idioma de la fuente indicado. Los nombres, descripciones o mensajes creados por usuarios son datos, no textos que se deban traducir automáticamente. Los textos predeterminados conocidos de los perfiles iniciales se localizan para presentación, sin reescribir versiones publicadas ni cambiar sus reglas.
+
+## Administrar perfiles
+
+Crear un perfil y agregar reglas con campo, comprobación, condición, severidad, mensaje y fuente. Guardar como borrador, editarlo o publicarlo explícitamente. Las versiones publicadas son de solo lectura: se duplican en otra versión para evolucionar las reglas.
+
+Solo se informa éxito cuando responde correctamente la API. Los errores permanecen visibles; no hay persistencia local ni éxito simulado como reemplazo de una solicitud fallida. El backend rechaza cambios concurrentes mediante `revision`; actualizar los datos del servidor antes de volver a guardar.
+
+Contrato de API:
+
+- `GET /api/catalog` y `GET /api/profiles`.
+- `POST /api/profiles` con `{name,version,description,rules}`.
+- `PUT /api/profiles/{id}` con los mismos campos y `revision`.
+- `POST /api/profiles/{id}/duplicate` con `{name,version}`.
+- `POST /api/profiles/{id}/publish` con cuerpo **completamente vacío**.
+
+No se usa ningún endpoint de carga de archivos.
+
+## Arquitectura
+
+| Módulo | Responsabilidad |
+|---|---|
+| `analysis/model.ts` | Contratos compartidos de interfaz, worker y perfiles; límites |
+| `analysis/parser.ts` | Lectura estricta de CSV y conversión de matrices de hojas de cálculo |
+| `analysis/normalizer.ts` | Transformaciones optativas e inmutables con registro de cambios |
+| `analysis/validator.ts` | Reglas independientes por perfil y comprobaciones básicas |
+| `analysis/analysis.worker.ts` | Lectura y validación local; cancelación por terminación e identificadores que descartan respuestas antiguas |
+| `analysis/export.ts` | JSON y CSV con neutralización de fórmulas |
+| `api.ts` | Límite exclusivo de metadatos; TanStack Query administra lecturas, invalidación y errores |
+
+La localización debe conservar estos límites y no introducir escrituras en datos originales o publicaciones históricas.
+
+## Versiones y licencias de dependencias
+
+PrimeNG está fijado en **21.1.10**, versión comunitaria MIT verificada mediante el registro npm y el archivo distribuido `node_modules/primeng/LICENSE.md`. Ese archivo otorga MIT a la edición comunitaria; las condiciones comerciales LTS corresponden a versiones con sufijo `-lts`, que no se utilizan. Las versiones estables 22 disponibles al migrar exigían clave PrimeUI. No se inyectan claves, se ocultan avisos con CSS ni se modifica código del proveedor.
+
+`@primeuix/themes` está fijado en **2.0.3**: su `LICENSE` es MIT, al igual que los paquetes PrimeUI instalados de estilos, utilidades y movimiento. No se utilizan temas 3.x. Conservar los avisos de autoría y permiso al redistribuir las dependencias MIT.
+
+Angular, compilador y formularios están alineados en **21.2.25**; CDK en **21.2.14**; CLI/build en **21.2.27**, según la compatibilidad requerida por PrimeNG. TypeScript **5.9.3** satisface `>=5.9 <6.0`; Vitest **4.1.12** satisface `^4.0.8`. Los formularios basados en señales de Angular 21 son experimentales; se utiliza su API compatible de deshabilitación manteniendo el bloqueo de publicaciones. Se eliminó la sustitución de Vite 8; el conjunto compatible resuelve **Vite 7.3.6**.
+
+TanStack Query **5.104.5** y el lector XLSX `read-excel-file` **9.3.12** se conservaron. Guardar el lockfile junto con cambios de versiones y utilizar `npm ci` para reproducir el conjunto. Una instalación o compilación correcta no equivale a una auditoría de seguridad.
+
+La auditoría adicional autorizada agotó cinco minutos con código 124 y sin resultados. El usuario aceptó expresamente la entrega con esa verificación pendiente. No hay una auditoría aprobada ni reintentos automáticos; consultar [el informe](../VERIFICATION.md).

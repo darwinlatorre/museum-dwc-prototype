@@ -8,21 +8,25 @@ import { Term } from './analysis/model';
   template: `
     <div class="section-heading">
       <div>
-        <h2>Darwin Core catalog</h2>
-        <p>Official vocabulary, not a list of mandatory fields. Profiles define requirements.</p>
+        <h2>Catálogo Darwin Core</h2>
+        <p>
+          Vocabulario oficial, no una lista de campos obligatorios. Los perfiles definen los
+          requisitos. Las definiciones, categorías y estados se conservan en el idioma de la fuente
+          oficial TDWG (inglés).
+        </p>
       </div>
-      <span class="count">{{ terms().length }} terms</span>
+      <span class="count">{{ terms().length }} términos</span>
     </div>
     <div class="toolbar">
       <label
-        >Search every attribute<input
+        >Buscar en todos los atributos<input
           type="search"
           [formField]="filters.search"
-          placeholder="Name, definition, URI, category or status"
+          placeholder="Nombre, definición, URI, categoría o estado"
       /></label>
       <label
-        >Category<select [formField]="filters.category">
-          <option value="">All categories</option>
+        >Categoría<select [formField]="filters.category">
+          <option value="">Todas las categorías</option>
           @for (category of categories(); track category) {
             <option [value]="category">{{ category }}</option>
           }
@@ -36,14 +40,14 @@ import { Term } from './analysis/model';
       [rowsPerPageOptions]="[15, 30, 50]"
       [tableStyle]="{ 'min-width': '45rem' }"
       [showCurrentPageReport]="true"
-      currentPageReportTemplate="{first}–{last} of {totalRecords} terms"
+      currentPageReportTemplate="{first}–{last} de {totalRecords} términos"
     >
       <ng-template #header
         ><tr>
-          <th>Term / URI</th>
-          <th>Definition</th>
-          <th>Category</th>
-          <th>Status</th>
+          <th>Término / URI</th>
+          <th>Definición (original en inglés)</th>
+          <th>Categoría (fuente)</th>
+          <th>Estado (fuente)</th>
         </tr></ng-template
       >
       <ng-template #body let-term
@@ -52,14 +56,14 @@ import { Term } from './analysis/model';
             <strong>{{ term.name }}</strong
             ><a [href]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
           </td>
-          <td class="definition">{{ term.definition }}</td>
+          <td class="definition" lang="en">{{ term.definition }}</td>
           <td>{{ term.category }}</td>
           <td>{{ term.status }}</td>
         </tr></ng-template
       >
       <ng-template #emptymessage
         ><tr>
-          <td colspan="4">No terms match these filters.</td>
+          <td colspan="4">Ningún término coincide con estos filtros.</td>
         </tr></ng-template
       ></p-table
     >

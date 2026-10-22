@@ -5,6 +5,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import { routes } from './app.routes';
+import { spanish } from './localization';
 const Museum = definePreset(Aura, {
   semantic: {
     primary: {
@@ -29,6 +30,9 @@ export const appConfig: ApplicationConfig = {
     provideTanStackQuery(
       new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } }),
     ),
-    providePrimeNG({ theme: { preset: Museum, options: { darkModeSelector: false } } }),
+    providePrimeNG({
+      translation: spanish,
+      theme: { preset: Museum, options: { darkModeSelector: false } },
+    }),
   ],
 };

@@ -1,55 +1,58 @@
-<a class="skip-link" href="#main">Skip to workspace</a>
+<a class="skip-link" href="#main">Ir al espacio de trabajo</a>
 <aside class="sidebar">
-  <a class="brand" href="/" aria-label="Museum collections home"
+  <a class="brand" href="/" aria-label="Inicio de colecciones del museo"
     ><span class="specimen-mark" aria-hidden="true">✳</span
-    ><span>Museum collections<small>Universidad del Cauca</small></span></a
+    ><span>Colecciones del museo<small>Universidad del Cauca</small></span></a
   >
-  <p class="workspace-label">Data stewardship</p>
-  <nav aria-label="Main navigation">
+  <p class="workspace-label">Gestión de datos</p>
+  <nav aria-label="Navegación principal">
     <button
       [class.active]="page() === 'workbench'"
       [attr.aria-current]="page() === 'workbench' ? 'page' : null"
       (click)="page.set('workbench')"
     >
-      <span aria-hidden="true">▤</span> Collection workbench</button
+      <span aria-hidden="true">▤</span> Análisis de colecciones</button
     ><button
       [class.active]="page() === 'profiles'"
       [attr.aria-current]="page() === 'profiles' ? 'page' : null"
       (click)="page.set('profiles')"
     >
-      <span aria-hidden="true">☷</span> Validation profiles</button
+      <span aria-hidden="true">☷</span> Perfiles de validación</button
     ><button
       [class.active]="page() === 'catalog'"
       [attr.aria-current]="page() === 'catalog' ? 'page' : null"
       (click)="page.set('catalog')"
     >
-      <span aria-hidden="true">▦</span> Darwin Core catalog
+      <span aria-hidden="true">▦</span> Catálogo Darwin Core
     </button>
   </nav>
   <div class="sidebar-note">
-    <strong>Records stay with you</strong>
-    <p>Local file analysis. Shared, versioned rules.</p>
-    <span>Darwin Core workbench</span>
+    <strong>Sus registros permanecen con usted</strong>
+    <p>Análisis local de archivos. Reglas compartidas y versionadas.</p>
+    <span>Espacio de trabajo Darwin Core</span>
   </div>
 </aside>
 <div class="workspace">
   <header class="topbar">
     <div>
-      <span>Natural history museum</span>
-      <h1>Collection data quality</h1>
+      <span>Museo de Historia Natural</span>
+      <h1>Calidad de los datos de colecciones</h1>
     </div>
-    <span class="environment">Research workspace</span>
+    <span class="environment">Espacio de investigación</span>
   </header>
   <main id="main" tabindex="-1">
     @if (catalog.isPending() || profiles.isPending()) {
-      <p role="status" class="notice">Loading catalog and validation profiles…</p>
+      <p role="status" class="notice">Cargando catálogo y perfiles de validación…</p>
     }
     @if (catalog.isError() || profiles.isError()) {
       <section class="error" role="alert">
-        <h2>Server metadata unavailable</h2>
+        <h2>Metadatos del servidor no disponibles</h2>
         <p>{{ catalog.error()?.message || profiles.error()?.message }}</p>
-        <p>No profiles are saved locally. Start the API and retry to load current server data.</p>
-        <button (click)="retry()">Retry connection</button>
+        <p>
+          No se guardan perfiles localmente. Inicie la API y vuelva a conectarse para cargar los
+          datos actuales del servidor.
+        </p>
+        <button (click)="retry()">Reintentar conexión</button>
       </section>
     }
     @if (catalog.data(); as terms) {
@@ -73,7 +76,7 @@
     }
   </main>
   <footer>
-    Universidad del Cauca · Museum of Natural History
-    <span>Profile administration requires a trusted local environment.</span>
+    Universidad del Cauca · Museo de Historia Natural
+    <span>La administración de perfiles requiere un entorno local de confianza.</span>
   </footer>
 </div>
