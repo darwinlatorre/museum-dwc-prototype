@@ -1,4 +1,4 @@
-package co.edu.unicauca.backend;
+package co.edu.unicauca.backend.profile;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import tools.jackson.databind.JsonNode;

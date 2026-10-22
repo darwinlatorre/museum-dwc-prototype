@@ -1,5 +1,7 @@
 package co.edu.unicauca.backend;
 
+import co.edu.unicauca.backend.profile.ProfileBootstrap;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -63,6 +65,7 @@ class BackendApplicationTests {
             .andExpect(jsonPath("$[0].status").isString());
         assertThat(profiles()).contains("SiB Registros Biológicos", "Museo", "PUBLISHED");
         String before = profiles();
+        bootstrap.initialize();
         bootstrap.initialize();
         assertThat(profiles()).isEqualTo(before);
     }
@@ -270,6 +273,84 @@ class BackendApplicationTests {
             .andExpect(header().exists("Allow"));
         assertThat(profiles()).isEqualTo(before);
     }
+    @Test void existingPublishedRowsLoadUnchangedAcrossBootstrap() throws Exception {
+        String id = UUID.randomUUID().toString();
+        String name = UUID.randomUUID().toString();
+        String rules = """
+            [{"field":"county","kind":"requiredColumn","severity":"WARNING",
+            "condition":"sampling","message":"Mensaje histórico","source":"Archivo histórico"}]
+            """;
+        // Simulate a row persisted before the ORM migration, without using its repository.
+        jdbc.update("""
+            insert into profiles(id,name,version,status,revision,description,rules)
+            values (?,?,'old','PUBLISHED',7,'Descripción histórica',?::jsonb)
+            """, id, name, rules);
+        String before = profiles();
+        JsonNode stored = profile(id);
+        assertThat(stored.get("rules")).isEqualTo(json.readTree(rules));
+        assertThat(stored.get("revision").asLong()).isEqualTo(7);
+        assertThat(stored.get("description").asText()).isEqualTo("Descripción histórica");
+        bootstrap.initialize();
+        bootstrap.initialize();
+        assertThat(profiles()).isEqualTo(before);
+    }
+
+    JsonNode profile(String id) throws Exception {
+        for (JsonNode profile : json.readTree(profiles())) {
+            if (profile.get("id").asText().equals(id)) return profile;
+        }
+        throw new AssertionError("No se encontró el perfil " + id);
+    }
+
+    @Test void staleEditAfterSuccessfulEditLeavesPersistedContentAndRevisionUnchanged() throws Exception {
+        JsonNode draft = create();
+        String id = draft.get("id").asText();
+        String edit = body(draft.get("name").asText(), "1.1")
+            .replace("\"rules\":", "\"revision\":0,\"rules\":");
+        mvc.perform(put("/api/profiles/" + id).contentType("application/json").content(edit))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.revision").value(1));
+        String before = profiles();
+        mvc.perform(put("/api/profiles/" + id).contentType("application/json").content(edit))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+            .andExpect(jsonPath("$.detail").value("La revisión del perfil cambió; actualice los datos antes de guardar."));
+        assertThat(profiles()).isEqualTo(before);
+    }
+
+    @Test void simultaneousEditAndPublishSerializeWithoutLosingContent() throws Exception {
+        JsonNode draft = create();
+        String id = draft.get("id").asText();
+        String edit = body(draft.get("name").asText(), "1.1")
+            .replace("Independent rules", "Contenido editado")
+            .replace("\"rules\":", "\"revision\":0,\"rules\":");
+        var ready = new java.util.concurrent.CountDownLatch(2);
+        Callable<Integer> update = () -> {
+            ready.countDown();
+            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            return mvc.perform(put("/api/profiles/" + id).contentType("application/json").content(edit))
+                .andReturn().getResponse().getStatus();
+        };
+        Callable<Integer> publish = () -> {
+            ready.countDown();
+            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            return mvc.perform(post("/api/profiles/" + id + "/publish"))
+                .andReturn().getResponse().getStatus();
+        };
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var results = executor.invokeAll(java.util.List.of(update, publish));
+            int editStatus = results.getFirst().get();
+            assertThat(editStatus).isIn(200, 409);
+            assertThat(results.get(1).get()).isEqualTo(200);
+            JsonNode stored = profile(id);
+            assertThat(stored.get("status").asText()).isEqualTo("PUBLISHED");
+            assertThat(stored.get("revision").asLong()).isEqualTo(editStatus == 200 ? 2 : 1);
+            assertThat(stored.get("version").asText()).isEqualTo(editStatus == 200 ? "1.1" : "1.0");
+            assertThat(stored.get("description").asText())
+                .isEqualTo(editStatus == 200 ? "Contenido editado" : "Independent rules");
+            assertThat(stored.get("rules")).isEqualTo(draft.get("rules"));
+        }
+    }
+
     @Test void databaseRejectsEveryPublishedMutation() throws Exception {
         JsonNode draft = create();
         String id = draft.get("id").asText();
@@ -280,5 +361,57 @@ class BackendApplicationTests {
         assertThatThrownBy(() -> jdbc.update("delete from profiles where id = ?", id))
             .isInstanceOf(org.springframework.dao.DataAccessException.class);
         assertThat(profiles()).isEqualTo(before);
+    }
+
+    String rowHash() throws Exception {
+        String rows = jdbc.queryForObject("select coalesce(jsonb_agg(to_jsonb(p) order by id)::text,'[]') from profiles p", String.class);
+        return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+            .digest(rows.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    }
+    @Test void verifierConcurrentBootstrapPreservesStoredRows() throws Exception {
+        String before = rowHash();
+        var ready = new java.util.concurrent.CountDownLatch(2);
+        Callable<Void> load = () -> {
+            ready.countDown();
+            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            bootstrap.initialize();
+            return null;
+        };
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            for (var result : executor.invokeAll(java.util.List.of(load, load))) result.get();
+        }
+        assertThat(rowHash()).isEqualTo(before);
+    }
+    @Test void verifierRejectedCommandsPreserveStoredBytesAndBaselineContract() throws Exception {
+        String input = body("Verificador independiente", "1.0");
+        var created = mvc.perform(post("/api/profiles").contentType("application/json").content(input))
+            .andExpect(status().isCreated()).andReturn().getResponse();
+        String id = json.readTree(created.getContentAsString()).get("id").asText();
+        String before = rowHash();
+        var requests = java.util.List.of(
+            post("/api/profiles").contentType("application/json").content(input),
+            put("/api/profiles/" + id).contentType("application/json").content(input.replace("\"rules\":", "\"revision\":99,\"rules\":")),
+            post("/api/profiles/" + id + "/publish").content(" "),
+            post("/api/profiles").contentType("application/json").content(input.replace("\"WARNING\"", "0")),
+            delete("/api/profiles"));
+        int[] statuses = {409,409,400,400,405};
+        for (int i = 0; i < requests.size(); i++) {
+            var response = mvc.perform(requests.get(i)).andReturn().getResponse();
+            assertThat(response.getStatus()).isEqualTo(statuses[i]);
+            assertThat(rowHash()).isEqualTo(before);
+            System.out.println("VERIFIER_CONTRACT " + response.getStatus() + " " + response.getContentAsString()
+                + " Allow=" + response.getHeader("Allow"));
+        }
+        mvc.perform(post("/api/profiles/" + id + "/publish")).andExpect(status().isOk());
+        String published = rowHash();
+        assertThat(jdbc.queryForObject("select jsonb_typeof(rules) from profiles where id=?", String.class, id)).isEqualTo("array");
+        String independent = "{\"name\":\"Verificador copia\",\"version\":\"2\"}";
+        mvc.perform(post("/api/profiles/" + id + "/duplicate").contentType("application/json").content(independent))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.description").value("Independent rules"))
+            .andExpect(jsonPath("$.rules[0].message").value("County column needed"));
+        String old = jdbc.queryForObject("select to_jsonb(p)::text from profiles p where id=?", String.class, id);
+        assertThatThrownBy(() -> jdbc.update("update profiles set rules='[]'::jsonb where id=?", id))
+            .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThat(jdbc.queryForObject("select to_jsonb(p)::text from profiles p where id=?", String.class, id)).isEqualTo(old);
     }
 }

@@ -1,4 +1,4 @@
-package co.edu.unicauca.backend;
+package co.edu.unicauca.backend.profile;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

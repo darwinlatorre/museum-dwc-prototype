@@ -1,6 +1,6 @@
 # API de perfiles de validación del museo
 
-Spring Boot **4.1.1**, Java **21**, PostgreSQL y Flyway. Los archivos biológicos permanecen en el navegador; el backend administra perfiles declarativos y entrega el catálogo.
+Spring Boot **4.1.1**, Java **21**, Spring Data JPA, PostgreSQL y Flyway. Los archivos biológicos permanecen en el navegador; el backend administra perfiles declarativos y entrega el catálogo.
 
 ## Ejecución local
 
@@ -78,6 +78,16 @@ Las respuestas de problema conservan sus claves técnicas y no exponen SQL ni de
 
 Límites: nombre 200 caracteres; versión 100; descripción 10 000; hasta 2 000 reglas; campo/mensaje/fuente de cada regla 200/2 000/4 000 caracteres.
 
+## Persistencia y paquetes
+
+La aplicación de arranque permanece en `co.edu.unicauca.backend`. Los paquetes por función son `profile` (controlador, DTO, validación, ciclo de vida, carga inicial, entidad y repositorio), `catalog` (catálogo local) y `shared.api` (respuestas de problema). No se introduce un framework de capas adicional.
+
+`ProfileRepository` extiende `JpaRepository<ProfileEntity, String>`. `ProfileMapper` convierte entre la entidad y los DTO; los controladores nunca exponen entidades administradas. Las transacciones residen en `ProfileService`, incluidas las lecturas de solo consulta. `open-in-view` permanece deshabilitado.
+
+La entidad conserva una fila por versión y las reglas como JSONB atómico, sin relaciones ni consultas adicionales por regla. Hibernate mapea el JSON como texto serializado por el mismo mapper JSON de la API; leer no vuelve a escribir ni normaliza registros históricos. Flyway V1, sus restricciones y su trigger permanecen intactos; no se necesita V2 y Hibernate solo valida el esquema.
+
+La carga inicial valida cada perfil y usa una inserción HQL de entidad con `on conflict (id) do nothing`, ejecutada por el repositorio JPA. No usa JDBC ni SQL nativo en producción, no hace `merge` de publicaciones existentes y conserva la idempotencia incluso entre arranques concurrentes. La revisión de cliente no es un campo ORM `@Version`: la exclusión de escritura se obtiene mediante `PESSIMISTIC_WRITE` y la comparación explícita de revisión dentro de la transacción. Las escrituras se vacían antes de responder para que las restricciones de base mantengan sus respuestas 409.
+
 ## Versiones publicadas y concurrencia
 
 El controlador delega las operaciones en un único servicio transaccional. Los bloqueos de fila PostgreSQL serializan la edición y publicación de una versión. La edición compara la revisión enviada por el cliente y evita sobrescrituras desactualizadas. Publicar toma el último borrador bloqueado y no acepta una revisión en el cuerpo: ese contrato exige cuerpo vacío. Dos publicaciones simultáneas tienen un único resultado ganador. La restricción única de la base resuelve las creaciones concurrentes de un mismo nombre y versión.
@@ -99,7 +109,7 @@ bash ./mvnw package -DskipTests
 
 Las pruebas crean un contenedor **PostgreSQL 17 Alpine** desechable en un puerto aleatorio y sustituyen las propiedades de conexión. No usan la base de desarrollo ni omiten pruebas silenciosamente cuando falta Docker. Cubren el ciclo completo mediante MockMvc, datos iniciales, catálogo, entradas inválidas, rechazos sin modificaciones, edición/creación/publicación simultáneas e inmutabilidad ante SQL directo.
 
-Las regresiones de idioma comprueban mensajes en español, estados y claves HTTP, preservación de encabezados y ausencia de cambios en los perfiles ante rechazos. Testcontainers elimina sus contenedores al terminar la JVM.
+Las 26 pruebas (incluidas las 21 originales) cubren además registros publicados preexistentes insertados por SQL aislado, cargas iniciales sucesivas y concurrentes, revisión desactualizada tras una edición válida y una carrera entre edición y publicación sin pérdida de contenido. Las regresiones adicionales comparan el hash de las filas antes y después de cada rechazo, comprueban JSONB de tipo arreglo y prueban que el trigger impide reemplazar reglas publicadas. La comprobación diferencial independiente contrastó cinco respuestas de rechazo con la versión anterior, normalizando solo UUID generados y el orden no significativo de los métodos de `Allow`. Las regresiones de idioma comprueban mensajes en español, estados y claves HTTP, preservación de encabezados y ausencia de cambios en los perfiles ante rechazos. Testcontainers elimina sus contenedores al terminar la JVM.
 
 ## Seguridad e integraciones futuras
 

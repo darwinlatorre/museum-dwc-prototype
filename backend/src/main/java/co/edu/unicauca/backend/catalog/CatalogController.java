@@ -1,4 +1,4 @@
-package co.edu.unicauca.backend;
+package co.edu.unicauca.backend.catalog;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
