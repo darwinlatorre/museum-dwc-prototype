@@ -1,0 +1,19 @@
+# Development-only isolated database; never expose these credentials publicly.
+services:
+  museum-db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: museum
+      POSTGRES_USER: museum
+      POSTGRES_PASSWORD: museum-local-only
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - museum_mvp_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U museum -d museum"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  museum_mvp_data:
