@@ -14,7 +14,7 @@ Si se inicia manualmente con `java -jar`, usar una copia de ejecución distinta 
 
 La API escucha en **127.0.0.1:8080**. La conexión predeterminada es `jdbc:postgresql://127.0.0.1:55432/museum`, usuario `museum` y contraseña exclusiva de desarrollo `museum-local-only`. Se puede configurar mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No se cargan archivos dotenv. No apuntar pruebas ni migraciones de desarrollo a una base institucional existente.
 
-Flyway crea el esquema antes de cargar `src/main/resources/data/profiles.json`. Cada identificador inicial se inserta una sola vez; reiniciar nunca sobrescribe versiones guardadas. La carga completa es transaccional. El recurso `data/catalog.json` se entrega sin modificar su significado ni consultar servicios externos. La ausencia de recursos o un contenido inválido impiden iniciar la aplicación, en lugar de simular un catálogo vacío.
+Flyway crea el esquema antes de cargar `src/main/resources/data/profiles.json`. Cada identificador inicial se inserta una sola vez; reiniciar nunca sobrescribe versiones guardadas. La carga completa es transaccional. El catálogo usa una instantánea persistida independiente de los perfiles. Solo cuando está vacía se carga el recurso confiable `data/catalog.json` y su procedencia; los reinicios sirven la última instantánea sin depender de la red ni reemplazarla por la semilla.
 
 ## Endpoints
 
@@ -23,6 +23,7 @@ Los cuerpos de entrada y salida son JSON. Se conservan las claves técnicas en i
 | Método | Ruta | Solicitud | Respuesta correcta |
 |---|---|---|---|
 | GET | `/api/catalog` | — | 200, `Term[]` |
+| GET | `/api/catalog/status` | — | 200, metadatos de la instantánea y del último intento |
 | GET | `/api/profiles` | — | 200, `Profile[]` con borradores y publicaciones, ordenados por nombre/versión/id |
 | POST | `/api/profiles` | `{name,version,description,rules}` | 201, borrador nuevo, revisión 0 |
 | PUT | `/api/profiles/{id}` | `{name,version,description,rules,revision}` | 200, borrador actualizado, revisión +1 |
@@ -84,9 +85,25 @@ La aplicación de arranque permanece en `co.edu.unicauca.backend`. Los paquetes 
 
 `ProfileRepository` extiende `JpaRepository<ProfileEntity, String>`. `ProfileMapper` convierte entre la entidad y los DTO; los controladores nunca exponen entidades administradas. Las transacciones residen en `ProfileService`, incluidas las lecturas de solo consulta. `open-in-view` permanece deshabilitado.
 
-La entidad conserva una fila por versión y las reglas como JSONB atómico, sin relaciones ni consultas adicionales por regla. Hibernate mapea el JSON como texto serializado por el mismo mapper JSON de la API; leer no vuelve a escribir ni normaliza registros históricos. Flyway V1, sus restricciones y su trigger permanecen intactos; no se necesita V2 y Hibernate solo valida el esquema.
+La entidad conserva una fila por versión y las reglas como JSONB atómico, sin relaciones ni consultas adicionales por regla. Hibernate mapea el JSON como texto serializado por el mismo mapper JSON de la API; leer no vuelve a escribir ni normaliza registros históricos. Flyway V1, sus restricciones y su trigger permanecen intactos; V2 agrega exclusivamente la instantánea del catálogo y Hibernate solo valida el esquema.
 
 La carga inicial valida cada perfil y usa una inserción HQL de entidad con `on conflict (id) do nothing`, ejecutada por el repositorio JPA. No usa JDBC ni SQL nativo en producción, no hace `merge` de publicaciones existentes y conserva la idempotencia incluso entre arranques concurrentes. La revisión de cliente no es un campo ORM `@Version`: la exclusión de escritura se obtiene mediante `PESSIMISTIC_WRITE` y la comparación explícita de revisión dentro de la transacción. Las escrituras se vacían antes de responder para que las restricciones de base mantengan sus respuestas 409.
+
+## Sincronización TDWG y última versión válida
+
+La fuente normativa es https://dwc.tdwg.org/terms/. Se descargan únicamente los tres CSV mantenidos por TDWG indicados en [sources/README.md](../sources/README.md), incluidos los términos Dublin Core importados. Primero se consulta la referencia oficial `master` mediante la API de GitHub del repositorio `tdwg/rs.tdwg.org`; los tres archivos se solicitan en `raw.githubusercontent.com` fijados al mismo SHA de commit. No existen URL configurables ni endpoints de actualización manual.
+
+`catalog.sync.enabled` habilita el programador; `delay` vale **86400000 ms** (un día entre ejecuciones) e `initial-delay` **60000 ms**. Pueden sobrescribirse como propiedades Spring. El arranque no espera ninguna descarga. Cada conexión tiene 5 s de conexión, 10 s de espera de lectura y un presupuesto total de lectura de 40 s comprobado entre bloques (una lectura bloqueada puede sumar hasta 10 s). Se limita la referencia a 128 KiB y cada CSV a 4 MiB; no se siguen redirecciones. No hay reintentos inmediatos: el siguiente ciclo vuelve a intentarlo.
+
+Commons CSV **1.14.1** interpreta comas, comillas escapadas y campos multilínea. Antes de activar se exige el conjunto completo, UTF-8 válido, cabeceras compatibles, filas completas, términos únicos, definiciones oficiales no vacías y al menos un término por archivo. `definition` conserva exactamente `rdfs_comment`; `category` conserva exactamente `tdwgutility_organizedInClass`, incluso vacío. `status` proyecta únicamente `term_deprecated`: vacío/`false` → `current`, `true` → `deprecated`; cualquier otro valor rechaza el conjunto. No se infiere categoría desde `rdf_type` ni se inventan definiciones.
+
+**Política conservadora de ausencias:** si falta cualquier URI previamente almacenada, se rechaza todo el candidato. Una ausencia no demuestra obsolescencia. Una eliminación oficial legítima requiere revisar esta política en otra unidad; nunca se marca automáticamente como obsoleto un término ausente.
+
+V2 mantiene una sola fila durable, sin historial ilimitado. Conserva los bytes JSON entregados, los CSV originales de la última activación, sus hashes SHA-256, el commit fijado, versión local, fecha y conteos de altas/modificaciones/deprecaciones explícitas. La procedencia histórica de la semilla se conserva aparte y no se reescribe. `modified` incluye cambios de estado; `deprecated` cuenta las transiciones explícitas, incluidas altas ya obsoletas. Una revisión diferente con los mismos términos puede actualizar la procedencia con conteos cero; repetir exactamente fuentes y commit no cambia la instantánea ni su fecha/conteos.
+
+Las descargas y el análisis ocurren fuera de la transacción. Un contador de intentos y bloqueo pesimista serializan la activación: solo el intento iniciado más recientemente puede activar o registrar su fallo. Un intento antiguo no puede reemplazar otro posterior, aunque termine después; si el posterior falla, se conserva la última instantánea válida. La activación completa y sus metadatos se confirman juntos. Los fallos de red, HTTP, CSV, conjunto parcial o validación conservan payload, hashes, revisión, fecha y conteos exitosos, también tras reiniciar. Solo cambian los datos separados del intento/fallo.
+
+`GET /api/catalog/status` devuelve `active` (revisión, hash combinado de fuentes, versión local, fecha, conteos y hashes por ruta), `attempts`, `lastAttempt` y `lastFailure`. No modifica datos. `GET /api/catalog` conserva sus cinco claves y devuelve directamente el JSON persistido mediante una lectura transaccional, con OSIV deshabilitado.
 
 ## Versiones publicadas y concurrencia
 
@@ -109,7 +126,9 @@ bash ./mvnw package -DskipTests
 
 Las pruebas crean un contenedor **PostgreSQL 17 Alpine** desechable en un puerto aleatorio y sustituyen las propiedades de conexión. No usan la base de desarrollo ni omiten pruebas silenciosamente cuando falta Docker. Cubren el ciclo completo mediante MockMvc, datos iniciales, catálogo, entradas inválidas, rechazos sin modificaciones, edición/creación/publicación simultáneas e inmutabilidad ante SQL directo.
 
-Las 26 pruebas (incluidas las 21 originales) cubren además registros publicados preexistentes insertados por SQL aislado, cargas iniciales sucesivas y concurrentes, revisión desactualizada tras una edición válida y una carrera entre edición y publicación sin pérdida de contenido. Las regresiones adicionales comparan el hash de las filas antes y después de cada rechazo, comprueban JSONB de tipo arreglo y prueban que el trigger impide reemplazar reglas publicadas. La comprobación diferencial independiente contrastó cinco respuestas de rechazo con la versión anterior, normalizando solo UUID generados y el orden no significativo de los métodos de `Allow`. Las regresiones de idioma comprueban mensajes en español, estados y claves HTTP, preservación de encabezados y ausencia de cambios en los perfiles ante rechazos. Testcontainers elimina sus contenedores al terminar la JVM.
+Las 26 regresiones de perfiles (incluidas las 21 originales) cubren además registros publicados preexistentes insertados por SQL aislado, cargas iniciales sucesivas y concurrentes, revisión desactualizada tras una edición válida y una carrera entre edición y publicación sin pérdida de contenido. Las regresiones adicionales comparan el hash de las filas antes y después de cada rechazo, comprueban JSONB de tipo arreglo y prueban que el trigger impide reemplazar reglas publicadas. La comprobación diferencial independiente contrastó cinco respuestas de rechazo con la versión anterior, normalizando solo UUID generados y el orden no significativo de los métodos de `Allow`. Las regresiones de idioma comprueban mensajes en español, estados y claves HTTP, preservación de encabezados y ausencia de cambios en los perfiles ante rechazos. Testcontainers elimina sus contenedores al terminar la JVM.
+
+Las pruebas adicionales del catálogo usan transporte y reloj falsos, PostgreSQL aislado y reinicios de contexto reales. Cubren categorías vacías, definición multilínea y comillas, altas/cambios/deprecación, rechazos sin alterar el estado activo, idempotencia, concurrencia, límites HTTP y el programador automático mientras una descarga está bloqueada. No consultan Internet. La regresión con los tres CSV oficiales completos comprueba los 414 términos y las 52 categorías vacías mediante el GET público, la procedencia ante una revisión nueva sin cambios y las guardas contra activaciones o fallos antiguos. El generador offline conserva ambos perfiles publicados byte a byte; la corrección inicial solo vacía 52 categorías que antes usaban un fallback RDF.
 
 ## Seguridad e integraciones futuras
 

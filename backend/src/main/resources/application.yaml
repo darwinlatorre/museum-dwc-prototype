@@ -22,6 +22,12 @@ spring:
     problemdetails:
       enabled: true
 
+catalog:
+  sync:
+    enabled: true
+    delay: 86400000
+    initial-delay: 60000
+
 server:
   address: 127.0.0.1
   port: 8080

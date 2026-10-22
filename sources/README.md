@@ -14,6 +14,14 @@ Las páginas https://dwc.tdwg.org/ y https://biodiversidad.co/recursos/plantilla
 
 Actualizar una copia de origen **no actualiza silenciosamente perfiles publicados** en la base. Las revisiones de requisitos deben publicarse como nuevas versiones.
 
+## Actualización automática del vocabulario
+
+https://dwc.tdwg.org/terms/ enlaza la lista completa, incluidos términos prestados y obsoletos. El README oficial https://raw.githubusercontent.com/tdwg/dwc/master/build/README.md identifica `rs.tdwg.org` como fuente autoritativa. Las URI canónicas Dublin Core no originan consultas a terceros: se usan exclusivamente sus importaciones mantenidas por TDWG.
+
+El backend consulta `https://api.github.com/repos/tdwg/rs.tdwg.org/git/ref/heads/master` y fija los tres CSV al mismo commit antes de validarlos y activarlos conjuntamente. Almacena una única instantánea durable con CSV originales, hashes SHA-256 y revisión; conserva aparte los hashes históricos de `provenance.json`. La revisión de las copias locales originales es desconocida y no se inventa. Los fallos conservan la última versión válida. Si desaparece una URI previa se rechaza la actualización completa, sin inferir obsolescencia. Configuración, límites y observabilidad: [backend/README.md](../backend/README.md#sincronización-tdwg-y-última-versión-válida).
+
+El generador sigue siendo offline y conserva la generación de los perfiles SiB/Museo originales. Solo escribe recursos cuyo contenido cambia; no reescribe semillas ni evidencia idénticas.
+
 ## Evidencia y limitaciones de SiB 4.1
 
 El Excel descargado se identifica como versión 4.1, mayo de 2024. Se leyó directamente la matriz de la hoja `Instrucciones`, filas 25–53; no se infirió obligatoriedad a partir del color de los encabezados.
@@ -32,7 +40,7 @@ Las explicaciones por término están en https://biodiversidad.co/elementos-darw
 
 Se preservan sin traducción los archivos oficiales, los nombres Darwin Core, las URI, las definiciones citadas y las demás evidencias originales. La interfaz identifica las definiciones del catálogo como texto original en inglés. Esta conservación permite contrastar la fuente exacta y evita presentar una traducción no oficial como definición normativa. Los textos de la aplicación y sus diagnósticos predeterminados se muestran en español, sin reescribir registros publicados.
 
-**Darwin Core:** Biodiversity Information Standards (TDWG), https://dwc.tdwg.org/, bajo **CC BY 4.0**; licencia verificada en https://raw.githubusercontent.com/tdwg/dwc/master/LICENSE. El catálogo conserva las definiciones originales y las URI canónicas, incluidos los términos Dublin Core importados. `status` se deriva de `term_deprecated` (`current`/`deprecated`), no de la obligatoriedad.
+**Darwin Core:** Biodiversity Information Standards (TDWG), https://dwc.tdwg.org/, bajo **CC BY 4.0**; licencia verificada en https://raw.githubusercontent.com/tdwg/dwc/master/LICENSE. El catálogo conserva las definiciones originales y las URI canónicas, incluidos los términos Dublin Core importados. `status` se deriva de `term_deprecated` (vacío/`false`: `current`; `true`: `deprecated`), no de la obligatoriedad. Se conserva exactamente `rdfs_comment` como definición y `tdwgutility_organizedInClass` como categoría; una categoría ausente permanece vacía, sin fallback a `rdf_type`. Las copias actuales contienen 52 categorías vacías.
 
 **Excel SiB y datos extraídos:** Plata C, Ortiz R, Marentes E, Velásquez J, Diaz J, Escobar D, Castro C, Leuro N, Sánchez L. 2024. *Plantilla para la publicación de registros biológicos*. Sistema de Información sobre Biodiversidad de Colombia, versión 4.1, Bogotá, D.C. El Excel y los datos del perfil SiB derivados se atribuyen y comparten bajo **CC BY-SA 4.0**, https://creativecommons.org/licenses/by-sa/4.0/.
 

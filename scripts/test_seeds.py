@@ -1,3 +1,4 @@
+import csv
 import json
 import pathlib
 import unittest
@@ -11,9 +12,17 @@ class SeedTests(unittest.TestCase):
         self.assertGreater(len(terms), 350)
         self.assertEqual(len({t['uri'] for t in terms}), len(terms))
         for term in terms:
-            self.assertTrue(all(term[k] for k in ('name','uri','definition','category','status')))
+            self.assertTrue(all(term[k] for k in ('name','uri','definition','status')))
+            self.assertIsInstance(term['category'], str)
             self.assertNotIn('required', term)
         self.assertTrue(any(t['status'] == 'deprecated' for t in terms))
+        by_uri = {t['uri']: t for t in terms}
+        for path in (DATA.parents[4] / 'sources/tdwg').glob('*.csv'):
+            with path.open() as source:
+                for row in csv.DictReader(source):
+                    term = by_uri[row['term_isDefinedBy'] + row['term_localName']]
+                    self.assertEqual(term['definition'], row['rdfs_comment'])
+                    self.assertEqual(term['category'], row['tdwgutility_organizedInClass'])
 
     def test_museum_has_exact_requested_required_fields(self):
         profiles = json.loads((DATA / 'profiles.json').read_text())
