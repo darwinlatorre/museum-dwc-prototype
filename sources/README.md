@@ -36,6 +36,14 @@ El Excel descargado se identifica como versión 4.1, mayo de 2024. Se leyó dire
 
 Las explicaciones por término están en https://biodiversidad.co/elementos-darwin-core. El MVP informa cumplimiento de perfiles; no certifica publicación SiB, verificación taxonómica, extensiones GGBN ni cumplimiento legal de permisos.
 
+## Composición local Museo + SiB 1.0
+
+`scripts/build_seeds.py` añade un tercer perfil sin cambiar los objetos originales Museo 1.0 y SiB Registros Biológicos 4.1. Reutiliza sus reglas, sin inferir nuevos requisitos biológicos. Recorre primero Museo y luego SiB, manteniendo el orden de primera aparición; deduplica únicamente la tupla exacta `(field, kind, severity, condition)`. De 58 reglas de origen resultan **56**: solo coinciden `country` y `scientificName` bajo `required`, `ERROR`, `always`. Hay **28 campos obligatorios siempre** (22 del Museo más ocho SiB, con esas dos coincidencias).
+
+Cada `source` conserva la cita original precedida por el nombre y versión del perfil aportante; las coincidencias reúnen ambas citas con ` | `. TDWG no se atribuye políticas de colección. Se conservan las reglas distintas para un mismo campo, las severidades, `requiredColumn`, `permitAndCollection` y las discrepancias documentadas de `disposition` e `individualCount`; sus mensajes nuevos explican esas limitaciones en español. No se traduce ni reescribe la evidencia original.
+
+La composición no constituye un perfil oficial SiB ni una certificación, y no convierte políticas locales en requisitos universales Darwin Core. Conserva la atribución y licencia de los datos derivados SiB indicadas abajo. Las pruebas fijan los hashes de los dos objetos originales y verifican la unión, procedencia y regeneración idempotente; `catalog.json`, `provenance.json` y `sib/instructions.json` permanecen intactos.
+
 ## Idioma, atribución y licencias
 
 Se preservan sin traducción los archivos oficiales, los nombres Darwin Core, las URI, las definiciones citadas y las demás evidencias originales. La interfaz identifica las definiciones del catálogo como texto original en inglés. Esta conservación permite contrastar la fuente exacta y evita presentar una traducción no oficial como definición normativa. Los textos de la aplicación y sus diagnósticos predeterminados se muestran en español, sin reescribir registros publicados.

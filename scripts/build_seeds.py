@@ -67,6 +67,43 @@ for key, name, version, rules, description in [
      'Museum-specific mandatory fields, independently versioned; these are not universal Darwin Core requirements.')]:
     profiles.append(dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'unicauca/'+key)), name=name, version=version,
         status='PUBLISHED', revision=0, description=description, rules=rules))
+
+
+def combine_profiles(originals):
+    # First occurrence determines order; only the complete predicate is deduplicated.
+    combined = {}
+    for profile in originals:
+        for original in profile['rules']:
+            predicate = tuple(original[k] for k in ('field', 'kind', 'severity', 'condition'))
+            citation = f"{profile['name']} {profile['version']}: {original['source']}"
+            if predicate in combined:
+                combined[predicate]['source'] += ' | ' + citation
+                continue
+            field = original['field']
+            if field == 'disposition' and original['kind'] == 'requiredColumn':
+                message = ('La matriz SiB solicita la columna disposition en este contexto; '
+                    'su definición permite un valor vacío salvo para especímenes recolectados '
+                    'con permiso y depositados en una colección.')
+            elif field == 'disposition':
+                message = ('Documente disposition (En colección) para especímenes recolectados '
+                    'con permiso y depositados en una colección.')
+            elif field == 'individualCount':
+                message = ('La matriz de instrucciones v4.1 marca individualCount**, pero el '
+                    'historial SiB lo considera recomendado; revise la documentación de cantidades.')
+            else:
+                message = f'Se requiere {field} para este contexto.'
+            combined[predicate] = dict(original, message=message, source=citation)
+    return dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'unicauca/museum-sib')),
+        name='Museo + SiB', version='1.0', status='PUBLISHED', revision=0,
+        description=('Perfil de composición local de Museo 1.0 y SiB Registros Biológicos 4.1. '
+            'Conserva los requisitos del Museo y los contextos y advertencias SiB; no son '
+            'requisitos universales Darwin Core y no certifica publicación oficial SiB. '
+            'No valida la extensión de permisos GGBN. No invente country si se desconoce; '
+            'revise el diagnóstico con el publicador.'), rules=list(combined.values()))
+
+
+# Compose only after the original immutable objects have been constructed.
+profiles.append(combine_profiles([profiles[1], profiles[0]]))
 write_if_changed(DATA / 'profiles.json', json.dumps(profiles, ensure_ascii=False, indent=2))
 manifest = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'sources').rglob('*') if p.is_file() and p.suffix in ['.csv','.xlsx']}
 write_if_changed(DATA / 'provenance.json', json.dumps(manifest, indent=2))

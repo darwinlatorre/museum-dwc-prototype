@@ -16,6 +16,14 @@ La API escucha en **127.0.0.1:8080**. La conexión predeterminada es `jdbc:postg
 
 Flyway crea el esquema antes de cargar `src/main/resources/data/profiles.json`. Cada identificador inicial se inserta una sola vez; reiniciar nunca sobrescribe versiones guardadas. La carga completa es transaccional. El catálogo usa una instantánea persistida independiente de los perfiles. Solo cuando está vacía se carga el recurso confiable `data/catalog.json` y su procedencia; los reinicios sirven la última instantánea sin depender de la red ni reemplazarla por la semilla.
 
+## Perfil combinado inicial
+
+La carga inicial contiene tres perfiles publicados: **Museo 1.0**, **SiB Registros Biológicos 4.1** y **Museo + SiB 1.0**. Los dos originales conservan exactamente sus identificadores, orden en la semilla, reglas, mensajes y fuentes. El nuevo perfil es una composición local independiente, publicada con revisión **0** e identificador UUID5 `7af9b4b3-e599-53a9-aee7-a55127d74f7f`; no sustituye las versiones anteriores ni certifica publicación oficial SiB.
+
+Sus **56 reglas** son la unión de las 22 del Museo y las 36 de SiB: solo se deduplican dos predicados idénticos (`country` y `scientificName`, obligatorios siempre). La identidad incluye `(field, kind, severity, condition)`, no solo el campo. Se conservan los 22 campos incondicionales del Museo y los ocho de SiB (28 campos distintos), las condiciones, `permitAndCollection`, las advertencias `requiredColumn` de `disposition` y la advertencia de `individualCount`. Cada fuente mantiene la cita original e identifica el perfil y versión aportantes; las dos coincidencias reúnen ambas procedencias. Los mensajes nuevos son españoles sin traducir los identificadores DwC.
+
+Estos son requisitos locales y SiB, no obligaciones universales de TDWG; TDWG sigue siendo la autoridad del vocabulario. Persisten los límites sobre GGBN, permisos y país desconocido descritos en [las fuentes](../sources/README.md). Arrancar incorpora únicamente el nuevo identificador mediante la carga validada existente; repetir el arranque no modifica ninguna publicación. Las pruebas aisladas comprueban la fila completa vía API y rechazan edición y republicación sin alterar datos ni revisiones.
+
 ## Endpoints
 
 Los cuerpos de entrada y salida son JSON. Se conservan las claves técnicas en inglés para no romper el contrato; los mensajes destinados al usuario se presentan en español.

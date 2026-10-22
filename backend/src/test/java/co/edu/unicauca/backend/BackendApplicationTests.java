@@ -63,11 +63,37 @@ class BackendApplicationTests {
             .andExpect(jsonPath("$[0].name").isString()).andExpect(jsonPath("$[0].uri").isString())
             .andExpect(jsonPath("$[0].definition").isString()).andExpect(jsonPath("$[0].category").isString())
             .andExpect(jsonPath("$[0].status").isString());
-        assertThat(profiles()).contains("SiB Registros Biológicos", "Museo", "PUBLISHED");
-        String before = profiles();
-        bootstrap.initialize();
-        bootstrap.initialize();
-        assertThat(profiles()).isEqualTo(before);
+        assertThat(profiles()).contains("SiB Registros Biológicos", "Museo", "Museo + SiB", "PUBLISHED");
+        try (var input = new org.springframework.core.io.ClassPathResource("data/profiles.json").getInputStream()) {
+            JsonNode seeds = json.readTree(input);
+            assertThat(seeds.size()).isEqualTo(3);
+            var ids = new java.util.HashSet<String>();
+            for (JsonNode seed : seeds) {
+                String id = seed.get("id").asText();
+                assertThat(ids.add(id)).isTrue();
+                assertThat(profile(id)).isEqualTo(seed);
+            }
+            JsonNode combined = seeds.get(2);
+            assertThat(combined.get("name").asText()).isEqualTo("Museo + SiB");
+            assertThat(combined.get("version").asText()).isEqualTo("1.0");
+            assertThat(combined.get("revision").asLong()).isZero();
+            assertThat(combined.get("status").asText()).isEqualTo("PUBLISHED");
+            assertThat(combined.get("rules").size()).isEqualTo(56);
+            String before = profiles();
+            String id = combined.get("id").asText();
+            mvc.perform(put("/api/profiles/" + id).contentType("application/json")
+                    .content(body("Museo + SiB", "1.0").replace("\"rules\":", "\"revision\":0,\"rules\":")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Las versiones publicadas son inmutables; duplique el perfil en una nueva versión."));
+            assertThat(profiles()).isEqualTo(before);
+            mvc.perform(post("/api/profiles/" + id + "/publish"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Las versiones publicadas son inmutables; duplique el perfil en una nueva versión."));
+            assertThat(profiles()).isEqualTo(before);
+            bootstrap.initialize();
+            bootstrap.initialize();
+            assertThat(profiles()).isEqualTo(before);
+        }
     }
     @Autowired ProfileBootstrap bootstrap;
 
