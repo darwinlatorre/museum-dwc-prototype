@@ -1,0 +1,268 @@
+[
+  {},
+  {},
+  {
+    "D3": "Plantilla para la publicación de Registros Biológicos\nversión 4.1"
+  },
+  {},
+  {
+    "C5": "Esta plantilla contiene todos los elementos del estándar Darwin Core (DwC) para la documentación de registros biológicos y corresponde a una adaptación del estándar, en idioma español, para cubrir las necesidades de publicación de datos sobre biodiversidad en Colombia (versión 2024-05-02).\n\nLa documentación oficial del estándar puede ser consultada en la siguiente URL: https://dwc.tdwg.org/terms/ "
+  },
+  {
+    "C6": "Sobre la plantilla"
+  },
+  {
+    "C7": "Esta plantilla Excel cuenta con cuatro (4) hojas o pestañas:\n\n        1. Instrucciones: Contiene la guía de uso y los puntos a tener en cuenta antes de iniciar la documentación de los registros biológicos.\n        2. Plantilla: Contiene la tabla con los elementos DwC para documentar los registros biológicos.\n        3. Definiciones: Contiene el glosario de los elementos DwC.\n        4. Vocabulario: Contiene la lista del vocabulario controlado para algunos de los elementos DwC.\n\nAntes de documentar la plantilla se recomienda leer la documentación disponible en: https://biodiversidad.co/recursos/plantillas-dwc\n\nEn la pestaña Plantilla encontrará que cada elemento DwC corresponde a una columna. Documente solo aquellos elementos de los que posea información, pueda inferirla o corresponda a un elemento obligatorio. \n\nPara conocer la definición de cada elemento DwC de la pestaña Plantilla, puede hacer clic sobre el nombre del elemento DwC y será redirigido a su respectiva definición y ejemplos disponibles en la pestaña Definiciones.\n\nUna vez finalice, elimine las columnas que no documentó.\n\nA tener en cuenta: esta plantilla sirve para documentar eventos de muestreo siempre y cuando se documenten los elementos obligatorios para este tipo de datos. También puede usar la plantilla diseñada para eventos de muestreo documentando en paralelo esta plantilla de registros biológicos a modo de extensión."
+  },
+  {},
+  {},
+  {
+    "C10": "Convenciones"
+  },
+  {},
+  {
+    "C12": "Elemento DwC",
+    "D12": "Obligatorio para la publicación de los registros biológicos a través del SiB Colombia"
+  },
+  {
+    "C13": "Elemento DwC",
+    "D13": "Obligatorio según el origen de los datos  y recomendado para la documentación de un buen registro biológico"
+  },
+  {
+    "C14": "Elemento DwC",
+    "D14": "Esencial o recomendado en la documentación de un buen registro biológico"
+  },
+  {
+    "C15": "Elemento DwC",
+    "D15": "Opcional y que puede documentarse si posee la información o si el publicador lo desea"
+  },
+  {
+    "C16": "«",
+    "D16": "Botón para regresar a la Plantilla"
+  },
+  {},
+  {
+    "C18": "α",
+    "D18": "Botón para ir desde las Definiciones al Vocabulario controlado del elemento DwC, en caso de contar con uno."
+  },
+  {},
+  {
+    "C20": "Elementos obligatorios según el origen de los datos"
+  },
+  {
+    "C21": "Los elementos obligatorios pueden variar según el origen de los datos:"
+  },
+  {},
+  {
+    "E23": "Fuente de los registros biológicos"
+  },
+  {
+    "C24": "Elemento Darwin Core",
+    "D24": "Elemento Darwin Core - es",
+    "E24": "Asociados a un permiso de recolección o acceso a recursos genéticos",
+    "F24": "Colección biológica",
+    "G24": "Eventos de muestreo",
+    "H24": "Marinos",
+    "I24": "Otros*"
+  },
+  {
+    "C25": "occurrenceID",
+    "D25": "ID del registro biológico",
+    "E25": "x",
+    "F25": "x",
+    "G25": "x",
+    "H25": "x",
+    "I25": "x"
+  },
+  {
+    "C26": "basisOfRecord",
+    "D26": "Base del registro",
+    "E26": "x",
+    "F26": "x",
+    "G26": "x",
+    "H26": "x",
+    "I26": "x"
+  },
+  {
+    "C27": "institutionCode",
+    "D27": "Código de la institución",
+    "E27": "x",
+    "F27": "x",
+    "G27": "x",
+    "H27": "x",
+    "I27": "x"
+  },
+  {
+    "C28": "collectionCode",
+    "D28": "Código de la colección",
+    "F28": "x"
+  },
+  {
+    "C29": "type",
+    "D29": "Tipo",
+    "E29": "x",
+    "F29": "x",
+    "G29": "x",
+    "H29": "x",
+    "I29": "x"
+  },
+  {
+    "C30": "catalogNumber",
+    "D30": "Número de catálogo",
+    "F30": "x"
+  },
+  {
+    "C31": "institutionID",
+    "D31": "ID de la institución",
+    "E31": "x",
+    "F31": "x",
+    "G31": "x",
+    "H31": "x",
+    "I31": "x"
+  },
+  {
+    "C32": "collectionID",
+    "D32": "ID de la colección",
+    "F32": "x"
+  },
+  {
+    "C33": "individualCount**",
+    "D33": "Cantidad de individuos",
+    "E33": "x"
+  },
+  {
+    "C34": "organismQuantity**",
+    "D34": "Cantidad del organismo",
+    "E34": "x"
+  },
+  {
+    "C35": "organismQuantityType**",
+    "D35": "Tipo de cantidad del organismo",
+    "E35": "x"
+  },
+  {
+    "C36": "recordedBy",
+    "D36": "Registrado por",
+    "E36": "x"
+  },
+  {
+    "C37": "occurrenceStatus",
+    "D37": "Estado del registro biológico",
+    "H37": "x"
+  },
+  {
+    "C38": "preparations",
+    "D38": "Preparaciones",
+    "E38": "x"
+  },
+  {
+    "C39": "disposition",
+    "D39": "Disposición",
+    "E39": "x",
+    "F39": "x"
+  },
+  {
+    "C40": "eventID",
+    "D40": "ID del evento",
+    "G40": "x",
+    "H40": "x"
+  },
+  {
+    "C41": "eventDate",
+    "D41": "Fecha del evento",
+    "E41": "x",
+    "G41": "x",
+    "H41": "x"
+  },
+  {
+    "C42": "country",
+    "D42": "País",
+    "E42": "x",
+    "F42": "x",
+    "G42": "x",
+    "H42": "x",
+    "I42": "x"
+  },
+  {
+    "C43": "stateProvince",
+    "D43": "Departamento",
+    "E43": "x"
+  },
+  {
+    "C44": "county",
+    "D44": "Municipio",
+    "E44": "x"
+  },
+  {
+    "C45": "locality",
+    "D45": "Localidad",
+    "E45": "x",
+    "H45": "x"
+  },
+  {
+    "C46": "minimumElevationInMeters",
+    "D46": "Elevación mínima en metros",
+    "E46": "x"
+  },
+  {
+    "C47": "decimalLatitude",
+    "D47": "Latitud decimal",
+    "E47": "x",
+    "H47": "x"
+  },
+  {
+    "C48": "decimalLongitude",
+    "D48": "Longitud decimal",
+    "E48": "x",
+    "H48": "x"
+  },
+  {
+    "C49": "geodeticDatum",
+    "D49": "Datum geodésico",
+    "E49": "x"
+  },
+  {
+    "C50": "scientificNameID",
+    "D50": "ID del nombre científico",
+    "H50": "x"
+  },
+  {
+    "C51": "scientificName",
+    "D51": "Nombre científico",
+    "E51": "x",
+    "F51": "x",
+    "G51": "x",
+    "H51": "x",
+    "I51": "x"
+  },
+  {
+    "C52": "taxonRank",
+    "D52": "Categoría del taxón",
+    "E52": "x",
+    "F52": "x",
+    "G52": "x",
+    "H52": "x",
+    "I52": "x"
+  },
+  {
+    "C53": "Extensión de permisos GGBN ",
+    "E53": "x"
+  },
+  {
+    "C54": "* Otros: Puede hacer referencia a observaciones en campo fortuitas u otros orígenes no contemplados en la tabla"
+  },
+  {},
+  {},
+  {
+    "C57": "Este material circula bajo una licencia Creative Commons CC BY-SA 4.0\n\n\nPuedes remezclar, modificar y crear a partir de esta obra, incluso con fines comerciales, siempre y cuando des los créditos correspondientes y licencies las nuevas creaciones bajo las mismas condiciones. Para ver una copia de esta licencia visita: https://creativecommons.org/licenses/by-sa/4.0/deed.es_ES"
+  },
+  {
+    "C58": "Plata C, Ortiz R, Marentes E, Velásquez J, Diaz J, Escobar D, Castro C, Leuro N, Sánchez L. 2024. Plantilla para la publicación de registros biológicos. Sistema de Información sobre Biodiversidad de Colombia. versión 4.1, Bogotá, D.C. "
+  },
+  {},
+  {
+    "C60": "Ultima revisión: Mayo 2024"
+  },
+  {},
+  {}
+]

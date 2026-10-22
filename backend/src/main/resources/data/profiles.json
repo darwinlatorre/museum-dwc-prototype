@@ -1,0 +1,486 @@
+[
+  {
+    "id": "1a8373c7-9428-517b-ac5d-7ee11f18c81d",
+    "name": "SiB Registros Biológicos",
+    "version": "4.1",
+    "status": "PUBLISHED",
+    "revision": 0,
+    "description": "Based on official v4.1 XLSX instruction matrix (May 2024) and SiB term definitions. Select collection, permit, sampling and marine contexts explicitly. disposition and individualCount carry documented source discrepancies. Permit records also require a GGBN extension, which this core-only MVP does not validate. country must not be invented when unknown; review missing-country errors with the publisher.",
+    "rules": [
+      {
+        "field": "occurrenceID",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "occurrenceID is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "basisOfRecord",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "basisOfRecord is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "institutionCode",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "institutionCode is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "institutionID",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "institutionID is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "type",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "type is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "country",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "country is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "scientificName",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "scientificName is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "taxonRank",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "taxonRank is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "collectionCode",
+        "condition": "collection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "collectionCode is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "collectionID",
+        "condition": "collection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "collectionID is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "catalogNumber",
+        "condition": "collection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "catalogNumber is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "organismQuantity",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "organismQuantity is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "organismQuantityType",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "organismQuantityType is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "recordedBy",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "recordedBy is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "preparations",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "preparations is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventDate",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "eventDate is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "stateProvince",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "stateProvince is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "county",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "county is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "locality",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "locality is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "minimumElevationInMeters",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "minimumElevationInMeters is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLatitude",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "decimalLatitude is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLongitude",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "decimalLongitude is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "geodeticDatum",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "geodeticDatum is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "occurrenceStatus",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "occurrenceStatus is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventID",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "eventID is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventDate",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "eventDate is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "locality",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "locality is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLatitude",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "decimalLatitude is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLongitude",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "decimalLongitude is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "scientificNameID",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "scientificNameID is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventID",
+        "condition": "sampling",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "eventID is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventDate",
+        "condition": "sampling",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "eventDate is required for this context.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "disposition",
+        "condition": "permit",
+        "kind": "requiredColumn",
+        "severity": "WARNING",
+        "message": "SiB matrix requests disposition here; its definition permits an empty value unless collected under permit and deposited.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "disposition",
+        "condition": "collection",
+        "kind": "requiredColumn",
+        "severity": "WARNING",
+        "message": "SiB matrix requests disposition here; its definition permits an empty value unless collected under permit and deposited.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "disposition",
+        "condition": "permitAndCollection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Document disposition (En colección) for permitted specimens deposited in a collection.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "individualCount",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "WARNING",
+        "message": "The v4.1 instruction matrix marks individualCount** but SiB version history calls it recommended; review quantity documentation.",
+        "source": "https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      }
+    ]
+  },
+  {
+    "id": "ea25b7e8-9d05-5427-8e0d-c0200785fb2d",
+    "name": "Museo",
+    "version": "1.0",
+    "status": "PUBLISHED",
+    "revision": 0,
+    "description": "Museum-specific mandatory fields, independently versioned; these are not universal Darwin Core requirements.",
+    "rules": [
+      {
+        "field": "catalogNumber",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "catalogNumber is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "recordedBy",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "recordedBy is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "eventDate",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "eventDate is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "year",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "year is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "month",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "month is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "day",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "day is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "country",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "country is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "stateProvince",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "stateProvince is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "county",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "county is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "locality",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "locality is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "minimumElevationInMeters",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "minimumElevationInMeters is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "decimalLatitude",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "decimalLatitude is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "decimalLongitude",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "decimalLongitude is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "identifiedBy",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "identifiedBy is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "scientificName",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "scientificName is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "order",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "order is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "superfamily",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "superfamily is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "family",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "family is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "subfamily",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "subfamily is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "tribe",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "tribe is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "subtribe",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "subtribe is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "genus",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "genus is required for this context.",
+        "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      }
+    ]
+  }
+]

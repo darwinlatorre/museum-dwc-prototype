@@ -1,0 +1,2900 @@
+[
+  {
+    "name": "acceptedNameUsage",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedNameUsage",
+    "definition": "The full name, with authorship and date information if known, of the currently valid (zoological) or accepted (botanical) dwc:Taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "acceptedNameUsageID",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedNameUsageID",
+    "definition": "An identifier for the name usage (documented meaning of the name according to a source) of the currently valid (zoological) or accepted (botanical) taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "acceptedScientificName",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedScientificName",
+    "definition": "The currently valid (zoological) or accepted (botanical) name for the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "acceptedScientificNameID",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedScientificNameID",
+    "definition": "A unique identifier for the acceptedScientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "AcceptedTaxon",
+    "uri": "http://rs.tdwg.org/dwc/terms/AcceptedTaxon",
+    "definition": "The currently valid (zoological) or accepted (botanical) name for the ScientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "AcceptedTaxonID",
+    "uri": "http://rs.tdwg.org/dwc/terms/AcceptedTaxonID",
+    "definition": "A global unique identifier for the parent to the AcceptedTaxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "acceptedTaxonID",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedTaxonID",
+    "definition": "An identifier for the name of the currently valid (zoological) or accepted (botanical) taxon. See acceptedTaxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "acceptedTaxonName",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedTaxonName",
+    "definition": "The currently valid (zoological) or accepted (botanical) name for the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "acceptedTaxonNameID",
+    "uri": "http://rs.tdwg.org/dwc/terms/acceptedTaxonNameID",
+    "definition": "A unique identifier for the acceptedTaxonName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "AccessConstraints",
+    "uri": "http://rs.tdwg.org/dwc/terms/AccessConstraints",
+    "definition": "A description of constraints on the use of the data as shared or access to further data that is not shared.",
+    "category": "http://rs.tdwg.org/dwc/terms/Sample",
+    "status": "deprecated"
+  },
+  {
+    "name": "accordingTo",
+    "uri": "http://rs.tdwg.org/dwc/terms/accordingTo",
+    "definition": "Abstract term to attribute information to a source.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "deprecated"
+  },
+  {
+    "name": "accuracy",
+    "uri": "http://rs.tdwg.org/dwc/terms/accuracy",
+    "definition": "Abstract term to capture error information about a measurement or fact.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "deprecated"
+  },
+  {
+    "name": "associatedMedia",
+    "uri": "http://rs.tdwg.org/dwc/terms/associatedMedia",
+    "definition": "A list (concatenated and separated) of associated ac:Media resources.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "associatedOccurrences",
+    "uri": "http://rs.tdwg.org/dwc/terms/associatedOccurrences",
+    "definition": "A list (concatenated and separated) of identifiers of other dwc:Occurrence records and their associations to this dwc:Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "associatedOrganisms",
+    "uri": "http://rs.tdwg.org/dwc/terms/associatedOrganisms",
+    "definition": "A list (concatenated and separated) of identifiers of other dwc:Organisms and the associations of this dwc:Organism to each of them.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "associatedReferences",
+    "uri": "http://rs.tdwg.org/dwc/terms/associatedReferences",
+    "definition": "A list (concatenated and separated) of associated dcterms:BibliographicResources.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "associatedSequences",
+    "uri": "http://rs.tdwg.org/dwc/terms/associatedSequences",
+    "definition": "A list (concatenated and separated) of dcterms:BibliographicResources for dwc:NucleotideSequences associated with a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "associatedTaxa",
+    "uri": "http://rs.tdwg.org/dwc/terms/associatedTaxa",
+    "definition": "A list (concatenated and separated) of identifiers or names of dwc:Taxon records and the associations of this dwc:Occurrence to each of them.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "basionym",
+    "uri": "http://rs.tdwg.org/dwc/terms/basionym",
+    "definition": "The basionym (botany) or basonym (bacteriology) of the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "basionymID",
+    "uri": "http://rs.tdwg.org/dwc/terms/basionymID",
+    "definition": "A unique identifier for the basionym (botany) or basonym (bacteriology) of the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "basisOfRecord",
+    "uri": "http://rs.tdwg.org/dwc/terms/basisOfRecord",
+    "definition": "The specific nature of the data record.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "bed",
+    "uri": "http://rs.tdwg.org/dwc/terms/bed",
+    "definition": "The full name of the lithostratigraphic bed from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "behavior",
+    "uri": "http://rs.tdwg.org/dwc/terms/behavior",
+    "definition": "A behavior shown by a dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "binomial",
+    "uri": "http://rs.tdwg.org/dwc/terms/binomial",
+    "definition": "The combination of genus and first (species) epithet of the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "caste",
+    "uri": "http://rs.tdwg.org/dwc/terms/caste",
+    "definition": "A social caste of a dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "catalogNumber",
+    "uri": "http://rs.tdwg.org/dwc/terms/catalogNumber",
+    "definition": "An identifier (preferably unique) for a resource within a collection.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "CatalogNumberNumeric",
+    "uri": "http://rs.tdwg.org/dwc/terms/CatalogNumberNumeric",
+    "definition": "The numeric value of the catalogNumber, used to facilitate numerical sorting and searching by ranges.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "deprecated"
+  },
+  {
+    "name": "class",
+    "uri": "http://rs.tdwg.org/dwc/terms/class",
+    "definition": "The full scientific name of the class in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "collectionCode",
+    "uri": "http://rs.tdwg.org/dwc/terms/collectionCode",
+    "definition": "A name, acronym, coden, or initialism identifying a collection.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "collectionID",
+    "uri": "http://rs.tdwg.org/dwc/terms/collectionID",
+    "definition": "An identifier for a collection.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "continent",
+    "uri": "http://rs.tdwg.org/dwc/terms/continent",
+    "definition": "The name of the continent in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "coordinatePrecision",
+    "uri": "http://rs.tdwg.org/dwc/terms/coordinatePrecision",
+    "definition": "A decimal representation of the precision of the coordinates given in the dwc:decimalLatitude and dwc:decimalLongitude.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "coordinateUncertaintyInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters",
+    "definition": "A horizontal distance (in meters) from a given dwc:decimalLatitude and dwc:decimalLongitude describing the smallest circle containing the whole of the dcterms:Location. Zero is not a valid value for this term.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "country",
+    "uri": "http://rs.tdwg.org/dwc/terms/country",
+    "definition": "The name of the country or major administrative unit in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "countryCode",
+    "uri": "http://rs.tdwg.org/dwc/terms/countryCode",
+    "definition": "The standard code for the country in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "county",
+    "uri": "http://rs.tdwg.org/dwc/terms/county",
+    "definition": "The full, unabbreviated name of the next smaller administrative region than stateProvince (county, shire, department, etc.) in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "cultivarEpithet",
+    "uri": "http://rs.tdwg.org/dwc/terms/cultivarEpithet",
+    "definition": "Part of the name of a cultivar, cultivar group or grex that follows the dwc:scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "dataGeneralizations",
+    "uri": "http://rs.tdwg.org/dwc/terms/dataGeneralizations",
+    "definition": "Actions taken to make the shared data less specific or complete than in its original form. Suggests that alternative data of higher quality may be available on request.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "Dataset",
+    "uri": "http://rs.tdwg.org/dwc/terms/Dataset",
+    "definition": "The category of information pertaining to a logical set of records.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "deprecated"
+  },
+  {
+    "name": "datasetID",
+    "uri": "http://rs.tdwg.org/dwc/terms/datasetID",
+    "definition": "An identifier for the set of data. May be a global unique identifier or an identifier specific to a collection or institution.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "datasetName",
+    "uri": "http://rs.tdwg.org/dwc/terms/datasetName",
+    "definition": "A name of a source dataset.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "dateIdentified",
+    "uri": "http://rs.tdwg.org/dwc/terms/dateIdentified",
+    "definition": "The date on which the dwc:Identification was made.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "day",
+    "uri": "http://rs.tdwg.org/dwc/terms/day",
+    "definition": "The integer day of the month on which the dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "decimalLatitude",
+    "uri": "http://rs.tdwg.org/dwc/terms/decimalLatitude",
+    "definition": "A geographic latitude (in decimal degrees, using the spatial reference system given in dwc:geodeticDatum) of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "decimalLongitude",
+    "uri": "http://rs.tdwg.org/dwc/terms/decimalLongitude",
+    "definition": "A geographic longitude (in decimal degrees, using the spatial reference system given in dwc:geodeticDatum) of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "degreeOfEstablishment",
+    "uri": "http://rs.tdwg.org/dwc/terms/degreeOfEstablishment",
+    "definition": "The degree to which a dwc:Organism survives, reproduces, and expands its range at the given place and time.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "disposition",
+    "uri": "http://rs.tdwg.org/dwc/terms/disposition",
+    "definition": "A current state of a dwc:MaterialEntity with respect to where it can be found.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "DwCType",
+    "uri": "http://rs.tdwg.org/dwc/terms/DwCType",
+    "definition": "The set of classes specified by the Darwin Core Type Vocabulary, used to categorize the nature or genre of the resource.",
+    "category": "http://purl.org/dc/dcam/VocabularyEncodingScheme",
+    "status": "deprecated"
+  },
+  {
+    "name": "dynamicProperties",
+    "uri": "http://rs.tdwg.org/dwc/terms/dynamicProperties",
+    "definition": "A list of additional measurements, facts, characteristics, or assertions about the record. Meant to provide a mechanism for structured content.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "earliestAgeOrLowestStage",
+    "uri": "http://rs.tdwg.org/dwc/terms/earliestAgeOrLowestStage",
+    "definition": "The full name of the earliest possible geochronologic age or lowest chronostratigraphic stage attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "EarliestDateCollected",
+    "uri": "http://rs.tdwg.org/dwc/terms/EarliestDateCollected",
+    "definition": "The earliest date-time in a period during which a event occurred. If the event is recorded as occurring at a single date-time, populate both EarliestDateCollected and LatestDateCollected with the same value. Recommended best practice is to use an encoding scheme, such as ISO 8601:2004(E).",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "deprecated"
+  },
+  {
+    "name": "earliestEonOrLowestEonothem",
+    "uri": "http://rs.tdwg.org/dwc/terms/earliestEonOrLowestEonothem",
+    "definition": "The full name of the earliest possible geochronologic eon or lowest chronostratigraphic eonothem or the informal name attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "earliestEpochOrLowestSeries",
+    "uri": "http://rs.tdwg.org/dwc/terms/earliestEpochOrLowestSeries",
+    "definition": "The full name of the earliest possible geochronologic epoch or lowest chronostratigraphic series attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "earliestEraOrLowestErathem",
+    "uri": "http://rs.tdwg.org/dwc/terms/earliestEraOrLowestErathem",
+    "definition": "The full name of the earliest possible geochronologic era or lowest chronostratigraphic erathem attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "earliestPeriodOrLowestSystem",
+    "uri": "http://rs.tdwg.org/dwc/terms/earliestPeriodOrLowestSystem",
+    "definition": "The full name of the earliest possible geochronologic period or lowest chronostratigraphic system attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "endDayOfYear",
+    "uri": "http://rs.tdwg.org/dwc/terms/endDayOfYear",
+    "definition": "The latest integer day of the year on which a dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "EndTimeOfDay",
+    "uri": "http://rs.tdwg.org/dwc/terms/EndTimeOfDay",
+    "definition": "The time of day when the event ended, expressed as decimal hours from midnight, local time.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "deprecated"
+  },
+  {
+    "name": "establishmentMeans",
+    "uri": "http://rs.tdwg.org/dwc/terms/establishmentMeans",
+    "definition": "Statement about whether a dwc:Organism has been introduced to a given place and time through the direct or indirect activity of modern humans.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "Event",
+    "uri": "http://rs.tdwg.org/dwc/terms/Event",
+    "definition": "An action, process, or set of circumstances occurring at a dcterms:Location during a period of time.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "EventAttribute",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "definition": "Container class for information about attributes related to a given sampling event.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeAccuracy",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeAccuracy",
+    "definition": "The description of the error associated with the EventAttributeValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeDeterminedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeDeterminedBy",
+    "definition": "The agent responsible for having determined the value of the measurement or characteristic of the sampling event.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeDeterminedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeDeterminedDate",
+    "definition": "The date on which the the measurement or characteristic of the sampling event was made.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeID",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeID",
+    "definition": "An identifier for the event attribute. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeRemarks",
+    "definition": "Comments or notes accompanying the measurement or characteristic of the sampling event.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventAttributes",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventAttributes",
+    "definition": "A list (concatenated and separated) of additional measurements or characteristics of the Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeType",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeType",
+    "definition": "The nature of the measurement or characteristic of the sampling event. Recommended best practice is to use a controlled vocabulary.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeUnit",
+    "definition": "The units for the value of the measurement or characteristic of the sampling event. Recommended best practice is to use International System of Units (SI) units.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "EventAttributeValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventAttributeValue",
+    "definition": "The value of the measurement or characteristic of the sampling event.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventDate",
+    "definition": "A date-time or time interval during which a dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "eventID",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventID",
+    "definition": "An identifier for the set of information associated with a dwc:Event (something that occurs at a place and time). May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "EventMeasurement",
+    "uri": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "definition": "The category of information pertaining to measurements associated with an event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementAccuracy",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementAccuracy",
+    "definition": "The description of the error associated with the EventAttributeValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementDeterminedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementDeterminedBy",
+    "definition": "The agent responsible for having determined the value of the measurement or characteristic of the event.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementDeterminedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementDeterminedDate",
+    "definition": "The date on which the the measurement or characteristic of the event was made. Recommended best practice is to use an encoding scheme, such as ISO 8601:2004(E).",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementID",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementID",
+    "definition": "An identifier for the event attribute. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementRemarks",
+    "definition": "Comments or notes accompanying the measurement or characteristic of the event.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementType",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementType",
+    "definition": "The nature of the measurement or characteristic of the event. Recommended best practice is to use a controlled vocabulary.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementUnit",
+    "definition": "The units for the value of the measurement or characteristic of the event. Recommended best practice is to use International System of Units (SI) units.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventMeasurementValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventMeasurementValue",
+    "definition": "The value of the measurement or characteristic of the event.",
+    "category": "http://rs.tdwg.org/dwc/terms/EventMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "eventRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventRemarks",
+    "definition": "Comments or notes about the dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "eventTime",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventTime",
+    "definition": "The time or interval during which a dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "eventType",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventType",
+    "definition": "A narrow category that best matches the nature of a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "family",
+    "uri": "http://rs.tdwg.org/dwc/terms/family",
+    "definition": "The full scientific name of the family in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "fieldNotes",
+    "uri": "http://rs.tdwg.org/dwc/terms/fieldNotes",
+    "definition": "One of a) an indicator of the existence of, b) a reference to (publication, URI), or c) the text of notes taken in the field about the dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "fieldNumber",
+    "uri": "http://rs.tdwg.org/dwc/terms/fieldNumber",
+    "definition": "An identifier given to a dwc:Event in the field.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "footprintSpatialFit",
+    "uri": "http://rs.tdwg.org/dwc/terms/footprintSpatialFit",
+    "definition": "A ratio of the area of a footprint (dwc:footprintWKT) to the area of a true (original, or most specific) spatial representation of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "footprintSRS",
+    "uri": "http://rs.tdwg.org/dwc/terms/footprintSRS",
+    "definition": "The ellipsoid, geodetic datum, or spatial reference system (SRS) upon which the geometry given in dwc:footprintWKT is based.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "footprintWKT",
+    "uri": "http://rs.tdwg.org/dwc/terms/footprintWKT",
+    "definition": "A Well-Known Text (WKT) representation of the shape (footprint, geometry) that defines a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "formation",
+    "uri": "http://rs.tdwg.org/dwc/terms/formation",
+    "definition": "The full name of the lithostratigraphic formation from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "FossilSpecimen",
+    "uri": "http://rs.tdwg.org/dwc/terms/FossilSpecimen",
+    "definition": "A preserved specimen that is a fossil.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "Generalizations",
+    "uri": "http://rs.tdwg.org/dwc/terms/Generalizations",
+    "definition": "Actions taken to make the data as shared less specific or complete than in its original form. Suggests that alternative data of highly quality may be available on request.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "deprecated"
+  },
+  {
+    "name": "genericName",
+    "uri": "http://rs.tdwg.org/dwc/terms/genericName",
+    "definition": "The genus part of the dwc:scientificName without authorship.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "genus",
+    "uri": "http://rs.tdwg.org/dwc/terms/genus",
+    "definition": "The full scientific name of the genus in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "geodeticDatum",
+    "uri": "http://rs.tdwg.org/dwc/terms/geodeticDatum",
+    "definition": "The ellipsoid, geodetic datum, or spatial reference system (SRS) upon which the geographic coordinates given in dwc:decimalLatitude and dwc:decimalLongitude are based.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "GeologicalContext",
+    "uri": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "definition": "A set of geological designations, such as stratigraphy, that qualify a dcterms:Location or source of a dwc:MaterialEntity.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "geologicalContextID",
+    "uri": "http://rs.tdwg.org/dwc/terms/geologicalContextID",
+    "definition": "An identifier for a dwc:GeologicalContext.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "georeferencedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/georeferencedBy",
+    "definition": "A name for a dcterms:Agent responsible for providing a georeference.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "georeferencedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/georeferencedDate",
+    "definition": "The date on which the dcterms:Location was georeferenced.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "georeferenceProtocol",
+    "uri": "http://rs.tdwg.org/dwc/terms/georeferenceProtocol",
+    "definition": "A description or reference to a dwc:Protocol used to determine a spatial footprint, coordinates, and uncertainties.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "georeferenceRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/georeferenceRemarks",
+    "definition": "Comments or notes about the spatial description determination, explaining assumptions made in addition or opposition to the those formalized in the method referred to in dwc:georeferenceProtocol.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "georeferenceSources",
+    "uri": "http://rs.tdwg.org/dwc/terms/georeferenceSources",
+    "definition": "A list (concatenated and separated) of maps, gazetteers, or other resources used to georeference a dcterms:Location, described specifically enough to allow anyone in the future to use the same resources.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "georeferenceVerificationStatus",
+    "uri": "http://rs.tdwg.org/dwc/terms/georeferenceVerificationStatus",
+    "definition": "A categorical description of the extent to which the georeference has been verified to represent the best possible spatial description for the dcterms:Location of the dwc:Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "group",
+    "uri": "http://rs.tdwg.org/dwc/terms/group",
+    "definition": "The full name of the lithostratigraphic group from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "habitat",
+    "uri": "http://rs.tdwg.org/dwc/terms/habitat",
+    "definition": "A category or description of the habitat in which the dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "higherClassification",
+    "uri": "http://rs.tdwg.org/dwc/terms/higherClassification",
+    "definition": "A list (concatenated and separated) of taxa names terminating at the rank immediately superior to the referenced dwc:Taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "higherGeography",
+    "uri": "http://rs.tdwg.org/dwc/terms/higherGeography",
+    "definition": "A list (concatenated and separated) of geographic names less specific than the information captured in the dwc:locality term.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "higherGeographyID",
+    "uri": "http://rs.tdwg.org/dwc/terms/higherGeographyID",
+    "definition": "An identifier for the geographic region within which the dcterms:Location occurred.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "HigherTaxon",
+    "uri": "http://rs.tdwg.org/dwc/terms/HigherTaxon",
+    "definition": "A list (concatenated and separated) of the names for the taxonomic ranks less specific than the ScientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "higherTaxonconceptID",
+    "uri": "http://rs.tdwg.org/dwc/terms/higherTaxonconceptID",
+    "definition": "A unique identifier for the taxon concept less specific than that given in the taxonConceptID.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "HigherTaxonID",
+    "uri": "http://rs.tdwg.org/dwc/terms/HigherTaxonID",
+    "definition": "A global unique identifier for the parent to the taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "higherTaxonName",
+    "uri": "http://rs.tdwg.org/dwc/terms/higherTaxonName",
+    "definition": "A list (concatenated and separated) of the names for the taxonomic ranks less specific than that given in the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "higherTaxonNameID",
+    "uri": "http://rs.tdwg.org/dwc/terms/higherTaxonNameID",
+    "definition": "A unique identifier for the name of the next higher rank than the scientificName in a taxonomic classification. See higherTaxonName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "highestBiostratigraphicZone",
+    "uri": "http://rs.tdwg.org/dwc/terms/highestBiostratigraphicZone",
+    "definition": "The full name of the highest possible geological biostratigraphic zone of the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "HumanObservation",
+    "uri": "http://rs.tdwg.org/dwc/terms/HumanObservation",
+    "definition": "An output of a human observation process.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "Identification",
+    "uri": "http://rs.tdwg.org/dwc/terms/Identification",
+    "definition": "A classification of a resource according to a classification scheme.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "identificationAttributes",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationAttributes",
+    "definition": "A list (concatenated and separated) of additional measurements, facts, characteristics, or assertions about the Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "deprecated"
+  },
+  {
+    "name": "identificationID",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationID",
+    "definition": "An identifier for a dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identificationQualifier",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationQualifier",
+    "definition": "A brief phrase or a standard term (\"cf.\", \"aff.\") to express the determiner's doubts about the dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identificationReferences",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationReferences",
+    "definition": "A list (concatenated and separated) of dcterms:BibliographicResources used in a dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identificationRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationRemarks",
+    "definition": "Comments or notes about the dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identificationVerificationStatus",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationVerificationStatus",
+    "definition": "A categorical indicator of the extent to which a dwc:Identification has been verified to be correct.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identifiedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/identifiedBy",
+    "definition": "A name for a dcterms:Agent responsible for making a dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identifiedByID",
+    "uri": "http://rs.tdwg.org/dwc/terms/identifiedByID",
+    "definition": "An identifier for a dcterms:Agent responsible for making a dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "individualCount",
+    "uri": "http://rs.tdwg.org/dwc/terms/individualCount",
+    "definition": "The number of individuals present at the time of the dwc:Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "individualID",
+    "uri": "http://rs.tdwg.org/dwc/terms/individualID",
+    "definition": "An identifier for an individual or named group of individual organisms represented in the Occurrence. Meant to accommodate resampling of the same individual or group for monitoring purposes. May be a global unique identifier or an identifier specific to a data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "deprecated"
+  },
+  {
+    "name": "informationWithheld",
+    "uri": "http://rs.tdwg.org/dwc/terms/informationWithheld",
+    "definition": "Additional information that exists about a resource, but that is not shared publicly. Suggests that alternative data of higher quality may be available on request.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "infragenericEpithet",
+    "uri": "http://rs.tdwg.org/dwc/terms/infragenericEpithet",
+    "definition": "The infrageneric part of a binomial name at ranks above species but below genus.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "infraspecificEpithet",
+    "uri": "http://rs.tdwg.org/dwc/terms/infraspecificEpithet",
+    "definition": "The name of the lowest or terminal infraspecific of the dwc:scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "institutionCode",
+    "uri": "http://rs.tdwg.org/dwc/terms/institutionCode",
+    "definition": "A name (or acronym) in use by an institution having custody of a resource.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "institutionID",
+    "uri": "http://rs.tdwg.org/dwc/terms/institutionID",
+    "definition": "An identifier for an organization.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "island",
+    "uri": "http://rs.tdwg.org/dwc/terms/island",
+    "definition": "The name of the island on or near which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "islandGroup",
+    "uri": "http://rs.tdwg.org/dwc/terms/islandGroup",
+    "definition": "The name of the island group in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "kingdom",
+    "uri": "http://rs.tdwg.org/dwc/terms/kingdom",
+    "definition": "The full scientific name of the kingdom in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "latestAgeOrHighestStage",
+    "uri": "http://rs.tdwg.org/dwc/terms/latestAgeOrHighestStage",
+    "definition": "The full name of the latest possible geochronologic age or highest chronostratigraphic stage attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "LatestDateCollected",
+    "uri": "http://rs.tdwg.org/dwc/terms/LatestDateCollected",
+    "definition": "The latest date-time in a period during which a event occurred. If the event is recorded as occurring at a single date-time, populate both EarliestDateCollected and LatestDateCollected with the same value. Recommended best practice is to use an encoding scheme, such as ISO 8601:2004(E).",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "deprecated"
+  },
+  {
+    "name": "latestEonOrHighestEonothem",
+    "uri": "http://rs.tdwg.org/dwc/terms/latestEonOrHighestEonothem",
+    "definition": "The full name of the latest possible geochronologic eon or highest chronostratigraphic eonothem or the informal name attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "latestEpochOrHighestSeries",
+    "uri": "http://rs.tdwg.org/dwc/terms/latestEpochOrHighestSeries",
+    "definition": "The full name of the latest possible geochronologic epoch or highest chronostratigraphic series attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "latestEraOrHighestErathem",
+    "uri": "http://rs.tdwg.org/dwc/terms/latestEraOrHighestErathem",
+    "definition": "The full name of the latest possible geochronologic era or highest chronostratigraphic erathem attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "latestPeriodOrHighestSystem",
+    "uri": "http://rs.tdwg.org/dwc/terms/latestPeriodOrHighestSystem",
+    "definition": "The full name of the latest possible geochronologic period or highest chronostratigraphic system attributable to the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "lifeStage",
+    "uri": "http://rs.tdwg.org/dwc/terms/lifeStage",
+    "definition": "An age class or life stage of a dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "lithostratigraphicTerms",
+    "uri": "http://rs.tdwg.org/dwc/terms/lithostratigraphicTerms",
+    "definition": "The combination of all lithostratigraphic names for the rock from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "LivingSpecimen",
+    "uri": "http://rs.tdwg.org/dwc/terms/LivingSpecimen",
+    "definition": "A specimen that is alive.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "locality",
+    "uri": "http://rs.tdwg.org/dwc/terms/locality",
+    "definition": "The specific description of the place.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "locationAccordingTo",
+    "uri": "http://rs.tdwg.org/dwc/terms/locationAccordingTo",
+    "definition": "Information about the source of this dcterms:Location information. Could be a publication (gazetteer), institution, or team of individuals.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "locationAttributes",
+    "uri": "http://rs.tdwg.org/dwc/terms/locationAttributes",
+    "definition": "A list (concatenated and separated) of additional measurements, facts, characteristics, or assertions about the location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "deprecated"
+  },
+  {
+    "name": "locationID",
+    "uri": "http://rs.tdwg.org/dwc/terms/locationID",
+    "definition": "An identifier for a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "locationRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/locationRemarks",
+    "definition": "Comments or notes about the dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "lowestBiostratigraphicZone",
+    "uri": "http://rs.tdwg.org/dwc/terms/lowestBiostratigraphicZone",
+    "definition": "The full name of the lowest possible geological biostratigraphic zone of the stratigraphic horizon from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "MachineObservation",
+    "uri": "http://rs.tdwg.org/dwc/terms/MachineObservation",
+    "definition": "An output of a machine observation process.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "MaterialCitation",
+    "uri": "http://rs.tdwg.org/dwc/terms/MaterialCitation",
+    "definition": "A reference to or citation of one, a part of, or multiple specimens in scholarly publications.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "MaterialEntity",
+    "uri": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "definition": "An entity that can be identified, exists for some period of time, and consists in whole or in part of physical matter while it exists.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "materialEntityID",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialEntityID",
+    "definition": "An identifier for a particular instance of a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "materialEntityRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialEntityRemarks",
+    "definition": "Comments or notes about a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "MaterialSample",
+    "uri": "http://rs.tdwg.org/dwc/terms/MaterialSample",
+    "definition": "A material entity that represents an entity of interest in whole or in part.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "materialSampleID",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialSampleID",
+    "definition": "An identifier for the dwc:MaterialSample (as opposed to a particular digital record of the dwc:MaterialSample). In the absence of a persistent global unique identifier, construct one from a combination of identifiers in the record that will most closely make the dwc:materialSampleID globally unique.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialSample",
+    "status": "current"
+  },
+  {
+    "name": "maximumDepthInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/maximumDepthInMeters",
+    "definition": "The greatest depth within a range of depths, measured relative to the vertical reference surface indicated by the value of dwc:verticalDatum.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "maximumDistanceAboveSurfaceInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/maximumDistanceAboveSurfaceInMeters",
+    "definition": "The greater distance in a range of distance from a reference surface in the vertical direction, in meters. Use positive values for locations above the surface, negative values for locations below. If depth measures are given, the reference surface is the location given by the depth, otherwise the reference surface is the location given by the elevation.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "maximumElevationInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/maximumElevationInMeters",
+    "definition": "The greatest elevation within a range of elevations, measured relative to the vertical reference surface indicated by the value of dwc:verticalDatum.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "measurementAccuracy",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementAccuracy",
+    "definition": "The description of the potential error associated with the dwc:measurementValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementDeterminedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementDeterminedBy",
+    "definition": "A list (concatenated and separated) of names of people, groups, or organizations who determined the value of the dwc:MeasurementOrFact.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementDeterminedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementDeterminedDate",
+    "definition": "The date on which the dwc:MeasurementOrFact was made.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementID",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementID",
+    "definition": "An identifier for the dwc:MeasurementOrFact (information pertaining to measurements, facts, characteristics, or assertions). May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementMethod",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementMethod",
+    "definition": "A description of or reference to (publication, URI) the method or protocol used to determine the measurement, fact, characteristic, or assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "MeasurementOrFact",
+    "uri": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "definition": "A measurement of or fact about an rdfs:Resource (http://www.w3.org/2000/01/rdf-schema#Resource).",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "measurementRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementRemarks",
+    "definition": "Comments or notes accompanying the dwc:MeasurementOrFact.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementType",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementType",
+    "definition": "The nature of the measurement, fact, characteristic, or assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementUnit",
+    "definition": "The units associated with the dwc:measurementValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "measurementValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/measurementValue",
+    "definition": "The value of the measurement, fact, characteristic, or assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "member",
+    "uri": "http://rs.tdwg.org/dwc/terms/member",
+    "definition": "The full name of the lithostratigraphic member from which the dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "minimumDepthInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/minimumDepthInMeters",
+    "definition": "The least depth within a range of depths, measured relative to the vertical reference surface indicated by the value of dwc:verticalDatum.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "minimumDistanceAboveSurfaceInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/minimumDistanceAboveSurfaceInMeters",
+    "definition": "The lesser distance in a range of distance from a reference surface in the vertical direction, in meters. Use positive values for locations above the surface, negative values for locations below. If depth measures are given, the reference surface is the location given by the depth, otherwise the reference surface is the location given by the elevation.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "minimumElevationInMeters",
+    "uri": "http://rs.tdwg.org/dwc/terms/minimumElevationInMeters",
+    "definition": "The least elevation within a range of elevations, measured relative to the vertical reference surface indicated by the value of dwc:verticalDatum.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "month",
+    "uri": "http://rs.tdwg.org/dwc/terms/month",
+    "definition": "The integer month in which the dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "municipality",
+    "uri": "http://rs.tdwg.org/dwc/terms/municipality",
+    "definition": "The full, unabbreviated name of the next smaller administrative region than county (city, municipality, etc.) in which the dcterms:Location occurs. Do not use this term for a nearby named place that does not contain the actual dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "nameAccordingTo",
+    "uri": "http://rs.tdwg.org/dwc/terms/nameAccordingTo",
+    "definition": "The reference to the source in which the specific taxon concept circumscription is defined or implied - traditionally signified by the Latin \"sensu\" or \"sec.\" (from secundum, meaning \"according to\"). For taxa that result from identifications, a reference to the keys, monographs, experts and other sources should be given.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "nameAccordingToID",
+    "uri": "http://rs.tdwg.org/dwc/terms/nameAccordingToID",
+    "definition": "An identifier for the source in which the specific taxon concept circumscription is defined or implied. See dwc:nameAccordingTo.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "namePublicationID",
+    "uri": "http://rs.tdwg.org/dwc/terms/namePublicationID",
+    "definition": "A resolvable globally unique identifier for the original publication of the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "namePublishedIn",
+    "uri": "http://rs.tdwg.org/dwc/terms/namePublishedIn",
+    "definition": "A reference for the publication in which the dwc:scientificName was originally established under the rules of the associated dwc:nomenclaturalCode.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "namePublishedInID",
+    "uri": "http://rs.tdwg.org/dwc/terms/namePublishedInID",
+    "definition": "An identifier for the publication in which the dwc:scientificName was originally established under the rules of the associated dwc:nomenclaturalCode.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "namePublishedInYear",
+    "uri": "http://rs.tdwg.org/dwc/terms/namePublishedInYear",
+    "definition": "The four-digit year in which the dwc:scientificName was published.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "nomenclaturalCode",
+    "uri": "http://rs.tdwg.org/dwc/terms/nomenclaturalCode",
+    "definition": "The nomenclatural code (or codes in the case of an ambiregnal name) under which the dwc:scientificName is constructed.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "nomenclaturalStatus",
+    "uri": "http://rs.tdwg.org/dwc/terms/nomenclaturalStatus",
+    "definition": "The status related to the original publication of the name and its conformance to the relevant rules of nomenclature. It is based essentially on an algorithm according to the business rules of the code. It requires no taxonomic opinion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "Occurrence",
+    "uri": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "definition": "A dwc:Event that establishes the state of a dwc:Organism at a particular place and time.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "occurrenceAttributes",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceAttributes",
+    "definition": "A list (concatenated and separated) of additional measurements, facts, characteristics, or assertions about the Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceDetails",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceDetails",
+    "definition": "A reference (publication, URI) to the most detailed information available about the Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceID",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceID",
+    "definition": "An identifier for a dwc:Occurrence (as opposed to a particular digital record of a dwc:Occurrence).",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "OccurrenceMeasurement",
+    "uri": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "definition": "The category of information pertaining to measurements accociated with an occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementAccuracy",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementAccuracy",
+    "definition": "The description of the error associated with the occurrenceAttributeValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementDeterminedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementDeterminedBy",
+    "definition": "The agent responsible for having determined the value of the measurement or characteristic of the occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementDeterminedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementDeterminedDate",
+    "definition": "The date on which the the measurement or characteristic of the occurrence was made. Recommended best practice is to use an encoding scheme, such as ISO 8601:2004(E).",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementID",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementID",
+    "definition": "An identifier for the occurrence attribute. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementRemarks",
+    "definition": "Comments or notes accompanying the measurement or characteristic of the occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementType",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementType",
+    "definition": "The nature of the measurement or characteristic of the occurrence. Recommended best practice is to use a controlled vocabulary.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementUnit",
+    "definition": "The units for the value of the measurement or characteristic of the occurrence. Recommended best practice is to use International System of Units (SI) units.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceMeasurementValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceMeasurementValue",
+    "definition": "The value of the measurement or characteristic of the occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/OccurrenceMeasurement",
+    "status": "deprecated"
+  },
+  {
+    "name": "occurrenceRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceRemarks",
+    "definition": "Comments or notes about the dwc:Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "occurrenceStatus",
+    "uri": "http://rs.tdwg.org/dwc/terms/occurrenceStatus",
+    "definition": "A statement about the detection or non-detection of a dwc:Organism during a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "order",
+    "uri": "http://rs.tdwg.org/dwc/terms/order",
+    "definition": "The full scientific name of the order in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "Organism",
+    "uri": "http://rs.tdwg.org/dwc/terms/Organism",
+    "definition": "A particular organism or defined group of organisms considered to be taxonomically homogeneous.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "organismID",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismID",
+    "definition": "An identifier for the dwc:Organism instance (as opposed to a particular digital record of the dwc:Organism). May be a globally unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "organismName",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismName",
+    "definition": "A textual name or label assigned to a dwc:Organism instance.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "organismQuantity",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismQuantity",
+    "definition": "A number or enumeration value for the quantity of dwc:Organisms.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "organismQuantityType",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismQuantityType",
+    "definition": "The type of quantification system used for the quantity of dwc:Organisms.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "organismRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismRemarks",
+    "definition": "Comments or notes about the dwc:Organism instance.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "organismScope",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismScope",
+    "definition": "A description of the kind of dwc:Organism instance. Can be used to indicate whether the dwc:Organism instance represents a discrete organism or if it represents a particular type of aggregation.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "originalNameUsage",
+    "uri": "http://rs.tdwg.org/dwc/terms/originalNameUsage",
+    "definition": "The taxon name, with authorship and date information if known, as it originally appeared when first established under the rules of the associated dwc:nomenclaturalCode. The basionym (botany) or basonym (bacteriology) of the dwc:scientificName or the senior/earlier homonym for replaced names.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "originalNameUsageID",
+    "uri": "http://rs.tdwg.org/dwc/terms/originalNameUsageID",
+    "definition": "An identifier for the name usage (documented meaning of the name according to a source) in which the terminal element of the dwc:scientificName was originally established under the rules of the associated dwc:nomenclaturalCode.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "otherCatalogNumbers",
+    "uri": "http://rs.tdwg.org/dwc/terms/otherCatalogNumbers",
+    "definition": "A list (concatenated and separated) of previous or alternate fully qualified catalog numbers or other human-used identifiers for the same dwc:MaterialEntity, whether in the current or any other data set or collection.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "ownerInstitutionCode",
+    "uri": "http://rs.tdwg.org/dwc/terms/ownerInstitutionCode",
+    "definition": "A name (or acronym) in use by an institution having ownership of a resource.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "parentEventID",
+    "uri": "http://rs.tdwg.org/dwc/terms/parentEventID",
+    "definition": "An identifier for a broader dwc:Event that contains this and potentially other dwc:Events.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "parentMeasurementID",
+    "uri": "http://rs.tdwg.org/dwc/terms/parentMeasurementID",
+    "definition": "An identifier for a broader dwc:MeasurementOrFact that groups this and potentially other dwc:MeasurementOrFacts.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "parentNameUsage",
+    "uri": "http://rs.tdwg.org/dwc/terms/parentNameUsage",
+    "definition": "The full name, with authorship and date information if known, of the direct, most proximate higher-rank parent dwc:Taxon (in a classification) of the most specific element of the dwc:scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "parentNameUsageID",
+    "uri": "http://rs.tdwg.org/dwc/terms/parentNameUsageID",
+    "definition": "An identifier for the name usage (documented meaning of the name according to a source) of the direct, most proximate higher-rank parent taxon (in a classification) of the most specific element of the dwc:scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "pathway",
+    "uri": "http://rs.tdwg.org/dwc/terms/pathway",
+    "definition": "The process by which a dwc:Organism came to be in a given place at a given time.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "phylum",
+    "uri": "http://rs.tdwg.org/dwc/terms/phylum",
+    "definition": "The full scientific name of the phylum or division in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "pointRadiusSpatialFit",
+    "uri": "http://rs.tdwg.org/dwc/terms/pointRadiusSpatialFit",
+    "definition": "A ratio of the area of a point-radius (dwc:decimalLatitude, dwc:decimalLongitude, dwc:coordinateUncertaintyInMeters) to the area of a true (original, or most specific) spatial representation of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "preparations",
+    "uri": "http://rs.tdwg.org/dwc/terms/preparations",
+    "definition": "A list (concatenated and separated) of preparations and preservation methods for a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "PreservedSpecimen",
+    "uri": "http://rs.tdwg.org/dwc/terms/PreservedSpecimen",
+    "definition": "A specimen that has been preserved.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "PreviousIdentifications",
+    "uri": "http://rs.tdwg.org/dwc/terms/PreviousIdentifications",
+    "definition": "A list (concatenated and separated) of previous ScientificNames to which the sample was identified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "deprecated"
+  },
+  {
+    "name": "previousIdentifications",
+    "uri": "http://rs.tdwg.org/dwc/terms/previousIdentifications",
+    "definition": "A list (concatenated and separated) of previous assignments of names to the dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "recordedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/recordedBy",
+    "definition": "A name for a dcterms:Agent responsible for recording a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "recordedByID",
+    "uri": "http://rs.tdwg.org/dwc/terms/recordedByID",
+    "definition": "An identifier for a dcterms:Agent responsible for recording a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "recordNumber",
+    "uri": "http://rs.tdwg.org/dwc/terms/recordNumber",
+    "definition": "An identifier given to the dwc:Occurrence at the time it was recorded. Often serves as a link between field notes and a dwc:MaterialEntity record, such as a specimen collector's number.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "RelatedBasisOfRecord",
+    "uri": "http://rs.tdwg.org/dwc/terms/RelatedBasisOfRecord",
+    "definition": "The nature of the related resource. Recommended best practice is to use the same controlled vocabulary as for basisOfRecord.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "deprecated"
+  },
+  {
+    "name": "relatedResourceID",
+    "uri": "http://rs.tdwg.org/dwc/terms/relatedResourceID",
+    "definition": "An identifier for the related resource (the object) of a dwc:ResourceRelationship.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "relatedResourceType",
+    "uri": "http://rs.tdwg.org/dwc/terms/relatedResourceType",
+    "definition": "The type of the related resource. Recommended best practice is to use a controlled vocabulary.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "deprecated"
+  },
+  {
+    "name": "relationshipAccordingTo",
+    "uri": "http://rs.tdwg.org/dwc/terms/relationshipAccordingTo",
+    "definition": "The source (person, organization, publication, reference) establishing the relationship between the two resources.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "relationshipEstablishedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/relationshipEstablishedDate",
+    "definition": "A date-time or time interval during which a dwc:ResourceRelationship was established.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "relationshipOfResource",
+    "uri": "http://rs.tdwg.org/dwc/terms/relationshipOfResource",
+    "definition": "The relationship of the subject (identified by dwc:resourceID) to the object (identified by dwc:relatedResourceID).",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "relationshipOfResourceID",
+    "uri": "http://rs.tdwg.org/dwc/terms/relationshipOfResourceID",
+    "definition": "An identifier for the relationship type (predicate) that connects the subject identified by dwc:resourceID to its object identified by dwc:relatedResourceID.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "relationshipRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/relationshipRemarks",
+    "definition": "Comments or notes about a dwc:ResourceRelationship.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "reproductiveCondition",
+    "uri": "http://rs.tdwg.org/dwc/terms/reproductiveCondition",
+    "definition": "A reproductive condition of a dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "resourceID",
+    "uri": "http://rs.tdwg.org/dwc/terms/resourceID",
+    "definition": "An identifier for the subject of a dwc:ResourceRelationship.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "ResourceRelationship",
+    "uri": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "definition": "A relationship of one rdfs:Resource (http://www.w3.org/2000/01/rdf-schema#Resource) to another.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "resourceRelationshipID",
+    "uri": "http://rs.tdwg.org/dwc/terms/resourceRelationshipID",
+    "definition": "An identifier for a dwc:ResourceRelationship.",
+    "category": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
+    "status": "current"
+  },
+  {
+    "name": "Sample",
+    "uri": "http://rs.tdwg.org/dwc/terms/Sample",
+    "definition": "Container class for information about the results of a sampling event (specimen, observation, etc.)",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttribute",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "definition": "Container class for information about attributes related to a given sample.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttributeAccuracy",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttributeAccuracy",
+    "definition": "The description of the error associated with the SampleAttributeValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttributeDeterminedBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttributeDeterminedBy",
+    "definition": "The agent responsible for having determined the value of the measurement or characteristic of the sample.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttributeDeterminedDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttributeDeterminedDate",
+    "definition": "The date on which the the measurement or characteristic of the sample was made.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttributeRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttributeRemarks",
+    "definition": "Comments or notes accompanying the measurement or characteristic of the sample.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttributeUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttributeUnit",
+    "definition": "The units for the value of the measurement or characteristic of the sample. Recommended best practice is to use International System of Units (SI) units.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleAttributeValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleAttributeValue",
+    "definition": "The value of the measurement or characteristic of the sample.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SampleRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/SampleRemarks",
+    "definition": "Comments or notes about the sample or record.",
+    "category": "http://rs.tdwg.org/dwc/terms/Sample",
+    "status": "deprecated"
+  },
+  {
+    "name": "sampleSizeUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/sampleSizeUnit",
+    "definition": "The unit of measurement of the size (time duration, length, area, or volume) of a sample in a sampling dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "sampleSizeValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/sampleSizeValue",
+    "definition": "A numeric value for a measurement of the size (time duration, length, area, or volume) of a sample in a sampling dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "SamplingAttributeID",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingAttributeID",
+    "definition": "An identifier for the sampling attribute. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingAttributeType",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingAttributeType",
+    "definition": "The nature of the measurement or characteristic of the sample. Recommended best practice is to use a controlled vocabulary.",
+    "category": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
+    "status": "deprecated"
+  },
+  {
+    "name": "samplingEffort",
+    "uri": "http://rs.tdwg.org/dwc/terms/samplingEffort",
+    "definition": "The amount of effort expended during an eco:Survey.",
+    "category": "http://rs.tdwg.org/eco/terms/Survey",
+    "status": "current"
+  },
+  {
+    "name": "SamplingEvent",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingEvent",
+    "definition": "Container class for information about the conditions and methods of acquisition of samples.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingEventAttributes",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingEventAttributes",
+    "definition": "A list (concatenated and separated) of additional measurements or characteristics of the sampling event.",
+    "category": "http://rs.tdwg.org/dwc/terms/SamplingEvent",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingEventID",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingEventID",
+    "definition": "An identifier for the sampling event. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/SamplingEvent",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingEventRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingEventRemarks",
+    "definition": "Comments or notes about the sampling event.",
+    "category": "http://rs.tdwg.org/dwc/terms/SamplingEvent",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingLocation",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingLocation",
+    "definition": "Container class for information about the location where a sampling event occurred.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingLocationID",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingLocationID",
+    "definition": "An identifier for the sampling location. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "deprecated"
+  },
+  {
+    "name": "SamplingLocationRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/SamplingLocationRemarks",
+    "definition": "Comments or notes about the sampling location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "deprecated"
+  },
+  {
+    "name": "samplingProtocol",
+    "uri": "http://rs.tdwg.org/dwc/terms/samplingProtocol",
+    "definition": "The names of, references to, or descriptions of the methods or protocols used during an eco:Survey.",
+    "category": "http://rs.tdwg.org/eco/terms/Survey",
+    "status": "current"
+  },
+  {
+    "name": "scientificName",
+    "uri": "http://rs.tdwg.org/dwc/terms/scientificName",
+    "definition": "The full scientific name, with authorship and date information if known. When forming part of a dwc:Identification, this should be the name in lowest level taxonomic rank that can be determined.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "scientificNameAuthorship",
+    "uri": "http://rs.tdwg.org/dwc/terms/scientificNameAuthorship",
+    "definition": "The authorship information for the dwc:scientificName formatted according to the conventions of the applicable dwc:nomenclaturalCode.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "scientificNameID",
+    "uri": "http://rs.tdwg.org/dwc/terms/scientificNameID",
+    "definition": "An identifier for the nomenclatural (not taxonomic) details of a scientific name.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "scientificNameRank",
+    "uri": "http://rs.tdwg.org/dwc/terms/scientificNameRank",
+    "definition": "The taxonomic rank of the most specific name in the scientificName. Recommended best practice is to use a controlled vocabulary.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "sex",
+    "uri": "http://rs.tdwg.org/dwc/terms/sex",
+    "definition": "A sex of a dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "specificEpithet",
+    "uri": "http://rs.tdwg.org/dwc/terms/specificEpithet",
+    "definition": "The name of the first or species epithet of the dwc:scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "startDayOfYear",
+    "uri": "http://rs.tdwg.org/dwc/terms/startDayOfYear",
+    "definition": "The earliest integer day of the year on which a dwc:Event occurred.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "StartTimeOfDay",
+    "uri": "http://rs.tdwg.org/dwc/terms/StartTimeOfDay",
+    "definition": "The time of day when the event began, expressed as decimal hours from midnight, local time.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "deprecated"
+  },
+  {
+    "name": "stateProvince",
+    "uri": "http://rs.tdwg.org/dwc/terms/stateProvince",
+    "definition": "The name of the next smaller administrative region than country (state, province, canton, department, region, etc.) in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "subfamily",
+    "uri": "http://rs.tdwg.org/dwc/terms/subfamily",
+    "definition": "The full scientific name of the subfamily in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "subgenus",
+    "uri": "http://rs.tdwg.org/dwc/terms/subgenus",
+    "definition": "The full scientific name of the subgenus in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "subtribe",
+    "uri": "http://rs.tdwg.org/dwc/terms/subtribe",
+    "definition": "The full scientific name of the subtribe in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "superfamily",
+    "uri": "http://rs.tdwg.org/dwc/terms/superfamily",
+    "definition": "The full scientific name of the superfamily in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "Taxon",
+    "uri": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "definition": "A group of organisms (sensu http://purl.obolibrary.org/obo/OBI_0100026) considered by taxonomists to form a homogeneous unit.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "taxonAccordingTo",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonAccordingTo",
+    "definition": "Information about the authorship of this taxon concept which uses the scientificName in their sense (secundum, sensu). Could be a publication (identification key), institution or team of individuals.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "taxonAttributes",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonAttributes",
+    "definition": "A list (concatenated and separated) of additional measurements, facts, characteristics, or assertions about the taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "taxonConceptID",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonConceptID",
+    "definition": "An identifier for the taxonomic concept to which the record refers - not for the nomenclatural details of a dwc:Taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "TaxonID",
+    "uri": "http://rs.tdwg.org/dwc/terms/TaxonID",
+    "definition": "A global unique identifier for the taxon (name in a classification).",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "taxonID",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonID",
+    "definition": "An identifier for a dwc:Taxon.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "taxonNameID",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonNameID",
+    "definition": "A unique identifier for the scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "taxonomicStatus",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonomicStatus",
+    "definition": "The status of the use of the dwc:scientificName as a label for a taxon. Requires taxonomic opinion to define the scope of a dwc:Taxon. Rules of priority then are used to define the taxonomic status of the nomenclature contained in that scope, combined with the experts opinion. It must be linked to a specific taxonomic reference that defines the concept.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "taxonRank",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonRank",
+    "definition": "The taxonomic rank of the most specific name in the dwc:scientificName.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "taxonRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonRemarks",
+    "definition": "Comments or notes about the taxon or name.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "tribe",
+    "uri": "http://rs.tdwg.org/dwc/terms/tribe",
+    "definition": "The full scientific name of the tribe in which the dwc:Taxon is classified.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "typeStatus",
+    "uri": "http://rs.tdwg.org/dwc/terms/typeStatus",
+    "definition": "A list (concatenated and separated) of nomenclatural types (type status, typified scientific name, publication) applied to the subject.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "verbatimCoordinates",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimCoordinates",
+    "definition": "Verbatim original spatial coordinates of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimCoordinateSystem",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimCoordinateSystem",
+    "definition": "A coordinate format for dwc:verbatimLatitude and dwc:verbatimLongitude or dwc:verbatimCoordinates.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimDepth",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimDepth",
+    "definition": "The original description of the depth below the local surface.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimElevation",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimElevation",
+    "definition": "An original description of the elevation of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimEventDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimEventDate",
+    "definition": "The verbatim original representation of the date and time information for a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "verbatimIdentification",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimIdentification",
+    "definition": "A string representing the classification as it appeared in the original record.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "verbatimLabel",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimLabel",
+    "definition": "A verbatim original representation of the written information affixed or related to a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "verbatimLatitude",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimLatitude",
+    "definition": "A verbatim original latitude of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimLocality",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimLocality",
+    "definition": "An original textual description of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimLongitude",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimLongitude",
+    "definition": "A verbatim original longitude of a dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimScientificNameRank",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimScientificNameRank",
+    "definition": "The taxonomic rank of the most specific name in the scientificName as it appears in the original record.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "deprecated"
+  },
+  {
+    "name": "verbatimSRS",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimSRS",
+    "definition": "The ellipsoid, geodetic datum, or spatial reference system (SRS) upon which coordinates given in dwc:verbatimLatitude and dwc:verbatimLongitude, or dwc:verbatimCoordinates are based.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "verbatimTaxonRank",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimTaxonRank",
+    "definition": "The taxonomic rank of the most specific name in the dwc:scientificName as it appears in the original record.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "vernacularName",
+    "uri": "http://rs.tdwg.org/dwc/terms/vernacularName",
+    "definition": "A common or vernacular name.",
+    "category": "http://rs.tdwg.org/dwc/terms/Taxon",
+    "status": "current"
+  },
+  {
+    "name": "verticalDatum",
+    "uri": "http://rs.tdwg.org/dwc/terms/verticalDatum",
+    "definition": "The vertical datum used as the reference upon which the values in the elevation terms are based.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "vitality",
+    "uri": "http://rs.tdwg.org/dwc/terms/vitality",
+    "definition": "An indication of whether a dwc:Organism was alive or dead at the time of collection or observation.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "waterBody",
+    "uri": "http://rs.tdwg.org/dwc/terms/waterBody",
+    "definition": "The name of the water body in which the dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "year",
+    "uri": "http://rs.tdwg.org/dwc/terms/year",
+    "definition": "The four-digit year in which the dwc:Event occurred, according to the Common Era Calendar.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "feedbackURL",
+    "uri": "http://rs.tdwg.org/dwc/terms/feedbackURL",
+    "definition": "A uniform resource locator (URL) that points to a webpage on which a form may be submitted to gather feedback about the record.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "typifiedName",
+    "uri": "http://rs.tdwg.org/dwc/terms/typifiedName",
+    "definition": "A scientific name for which a specimen or other name is the type.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "fundingAttributionID",
+    "uri": "http://rs.tdwg.org/dwc/terms/fundingAttributionID",
+    "definition": "An identifier for a dcterms:Agent that financially supported a project.",
+    "category": "http://rs.tdwg.org/dwc/terms/Provenance",
+    "status": "current"
+  },
+  {
+    "name": "projectID",
+    "uri": "http://rs.tdwg.org/dwc/terms/projectID",
+    "definition": "A list (concatenated and separated) of identifiers for projects that contributed to a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Provenance",
+    "status": "current"
+  },
+  {
+    "name": "projectTitle",
+    "uri": "http://rs.tdwg.org/dwc/terms/projectTitle",
+    "definition": "A list (concatenated and separated) of titles or names for projects that contributed to a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Provenance",
+    "status": "current"
+  },
+  {
+    "name": "digitalSpecimenID",
+    "uri": "http://rs.tdwg.org/dwc/terms/digitalSpecimenID",
+    "definition": "An identifier for a Digital Specimen resource.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "causeOfDeath",
+    "uri": "http://rs.tdwg.org/dwc/terms/causeOfDeath",
+    "definition": "An indication of the known or suspected cause of death of a dwc:Organism.",
+    "category": "http://rs.tdwg.org/dwc/terms/Organism",
+    "status": "current"
+  },
+  {
+    "name": "verbatimMeasurementType",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimMeasurementType",
+    "definition": "A string representing the type of measurement or fact as it appeared in the original record.",
+    "category": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
+    "status": "current"
+  },
+  {
+    "name": "materialEntityType",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialEntityType",
+    "definition": "A more generic classification of a dwc:MaterialEntity than dwc:preparations but less broad than dwc:materialEntityCategory.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "discipline",
+    "uri": "http://rs.tdwg.org/dwc/terms/discipline",
+    "definition": "The primary branch or branches of knowledge represented by a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "agentRoleOrder",
+    "uri": "http://rs.tdwg.org/dwc/terms/agentRoleOrder",
+    "definition": "A numerical position of an AgentRole in a set of AgentRoles.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "agentID",
+    "uri": "http://rs.tdwg.org/dwc/terms/agentID",
+    "definition": "An identifier for a dcterms:Agent.",
+    "category": "http://purl.org/dc/terms/Agent",
+    "status": "current"
+  },
+  {
+    "name": "agentRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/agentRemarks",
+    "definition": "Comments or notes about a dcterms:Agent.",
+    "category": "http://purl.org/dc/terms/Agent",
+    "status": "current"
+  },
+  {
+    "name": "agentType",
+    "uri": "http://rs.tdwg.org/dwc/terms/agentType",
+    "definition": "A category that best matches the nature of a dcterms:Agent.",
+    "category": "http://purl.org/dc/terms/Agent",
+    "status": "current"
+  },
+  {
+    "name": "Assertion",
+    "uri": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "definition": "A statement about an rdfs:Resource (http://www.w3.org/2000/01/rdf-schema#Resource).",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionID",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionID",
+    "definition": "An identifier for a dwc:Assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "verbatimAssertionType",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimAssertionType",
+    "definition": "A string representing the type of dwc:Assertion as it appeared in an original record.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionType",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionType",
+    "definition": "A category that best matches the nature of a dwc:Assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionMadeDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionMadeDate",
+    "definition": "A date on which a dwc:Assertion was created.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionEffectiveDate",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionEffectiveDate",
+    "definition": "A date-time or time interval during which an asserted state or measurement was deemed to be in effect.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionValue",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionValue",
+    "definition": "An asserted value.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionUnit",
+    "definition": "A unit associated with the value in dwc:assertionValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionError",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionError",
+    "definition": "A description of the potential error associated with a dwc:assertionValue.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionBy",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionBy",
+    "definition": "A name for a dcterms:Agent responsible for making a dwc:Assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionProtocols",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionProtocols",
+    "definition": "Names of, references to, or descriptions of dwc:Protocols used in making a dwc:Assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionReferences",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionReferences",
+    "definition": "A list (concatenated and separated) of dcterms:BibliographicResources associated with a dwc:Assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "assertionRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/assertionRemarks",
+    "definition": "Comments or notes about a dwc:Assertion.",
+    "category": "http://rs.tdwg.org/dwc/terms/Assertion",
+    "status": "current"
+  },
+  {
+    "name": "referenceID",
+    "uri": "http://rs.tdwg.org/dwc/terms/referenceID",
+    "definition": "An identifier for a dcterms:BibliographicResource.",
+    "category": "http://purl.org/dc/terms/BibliographicResource",
+    "status": "current"
+  },
+  {
+    "name": "referenceRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/referenceRemarks",
+    "definition": "Comments or notes about a dcterms:BibliographicResource.",
+    "category": "http://purl.org/dc/terms/BibliographicResource",
+    "status": "current"
+  },
+  {
+    "name": "referenceType",
+    "uri": "http://rs.tdwg.org/dwc/terms/referenceType",
+    "definition": "A category that best matches the nature of a dcterms:BibliographicResource.",
+    "category": "http://purl.org/dc/terms/BibliographicResource",
+    "status": "current"
+  },
+  {
+    "name": "eventCategory",
+    "uri": "http://rs.tdwg.org/dwc/terms/eventCategory",
+    "definition": "A broad category that best matches the nature of a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "sampledSubstrateLayer",
+    "uri": "http://rs.tdwg.org/dwc/terms/sampledSubstrateLayer",
+    "definition": "A list (concatenated and separated) of substrate layers sampled during a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "sampledSubstrateCategory",
+    "uri": "http://rs.tdwg.org/dwc/terms/sampledSubstrateCategory",
+    "definition": "A category or type of substrate sampled during a dwc:Event.",
+    "category": "http://rs.tdwg.org/dwc/terms/Event",
+    "status": "current"
+  },
+  {
+    "name": "isAcceptedIdentification",
+    "uri": "http://rs.tdwg.org/dwc/terms/isAcceptedIdentification",
+    "definition": "An indicator that a dwc:Identification of a dwc:Organism is a currently an accepted or preferred one.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "identificationType",
+    "uri": "http://rs.tdwg.org/dwc/terms/identificationType",
+    "definition": "A category that best matches the nature of a dwc:Identification.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "taxonFormula",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonFormula",
+    "definition": "A string representing the pattern to use to construct a dwc:Identification from dwc:Taxon names and identification qualifiers.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "preferredSpatialRepresentation",
+    "uri": "http://rs.tdwg.org/dwc/terms/preferredSpatialRepresentation",
+    "definition": "An indication of which spatial representation best represents the dcterms:Location.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "siteNumber",
+    "uri": "http://rs.tdwg.org/dwc/terms/siteNumber",
+    "definition": "An identifier for a named site.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "materialEntityCategory",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialEntityCategory",
+    "definition": "A high-level, mutually exclusive classification describing the fundamental substance and origin of a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "objectQuantity",
+    "uri": "http://rs.tdwg.org/dwc/terms/objectQuantity",
+    "definition": "A number or enumeration value for the quantity of differentiable dwc:MaterialEntities comprising this dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "objectQuantityType",
+    "uri": "http://rs.tdwg.org/dwc/terms/objectQuantityType",
+    "definition": "The type of quantification system used for the quantity of dwc:MaterialEntities.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "typeOfType",
+    "uri": "http://rs.tdwg.org/dwc/terms/typeOfType",
+    "definition": "A category of nomenclatural type of a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "MolecularProtocol",
+    "uri": "http://rs.tdwg.org/dwc/terms/MolecularProtocol",
+    "definition": "A protocol used to perform a dwc:NucleotideAnalysis and potentially derive a dwc:NucleotideSequence from a dwc:MaterialEntity.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "assayType",
+    "uri": "http://rs.tdwg.org/dwc/terms/assayType",
+    "definition": "A type of method used in a study to detect taxon/taxa of interest in a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MolecularProtocol",
+    "status": "current"
+  },
+  {
+    "name": "molecularProtocolID",
+    "uri": "http://rs.tdwg.org/dwc/terms/molecularProtocolID",
+    "definition": "An identifier for a dwc:MolecularProtocol.",
+    "category": "http://rs.tdwg.org/dwc/terms/MolecularProtocol",
+    "status": "current"
+  },
+  {
+    "name": "NucleotideAnalysis",
+    "uri": "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis",
+    "definition": "A link between a dwc:NucleotideSequence or a dwc:Identification and a dwc:Event and a dwc:MaterialEntity from which it was derived, using a specified dwc:Protocol.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "readCount",
+    "uri": "http://rs.tdwg.org/dwc/terms/readCount",
+    "definition": "The number of reads obtained for a processed dwc:NucleotideSequence during a dwc:NucleotideAnalysis.",
+    "category": "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis",
+    "status": "current"
+  },
+  {
+    "name": "processedTotalReadCount",
+    "uri": "http://rs.tdwg.org/dwc/terms/processedTotalReadCount",
+    "definition": "The total number of reads obtained for a processed dwc:NucleotideSequence during a dwc:NucleotideAnalysis.",
+    "category": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
+    "status": "current"
+  },
+  {
+    "name": "NucleotideSequence",
+    "uri": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
+    "definition": "A digital representation of a nucleotide sequence.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "sequence",
+    "uri": "http://rs.tdwg.org/dwc/terms/sequence",
+    "definition": "A string representing nucleotide base pairs.",
+    "category": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
+    "status": "current"
+  },
+  {
+    "name": "nucleotideSequenceRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/nucleotideSequenceRemarks",
+    "definition": "Comments or notes about a dwc:NucleotideSequence.",
+    "category": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
+    "status": "current"
+  },
+  {
+    "name": "OrganismInteraction",
+    "uri": "http://rs.tdwg.org/dwc/terms/OrganismInteraction",
+    "definition": "An interaction between two dwc:Organisms during a dwc:Event.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "organismInteractionDescription",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismInteractionDescription",
+    "definition": "A verbatim description of a dwc:OrganismInteraction.",
+    "category": "http://rs.tdwg.org/dwc/terms/OrganismInteraction",
+    "status": "current"
+  },
+  {
+    "name": "organismInteractionID",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismInteractionID",
+    "definition": "An identifier for a dwc:OrganismInteraction.",
+    "category": "http://rs.tdwg.org/dwc/terms/OrganismInteraction",
+    "status": "current"
+  },
+  {
+    "name": "organismInteractionType",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismInteractionType",
+    "definition": "A category that best matches the nature of a dwc:OrganismInteraction.",
+    "category": "http://rs.tdwg.org/dwc/terms/OrganismInteraction",
+    "status": "current"
+  },
+  {
+    "name": "Protocol",
+    "uri": "http://rs.tdwg.org/dwc/terms/Protocol",
+    "definition": "A method used during an action.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "protocolID",
+    "uri": "http://rs.tdwg.org/dwc/terms/protocolID",
+    "definition": "An identifier for a dwc:Protocol.",
+    "category": "http://rs.tdwg.org/dwc/terms/Protocol",
+    "status": "current"
+  },
+  {
+    "name": "protocolDescription",
+    "uri": "http://rs.tdwg.org/dwc/terms/protocolDescription",
+    "definition": "A detailed description of a dwc:Protocol.",
+    "category": "http://rs.tdwg.org/dwc/terms/Protocol",
+    "status": "current"
+  },
+  {
+    "name": "protocolRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/protocolRemarks",
+    "definition": "Comments or notes about a dwc:Protocol.",
+    "category": "http://rs.tdwg.org/dwc/terms/Protocol",
+    "status": "current"
+  },
+  {
+    "name": "protocolType",
+    "uri": "http://rs.tdwg.org/dwc/terms/protocolType",
+    "definition": "A category that best matches the nature of a dwc:Protocol.",
+    "category": "http://rs.tdwg.org/dwc/terms/Protocol",
+    "status": "current"
+  },
+  {
+    "name": "protocolReferences",
+    "uri": "http://rs.tdwg.org/dwc/terms/protocolReferences",
+    "definition": "A list (concatenated and separated) of dcterms:BibliographicResources used in a dwc:Protocol.",
+    "category": "http://rs.tdwg.org/dwc/terms/Protocol",
+    "status": "current"
+  },
+  {
+    "name": "Provenance",
+    "uri": "http://rs.tdwg.org/dwc/terms/Provenance",
+    "definition": "Information about an entity’s origins.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "UsagePolicy",
+    "uri": "http://rs.tdwg.org/dwc/terms/UsagePolicy",
+    "definition": "Information about rights, usage, and attribution statements applicable to an entity.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "bibliographicIdentifier",
+    "uri": "http://rs.tdwg.org/dwc/terms/bibliographicIdentifier",
+    "definition": "A number or symbol to uniquely identify a dcterms:BibliographicResource.",
+    "category": "http://purl.org/dc/terms/BibliographicResource",
+    "status": "current"
+  },
+  {
+    "name": "bibliographicIdentifierType",
+    "uri": "http://rs.tdwg.org/dwc/terms/bibliographicIdentifierType",
+    "definition": "A code that best matches the nature of an identifier for a dcterms:BibliographicResource.",
+    "category": "http://purl.org/dc/terms/BibliographicResource",
+    "status": "current"
+  },
+  {
+    "name": "namedPlace",
+    "uri": "http://rs.tdwg.org/dwc/terms/namedPlace",
+    "definition": "The full, unabbreviated name of a geographic location not otherwise categorized by a dcterms:Location property that is naturally occurring or anthropogenic in origin within a historical, administrative, or cultural context in which a dcterms:Location occurs.",
+    "category": "http://purl.org/dc/terms/Location",
+    "status": "current"
+  },
+  {
+    "name": "geologicEvent",
+    "uri": "http://rs.tdwg.org/dwc/terms/geologicEvent",
+    "definition": "A name of an identifiable event during which one or more geologic processes acted to create or modify one or more dwc:GeologicalMaterials.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "geologicProvince",
+    "uri": "http://rs.tdwg.org/dwc/terms/geologicProvince",
+    "definition": "An extensive named region with similar geologic history, structural, petrographic, or physiographic features throughout in which the GeologicalContext was located.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "lithodemicUnit",
+    "uri": "http://rs.tdwg.org/dwc/terms/lithodemicUnit",
+    "definition": "A geologic unit that lacks stratification, is primarily comprised of intrusive, deformed, and/or metamorphosed rock, and is characterized by irregularly mixed lithology or highly complicated structural relations.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "tectonicUnits",
+    "uri": "http://rs.tdwg.org/dwc/terms/tectonicUnits",
+    "definition": "The combination of all tectonic unit names for the rock from which a dwc:MaterialEntity was collected.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
+    "status": "current"
+  },
+  {
+    "name": "chemistryRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/chemistryRemarks",
+    "definition": "General remarks about the chemical and isotopic composition of a dwc:GeologicalMaterial.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "classificationCodes",
+    "uri": "http://rs.tdwg.org/dwc/terms/classificationCodes",
+    "definition": "A list (concatenated and separated) of codes that each identifies a name from a classification system applied to a dwc:GeologicalMaterial.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "geologicalMaterialNames",
+    "uri": "http://rs.tdwg.org/dwc/terms/geologicalMaterialNames",
+    "definition": "A list (concatenated and separated) of mineral or lithotaxon names for a dwc:GeologicalMaterial.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "geologicalMaterialNameTypes",
+    "uri": "http://rs.tdwg.org/dwc/terms/geologicalMaterialNameTypes",
+    "definition": "A list (concatenated and separated) of the types of names provided in dwc:geologicalMaterialNames.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "geologicMaterialNameID",
+    "uri": "http://rs.tdwg.org/dwc/terms/geologicMaterialNameID",
+    "definition": "An identifier for a mineral or lithotaxon name for a dwc:GeologicalMaterial. May be a global unique identifier or an identifier specific to the data set.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "measuredChemistry",
+    "uri": "http://rs.tdwg.org/dwc/terms/measuredChemistry",
+    "definition": "A concise expression of the chemical composition of a mineral that shows the number of atoms of each element in a molecule, their spatial arrangement, and their linkage to each other.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "measuredChemistrySource",
+    "uri": "http://rs.tdwg.org/dwc/terms/measuredChemistrySource",
+    "definition": "A list (concatenated and separated) of resources associated with the reported measured chemistry described specifically enough to allow anyone in the future to use the same resources.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "mineralogicalAnalysisProtocol",
+    "uri": "http://rs.tdwg.org/dwc/terms/mineralogicalAnalysisProtocol",
+    "definition": "A technique used to determine the chemical composition or crystallography of a mineral.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "mineralSequence",
+    "uri": "http://rs.tdwg.org/dwc/terms/mineralSequence",
+    "definition": "A list (concatenated and separated) of minerals in a dwc:GeologicalMaterial, ordered in a manner that illustrates the relative timing of mineral formation.",
+    "category": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "status": "current"
+  },
+  {
+    "name": "classificationSystem",
+    "uri": "http://rs.tdwg.org/dwc/terms/classificationSystem",
+    "definition": "A reference to the classification system in which an authoritative name or formal classification belongs.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "taxonSortOrder",
+    "uri": "http://rs.tdwg.org/dwc/terms/taxonSortOrder",
+    "definition": "A numerical position of a dwc:Taxon in a dwc:taxonFormula.",
+    "category": "http://rs.tdwg.org/dwc/terms/Identification",
+    "status": "current"
+  },
+  {
+    "name": "damageRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/damageRemarks",
+    "definition": "A general description of any physical changes to a dwc:MaterialEntity that have negatively affected its value.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "handlingRequirements",
+    "uri": "http://rs.tdwg.org/dwc/terms/handlingRequirements",
+    "definition": "A description of the procedures required to preserve and protect a dwc:MaterialEntity during handling.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "hazardRemarks",
+    "uri": "http://rs.tdwg.org/dwc/terms/hazardRemarks",
+    "definition": "Comments or notes about the type of hazards associated with a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "hazardType",
+    "uri": "http://rs.tdwg.org/dwc/terms/hazardType",
+    "definition": "A term that belongs to a hazard classification scheme based on a set of unique characteristics and negative health outcomes.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "isPartOfMaterialEntityID",
+    "uri": "http://rs.tdwg.org/dwc/terms/isPartOfMaterialEntityID",
+    "definition": "An identifier for a dwc:MaterialEntity of which this dwc:MaterialEntity is a part.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "materialDescription",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialDescription",
+    "definition": "Remarks on the physical characteristics of a dwc:MaterialEntity, particularly those that distinguish it from otherwise similar dwc:MaterialEntities.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "materialProportion",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialProportion",
+    "definition": "The qualitative or quantitative abundance of a dwc:MaterialEntity with respect to another dwc:MaterialEntity of which it is a part.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "materialRole",
+    "uri": "http://rs.tdwg.org/dwc/terms/materialRole",
+    "definition": "A category that best matches the nature of the relationship between a dwc:MaterialEntity and another dwc:MaterialEntity of which it is a part.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "measuredMassInGrams",
+    "uri": "http://rs.tdwg.org/dwc/terms/measuredMassInGrams",
+    "definition": "Mass of a dwc:MaterialEntity, measured in grams.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "sampledFeatureType",
+    "uri": "http://rs.tdwg.org/dwc/terms/sampledFeatureType",
+    "definition": "The type of naturally occurring or anthropogenic physical feature from which a dwc:MaterialEntity was sampled.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "treatments",
+    "uri": "http://rs.tdwg.org/dwc/terms/treatments",
+    "definition": "Description of any processes or curatorial actions taken specifically to mitigate damage to a dwc:MaterialEntity.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "verbatimMass",
+    "uri": "http://rs.tdwg.org/dwc/terms/verbatimMass",
+    "definition": "The verbatim original representation of the mass of a dwc:MaterialEntity, including original units of measurement.",
+    "category": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
+    "status": "current"
+  },
+  {
+    "name": "rawTotalReadCount",
+    "uri": "http://rs.tdwg.org/dwc/terms/rawTotalReadCount",
+    "definition": "A total number of raw, unprocessed reads from a dwc:NucleotideAnalysis.",
+    "category": "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis",
+    "status": "current"
+  },
+  {
+    "name": "substrate",
+    "uri": "http://rs.tdwg.org/dwc/terms/substrate",
+    "definition": "A type of biotic or abiotic material to which a dwc:Organism was attached during a dwc:Occurrence.",
+    "category": "http://rs.tdwg.org/dwc/terms/Occurrence",
+    "status": "current"
+  },
+  {
+    "name": "provenanceID",
+    "uri": "http://rs.tdwg.org/dwc/terms/provenanceID",
+    "definition": "An identifier for a dwc:Provenance.",
+    "category": "http://rs.tdwg.org/dwc/terms/Provenance",
+    "status": "current"
+  },
+  {
+    "name": "usagePolicyID",
+    "uri": "http://rs.tdwg.org/dwc/terms/usagePolicyID",
+    "definition": "An identifier for a dwc:UsagePolicy.",
+    "category": "http://rs.tdwg.org/dwc/terms/UsagePolicy",
+    "status": "current"
+  },
+  {
+    "name": "GeologicalMaterial",
+    "uri": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
+    "definition": "A dwc:MaterialEntity that is geological in nature.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "organismPart",
+    "uri": "http://rs.tdwg.org/dwc/terms/organismPart",
+    "definition": "An anatomical part of a dwc:Organism.",
+    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "status": "current"
+  },
+  {
+    "name": "language",
+    "uri": "http://purl.org/dc/elements/1.1/language",
+    "definition": "A language of the resource.",
+    "category": "http://purl.org/dc/elements/1.1/",
+    "status": "current"
+  },
+  {
+    "name": "type",
+    "uri": "http://purl.org/dc/elements/1.1/type",
+    "definition": "The nature or genre of the resource.",
+    "category": "http://purl.org/dc/elements/1.1/",
+    "status": "current"
+  },
+  {
+    "name": "accessRights",
+    "uri": "http://purl.org/dc/terms/accessRights",
+    "definition": "Information about who can access the resource or an indication of its security status.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "bibliographicCitation",
+    "uri": "http://purl.org/dc/terms/bibliographicCitation",
+    "definition": "A bibliographic reference for the resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "language",
+    "uri": "http://purl.org/dc/terms/language",
+    "definition": "A language of the resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "license",
+    "uri": "http://purl.org/dc/terms/license",
+    "definition": "A legal document giving official permission to do something with the resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "Location",
+    "uri": "http://purl.org/dc/terms/Location",
+    "definition": "A spatial region or named place.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "modified",
+    "uri": "http://purl.org/dc/terms/modified",
+    "definition": "Date on which the resource was changed.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "references",
+    "uri": "http://purl.org/dc/terms/references",
+    "definition": "A related resource that is referenced, cited, or otherwise pointed to by the described resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "rightsHolder",
+    "uri": "http://purl.org/dc/terms/rightsHolder",
+    "definition": "A person or organization owning or managing rights over the resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "current"
+  },
+  {
+    "name": "type",
+    "uri": "http://purl.org/dc/terms/type",
+    "definition": "The nature or genre of the resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "deprecated"
+  },
+  {
+    "name": "rights",
+    "uri": "http://purl.org/dc/terms/rights",
+    "definition": "Information about rights held in and over the resource.",
+    "category": "http://purl.org/dc/terms/",
+    "status": "deprecated"
+  },
+  {
+    "name": "BibliographicResource",
+    "uri": "http://purl.org/dc/terms/BibliographicResource",
+    "definition": "A book, article, or other documentary resource.",
+    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "status": "current"
+  },
+  {
+    "name": "Agent",
+    "uri": "http://purl.org/dc/terms/Agent",
+    "definition": "A resource that acts or has the power to act.",
+    "category": "http://purl.org/dc/terms/Agent",
+    "status": "current"
+  }
+]

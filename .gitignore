@@ -1,0 +1,11 @@
+.env
+*:Zone.Identifier
+node_modules/
+.angular/
+dist/
+target/
+.idea/
+.vscode/
+*.log
+.playwright-cli/
+.agent-browser/
