@@ -15,9 +15,9 @@ S9. «El MVP estará terminado cuando permita analizar un archivo localmente, de
 
 ## Tasks
 T1 | S1-S3 | inline: source evidence, catalog and seed profiles | done | RED: missing seed files; GREEN: python3 scripts/test_seeds.py 3/3; commit 3422f39.
-T2 | S4,S8,S9 | delegated backend: independent versioned profile management, migrations and API tests | done | Risk: item 1 (published data immutability), item 4 (concurrent publication); full suite20 PASS, independent recheck11 PASS; commit pending.
-T3 | S5-S7,S9 | delegated frontend: independent local file analysis and profile UI against fixed API contract | in_progress | Risk: item 5 (XLSX parser dependency); commit pending.
-T4 | S1-S9 | inline integration, README and functional verification; independent verifier for named risks | pending | commit pending.
+T2 | S4,S8,S9 | delegated backend: independent versioned profile management, migrations and API tests | done | Risk: item 1 (published data immutability), item 4 (concurrent publication); full suite20 PASS, independent recheck11 PASS; commit 8c76b3d.
+T3 | S5-S7,S9 | delegated frontend: independent local file analysis and profile UI against fixed API contract | done | Risk: item 5 (XLSX parser dependency); parent full suite49 PASS/build PASS and independent49 PASS; commit pending. License/audit delivery decision remains T4.
+T4 | S1-S9 | inline integration, README and functional verification; independent verifier for named risks | in_progress | CSV/XLSX, downloads and GUI create/edit/duplicate/publish observed; license and npm audit decisions open; commit pending.
 
 ## Log
 L1. Original request:
@@ -67,3 +67,6 @@ L7. Runtime initially rejected writers; later measured context backstop admitted
 L8. Backend worker self-check and parent rerun: nine PostgreSQL integration tests PASS, executable package PASS, live API GET catalog414 and profiles2. Independent verifier found numeric enum coercion (0 accepted) and ignored nonempty publish request bodies. Single correction batch requested: strict enum strings and explicit rejection of publish content, unchanged profiles on400; no new publication revision contract. Human approved project-local Chromium installation; official Chrome for Testing156 installed under ignored .browser/ and named agent-browser session successfully launched.
 
 L9. Backend correction evidence: focused RED11 failures (numeric enum3 + publish-body8), GREEN11/11; full suite20/20 and packagePASS. Independent verifier limited recheck running. Strict enum strings implemented per DTO; publish checks raw bytes before service, preserving empty-body200. Parent read both changes and restarted local API with corrected JAR. Source attribution corrected after official TDWG LICENSE verification: CC BY4.0, not CC0.
+
+L10. Frontend partial delivery:48 pure testsPASS, deferred component testFAIL, buildPASS. Parent reproduced component RED then fixed only deterministic defer activation; full suite49PASS, independent verifier49PASS, final formatted-source suite49PASS/buildPASS. Initial bundle693.41kB produces unchanged500kB warning (below1MB failure threshold). Dependency lock coherence verified, but install/audit each timed out120s; no automatic retries.
+L11. Real Chromium integration: CSV two profiles29ERROR+1WARNING; JSON/CSV downloads30 issues; HAR only2GET worker-bundle requests, no file upload. XLSX With errors and Complete sheets read; Complete zero issues after real keyboard selection. One30s expected-state wait failed because automation select changed DOM but not Angular model; diagnosed separately, no app workaround. Created/published Browser acceptance profile1.0 viaGUI, duplicated1.1 and edited draft; public API confirms independent versions/revisions/content. PrimeNG22 license notice visible; installed LICENSE requires valid key including community. No bypass. Release awaits human license choice and audit-proof decision. Details VERIFICATION.md.

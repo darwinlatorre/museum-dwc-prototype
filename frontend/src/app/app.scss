@@ -1,0 +1,189 @@
+:host {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  background: #163e31;
+  color: #e8f1eb;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.brand {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.brand small {
+  color: #b3cdbf;
+  font-size: 0.75rem;
+}
+.specimen-mark {
+  font-size: 2.8rem;
+  line-height: 1;
+  color: #b6d7bf;
+}
+.workspace-label {
+  margin: 2.8rem 0.6rem 1rem;
+  color: #b3cdbf;
+  font-size: 0.85rem;
+}
+nav {
+  display: grid;
+  gap: 0.5rem;
+}
+nav button {
+  background: transparent;
+  color: #d9e8de;
+  border: 0;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 0.6rem;
+  font-size: 0.92rem;
+}
+nav button:hover,
+nav button.active {
+  background: #2b5744;
+  color: white;
+}
+nav button.active {
+  box-shadow: inset 3px 0 #b6d7bf;
+}
+.sidebar-note {
+  margin-top: auto;
+  border-top: 1px solid #426653;
+  padding: 1.3rem 0.6rem 0;
+  font-size: 0.85rem;
+}
+.sidebar-note p {
+  color: #b3cdbf;
+  font-size: 0.85rem;
+  margin: 0.5rem 0 1.3rem;
+}
+.sidebar-note span {
+  font-size: 0.75rem;
+  color: #b3cdbf;
+}
+.workspace {
+  flex: 1;
+  min-width: 0;
+}
+.topbar {
+  background: white;
+  border-bottom: 1px solid #dce5e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 2.5rem;
+  gap: 1rem;
+}
+.topbar span {
+  font-size: 0.8rem;
+  color: #526960;
+}
+.topbar h1 {
+  font-size: 1.05rem;
+  margin: 0.3rem 0 0;
+  font-weight: 600;
+}
+.environment {
+  border: 1px solid #dce5e0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+}
+main {
+  padding: 2.5rem;
+  background: white;
+  margin: 1.5rem;
+  border: 1px solid #e0e8e3;
+  border-radius: 8px;
+  min-height: 75vh;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1.5rem 1.5rem;
+  color: #647a6e;
+  font-size: 0.75rem;
+}
+@media (min-width: 1600px) {
+  main {
+    max-width: 1500px;
+    margin: 2rem auto;
+  }
+}
+@media (max-width: 1050px) {
+  .sidebar {
+    width: 210px;
+    padding: 1.5rem 0.7rem;
+  }
+  main {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  .topbar {
+    padding: 1.2rem 2rem;
+  }
+  footer span {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  :host {
+    display: block;
+  }
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 1rem;
+  }
+  .sidebar-note,
+  .workspace-label {
+    display: none;
+  }
+  .brand {
+    margin-bottom: 1rem;
+  }
+  .specimen-mark {
+    font-size: 2rem;
+  }
+  nav {
+    display: flex;
+    overflow: auto;
+    gap: 0.2rem;
+  }
+  nav button {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    padding: 0.7rem 0.5rem;
+  }
+  nav button span {
+    display: none;
+  }
+  .topbar {
+    padding: 1rem;
+  }
+  .environment {
+    display: none;
+  }
+  main {
+    padding: 1rem;
+    margin: 0.6rem;
+  }
+  footer {
+    padding: 1rem;
+  }
+}
