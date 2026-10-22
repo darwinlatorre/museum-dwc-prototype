@@ -1,55 +1,89 @@
-# MVP verification evidence
+# Evidencia de verificación del MVP
 
-Functional checks pass, including the user-authorized MIT UI migration. Delivery closure awaits a human decision on the unavailable dependency audit: the authorized300s attempt also timed out. No audit clearance or native review approval/publication is claimed.
+La entrega funcional fue aceptada explícitamente con la auditoría de dependencias pendiente: **«Si acepto.»**. Esa aceptación no transforma un timeout en una auditoría aprobada ni autoriza reintentos. La traducción posterior al español se registra como trabajo adicional, con comprobaciones propias al final de este documento.
 
-## Observed checks
+No se afirma aprobación de revisión nativa, publicación remota ni despliegue de producción.
 
-| Check | Result |
+## Comprobaciones observadas
+
+| Comprobación | Resultado |
 |---|---|
-| Offline seed tests | 3/3 pass; initial RED was missing seed resources |
-| Backend public API, isolated PostgreSQL | 20/20 pass after correction; executable Maven package succeeds |
-| Independent backend verification | Original nine tests passed; HTTP probes found two strict-input gaps |
-| Backend bounded correction recheck | 11/11 pass in fresh isolated PostgreSQL; numeric enums and nonempty publication bodies reject without writes, empty-body publication succeeds |
-| Frontend processing and shell tests | 49/49 pass in parent and independent verifier runs |
-| Production frontend build | Pass after MIT migration; 628.86 kB initial bundle, warning above500 kB target, below unchanged1 MB failure budget |
-| Installed dependency/lock coherence | After MIT migration, independent inspection confirms all21 direct dependencies match installed/lock versions and compatible peers; Angular21.2.25, build21.2.27, CDK21.2.14, PrimeNG21.1.10, themes2.0.3, TypeScript5.9.3, Vitest4.1.12. Query5.104.5/read-excel-file9.3.12 unchanged |
-| Dependency audit | FAIL/unavailable: original attempt timed out120s; explicitly authorized `timeout 300s npm audit --json` exited124 at5m00s with no stdout/stderr. No automatic retry or clean claim |
-| Dependency installation | Original install timed out120s. Separately authorized MIT migration: `timeout300s npm install --no-audit --no-fund` succeeded in21s; npm ls --all exits0; lock coherent. A fresh npm ci was not run |
-| Native review assessment | Unassessable: provider requests an explicit declaration of remaining untracked files; no approval/acknowledgement claimed |
+| Datos iniciales sin conexión | 3/3 aprobadas; el RED inicial correspondió a recursos todavía inexistentes |
+| API pública sobre PostgreSQL aislado | 20/20 aprobadas antes de traducir; la suite posterior de idioma tiene 21/21 aprobadas; paquete Maven correcto |
+| Verificación independiente del backend | Las nueve pruebas originales aprobaron; pruebas HTTP adicionales detectaron dos fallos de validación de entradas |
+| Rechequeo acotado de correcciones | 11/11 aprobadas en PostgreSQL nuevo: enumerados numéricos y cuerpos de publicación no vacíos se rechazan sin escrituras; publicación sin cuerpo aprobada |
+| Frontend previo a la traducción | 49/49 aprobadas por el padre y el verificador independiente |
+| Frontend en español | 56/56 aprobadas por el worker y por el padre; compilación de producción aprobada |
+| Tamaño del frontend en español | 633,88 kB iniciales: advertencia sobre el objetivo de 500 kB, por debajo del límite de error sin modificar de 1 MB |
+| Coherencia de dependencias tras migración MIT | El verificador confirmó las 21 dependencias directas, sus versiones instaladas/lock y compatibilidad; Angular 21.2.25, build 21.2.27, CDK 21.2.14, PrimeNG 21.1.10, temas 2.0.3, TypeScript 5.9.3 y Vitest 4.1.12 |
+| Auditoría de dependencias | No disponible: primer intento agotado a los 120 s; `timeout 300s npm audit --json`, autorizado expresamente, terminó con código 124 a los 5 minutos sin salida. Sin reintento ni afirmación de limpieza |
+| Instalación de dependencias | La instalación original agotó 120 s. La migración MIT autorizada terminó correctamente en 21 s con `npm install --no-audit --no-fund` bajo límite de 300 s. `npm ls --all` terminó con código 0. No se ejecutó después un `npm ci` nuevo |
+| Evaluación de revisión nativa | No evaluable: el proveedor solicitó declarar los archivos originales restantes sin seguimiento. No se inició una revisión ni se afirmó aprobación o reconocimiento |
 
-Nonfatal Maven metadata401 and Mockito dynamic-agent/deprecation warnings occurred. Testcontainers used disposable databases, not the project's existing database. Development PostgreSQL uses separate service `museum-db` and port55432. Existing database/volume and local environment files were not modified.
+Hubo advertencias no fatales de metadatos Maven con respuesta 401, agente dinámico Mockito y API obsoletas. Testcontainers utilizó bases desechables; no se cambió la base existente del proyecto. La base de desarrollo del MVP usa el servicio separado `museum-db` y el puerto 55432. Los archivos locales de entorno no se modificaron.
 
-## Browser round trips
+## Recorridos iniciales en navegador
 
-Official Chrome for Testing156, downloaded with explicit human authorization into ignored `.browser/`; named agent-browser session `museum-01a16167`.
+Se usó Chrome for Testing 156 oficial, descargado con autorización humana en `.browser/`, excluido de Git, y la sesión nombrada `museum-01a16167` de agent-browser.
 
-1. **CSV errors:** `examples/records-with-errors.csv`, both published seed profiles, default contexts. Actual worker-produced diagnostic contains29 errors and1 unknown-column warning. Missing museum/SiB columns and blank scientificName row3 are attributed to their profiles; invalid eventDate row2 and coordinate bounds row2/3 are attributed to System.
-2. **Downloads:** clicked JSON and CSV download buttons; both files saved. Parsed JSON and CSV each contain30 issues with field, source row, severity, message, profile and version.
-3. **Locality of analysis:** HAR captured during CSV parsing/validation contains only two GET requests for the local worker bundle, no POST and no request body. This is observed proof for that workflow, not a claim that all future changes are incapable of networking.
-4. **XLSX:** `examples/records.xlsx` exposed both worksheet names. Selecting `Complete` with real keyboard events, reading it and running both profiles produced zero issues. The `With errors` worksheet produces the same invalid-record diagnosis as the CSV.
-5. **Configurable profiles:** created `Browser acceptance profile1.0` with a collection-conditional catalogNumber rule through GUI; published with confirmation; duplicated into1.1; edited its description through GUI. Public GET confirmed1.0 remains published/revision1/unchanged description,1.1 is draft/revision1/edited description, with independent identical rules.
-6. **Catalog:** browser displays all metadata including canonical URI, official definition, class/category and current/deprecated states.
-7. Browser errors list was empty during inspected CSV/XLSX workflows. The vendor license notice remained visible and was not hidden or disabled.
+1. **CSV con errores:** `examples/records-with-errors.csv`, ambos perfiles iniciales publicados y contextos predeterminados. El worker generó 29 errores y una advertencia por columna desconocida. Se conservaron el origen de cada perfil y las filas: `scientificName` vacío en fila 3, `eventDate` inválido en fila 2 y coordenadas fuera de rango en filas 2/3.
+2. **Descargas:** los botones JSON y CSV guardaron archivos reales. Ambos contenían 30 incidencias con campo, fila original, descripción, severidad, perfil y versión.
+3. **Análisis local:** el registro HAR durante lectura y validación del CSV contiene únicamente dos GET del módulo worker, sin POST ni cuerpo de solicitud. Es evidencia de ese recorrido observado, no una garantía automática sobre cambios futuros.
+4. **XLSX:** `examples/records.xlsx` mostró ambas hojas. La hoja `Complete`, elegida mediante teclado, produjo cero incidencias con ambos perfiles. `With errors` produjo el diagnóstico de registros inválidos equivalente al CSV. Los nombres pertenecen a datos de ejemplo y se conservaron.
+5. **Perfiles configurables:** se creó mediante la interfaz `Browser acceptance profile` 1.0 con una regla condicional sobre `catalogNumber`; se publicó con confirmación, se duplicó como 1.1 y se editó el borrador. El GET público confirmó que 1.0 seguía publicado con revisión 1 y descripción original; 1.1 era borrador con revisión 1 y nueva descripción. Las reglas eran independientes y equivalentes.
+6. **Catálogo:** se comprobaron nombre, URI canónica, definición oficial, categoría y estados vigente/obsoleto.
+7. No se observaron errores de navegador en los recorridos CSV/XLSX inspeccionados. Inicialmente se veía un aviso del proveedor por la licencia; no se ocultó ni desactivó, sino que posteriormente se migró a dependencias MIT.
 
-### Recorded failures and limits
+## Fallos registrados y limitaciones
 
-- The delivered shell test originally failed to activate deferred content. Parent reproduced the failure, then used preloaded Query metadata and explicit Angular defer rendering; all original assertions remain and49 tests pass.
-- One XLSX zero-issue wait timed out at30s because agent-browser's programmatic `select` changed the DOM value without updating the Angular field. Diagnosis showed `dom=Complete`, `model=With errors`. Real keyboard selection updated the model; the separately executed corrected input workflow passed. No production patch was made to mask a tool-level selection issue.
-- The initial PrimeNG22 dependency required a key and displayed `Invalid PrimeUI License`. The human selected migration. Actual installed PrimeNG21.1.10 community and themes2.0.3 licenses grantMIT; independent license/peer/lock verification passed. Browser now has no license notice, with no suppression, key injection or vendor patch. Angular21 signal forms remain experimental.
-- XLSX decompression is not streaming and occurs before row/column limits can be checked. A10MiB compressed input limit is not a memory guarantee.
-- Keycloak, server biological-record validation/import and GGBN extension validation are intentionally not implemented; this is a localhost-only metadata service.
+- La prueba de la interfaz principal entregada inicialmente no activaba el contenido diferido. Se reprodujo el fallo y se corrigió su sincronización usando metadatos Query precargados y el estado diferido explícito de Angular. Se conservaron todas las aserciones.
+- Una espera de XLSX sin incidencias agotó 30 s porque `select` de agent-browser cambió el valor DOM sin actualizar el campo Angular: `dom=Complete`, `model=With errors`. La selección real con teclado actualizó el modelo y el recorrido corregido aprobó. No se modificó la aplicación para ocultar una deficiencia de automatización.
+- Un intento de descarga con un selector textual no admitido por la herramienta no encontró el elemento. La descarga mediante la referencia actual del botón sí guardó el archivo. No fue un fallo de exportación de la aplicación.
+- PrimeNG 22 exigía clave y mostraba `Invalid PrimeUI License`. El usuario autorizó migrar. Los archivos de licencia reales de PrimeNG 21.1.10 comunitario y temas 2.0.3 otorgan MIT; se verificaron independientemente las licencias, dependencias y lock. No se inyectaron claves ni se alteró código del proveedor.
+- Los formularios basados en señales de Angular 21 son experimentales. Su API compatible conserva el bloqueo de perfiles publicados.
+- XLSX se descomprime antes de comprobar los límites de filas/columnas; 10 MiB de archivo comprimido no garantizan un límite equivalente de memoria.
+- Keycloak, importación y validación de registros biológicos en backend, y extensión GGBN no están implementados; el MVP debe usarse exclusivamente en localhost.
+- La auditoría no produjo resultados dentro de los dos límites descritos. El usuario aceptó esta evidencia no disponible; no se declaró que existieran o no vulnerabilidades.
 
-## MIT migration preservation
+## Conservación del comportamiento al migrar a MIT
 
-The user explicitly authorized migration to a compatible MIT version and one new audit capped at five minutes. That audit exhausted its bound with exit124 and no output; the remaining decision is acceptance of unavailable audit proof or obtaining completed audit evidence from another environment. The aligned stack is pinned in package.json/lock; actual package licenses were read. The only production API adaptation changes Angular's `disabled` callback syntax; the lock predicate and save guard are unchanged.
+El conjunto compatible está fijado en `package.json` y su lockfile. Query 5.104.5 y `read-excel-file` 9.3.12 no cambiaron. La única adaptación de producción cambió la sintaxis de la función `disabled` de Angular; el predicado de bloqueo y la protección al guardar permanecieron iguales.
 
-Parent reproduced the Angular21 unresolved-component-metadata test failure, then added `await TestBed.compileComponents()` without removing assertions. Parent49/49 and independent49/49 tests pass; parent production build succeeds. The independent verifier also exercised published/duplicate/draft/new form disabled states and confirmed all21 direct dependency/lock/peer entries with no mismatch.
+Se reprodujo el fallo de metadatos sin resolver de Angular 21 y se agregó `await TestBed.compileComponents()` sin quitar aserciones. El padre y el verificador aprobaron 49/49 pruebas; la compilación de producción fue correcta. El verificador también comprobó el estado deshabilitado en perfiles publicados y habilitado en duplicados, borradores y perfiles nuevos.
 
-Browser checks after migration:
+En navegador, después de migrar:
 
-- The same CSV produces30 diagnostic JSON objects **identical in content and order** to the pre-migration downloaded baseline.
-- XLSX `Complete` worksheet still produces zero issues for both published seed profiles.
-- Published profile metadata and every nested rule input are disabled; no save action is exposed.
-- Screenshot and DOM inspection show no license banner. No vendor code was altered.
+- El CSV generó los mismos 30 objetos JSON, **idénticos en contenido y orden** a la descarga anterior.
+- La hoja XLSX `Complete` siguió sin incidencias con ambos perfiles.
+- Los metadatos y campos de reglas de publicaciones estaban deshabilitados y no había acción de guardado.
+- Captura y DOM confirmaron la ausencia del aviso de licencia, sin modificar código del proveedor.
 
-Local screenshots, downloads and HAR are in ignored `.browser/`, not in Git. The sample profile versions remain in the isolated development database as visible acceptance-test data; no cleanup deleted published history.
+## Traducción al español: evidencia específica
+
+Alcance elegido por el usuario: **«Interfaz, diagnósticos y documentación — recomendado»**. Se mantienen identificadores técnicos, nombres Darwin Core, URI y contratos de API. Los archivos de origen, citas TDWG y contenido arbitrario de los usuarios no se alteran.
+
+### Backend
+
+- RED observado: el título HTTP esperado `Solicitud incorrecta` era `Bad Request`.
+- GREEN focalizado: una prueba pública aprobada comprueba títulos y detalles españoles para errores 400/404/409/405, encabezado `Allow` y el listado completo de perfiles sin modificaciones tras rechazos.
+- Suite completa: **21 pruebas aprobadas**, cero fallos/errores/omisiones; paquete ejecutable aprobado.
+- La traducción usa el tratamiento de excepciones de Spring y conserva encabezados, estado, instancia y claves técnicas. No se cambió la migración Flyway V1 ni los datos publicados.
+
+### Frontend
+
+- El worker observó cuatro fallos esperados al añadir las aserciones de español y luego **56/56 aprobadas**. Se conservan las pruebas anteriores y se comprueban objetos originales intactos, enumerados, claves JSON y publicación sin cuerpo.
+- El padre observó **56/56 aprobadas** y compilación correcta. La localización de mensajes iniciales es solo de presentación, acotada a los perfiles oficiales conocidos por identidad y versión; una duplicación conserva los textos originales como datos.
+- Chromium comprobó el asistente completo en español: CSV con 29 errores y una advertencia, descargas JSON/CSV de 30 incidencias, y hoja XLSX válida sin incidencias. Las filas, campos, enumerados y claves JSON coinciden con el diagnóstico anterior; solo se tradujeron los textos y la etiqueta del sistema.
+- El HAR del análisis español contiene dos GET del worker, sin POST ni cuerpo de solicitud. El GET de perfiles permaneció idéntico tras consultar y analizar: la localización no reescribió las cuatro versiones previas.
+- En la interfaz española se creó `Perfil de comprobación en español` 1.0, se editó su descripción, se publicó con confirmación española y se duplicó como 1.1. El GET público confirmó 1.0 publicado/revisión2, 1.1 borrador/revisión0, reglas y textos españoles conservados, identificadores independientes y cuatro perfiles previos intactos. Los campos publicados estaban deshabilitados y no se observaron errores del navegador.
+- Los títulos, navegación, paginación, etiquetas de estado/condición/severidad y ayudas se observaron en español. Los nombres de hojas y datos arbitrarios de usuarios permanecen originales. Las cadenas propias del navegador o de controles internos de terceros pueden depender del idioma del entorno y no se alteró código del proveedor.
+
+### Incidente del servidor de desarrollo
+
+Una solicitud de referencia al servidor local antiguo agotó su límite de 5 segundos y se registró como fallo, sin reintentar. El diagnóstico separado encontró PostgreSQL saludable y el proceso Java antiguo todavía escuchando en 8080, pero con `NoClassDefFoundError` de Logback en su registro. Su JAR había permanecido en ejecución mientras se reconstruía el mismo archivo. No se identificó un fallo de traducción ni de base de datos.
+
+El usuario autorizó explícitamente «Sí, actualizar el proceso y completar la comprobación». Se detuvo únicamente el proceso Java local antiguo y se inició la versión española desde `backend/target/runtime-es/museo-es.jar`, una copia distinta del artefacto reconstruible. No se borraron datos ni se ejecutó otra auditoría. La espera acotada de disponibilidad terminó correctamente con GET200; posteriormente la API real devolvió errores400/409/404/405 en español, conservó `Allow` con GET/POST y dejó intactos los perfiles frente a los rechazos. El recorrido español posterior se completó correctamente.
+
+Al reabrir la automatización, la sesión de Chrome había expirado y su lanzamiento sin ruta explícita no encontró un navegador. Se volvió a indicar la ruta ya autorizada de `.browser/chrome-headless-shell-linux64/chrome-headless-shell`, sin descargar otro navegador ni cambiar la aplicación. Las comprobaciones reales siguientes utilizaron ese ejecutable.
+
+Las capturas, descargas y HAR permanecen en `.browser/`, excluido de Git. Los perfiles de aceptación permanecen visibles en la base aislada; no se eliminó historial publicado como limpieza.

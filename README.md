@@ -1,31 +1,31 @@
-# Museum biological records workbench
+# Gestión y validación de registros biológicos del museo
 
-A first module for the Museo de Historia Natural, Universidad del Cauca. Analyze CSV/XLSX **inside the browser**, compare records against independently versioned SiB and museum profiles, download diagnostics, and manage profile drafts without editing code.
+Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Permite analizar archivos CSV/XLSX **en el navegador**, contrastarlos con perfiles independientes de SiB y del museo, descargar diagnósticos y administrar borradores sin modificar el código.
 
-**Development MVP, not a production deployment.** Authentication and record import are intentionally not enabled. Keep both servers on loopback. The application does not certify SiB publication, taxonomy, permit compliance or GGBN extensions.
+**MVP de desarrollo, no despliegue de producción.** La autenticación y la importación de registros al servidor no están habilitadas. Ambos servidores deben permanecer en la interfaz local. La aplicación no certifica la publicación ante SiB, la taxonomía, los permisos ni las extensiones GGBN.
 
-**UI licensing:** this project uses the MIT-licensed PrimeNG **21.1.10 community release** and PrimeUI themes **2.0.3**, aligned with Angular **21.2.25** (CLI/build21.2.27). It does not use commercial/LTS variants or require a PrimeUI key. The user authorized migration from the preinstalled key-required22 series; no vendor license mechanism was patched or hidden. Keep the dependency license notices when redistributing. See `frontend/node_modules/primeng/LICENSE.md` and the pinned lockfile.
+**Licencias de interfaz:** PrimeNG **21.1.10, edición comunitaria MIT**, temas PrimeUI **2.0.3** y Angular **21.2.25** (CLI/build **21.2.27**). No se utilizan versiones comerciales/LTS ni se requiere una clave PrimeUI. La migración desde la versión 22 fue autorizada; no se ocultaron avisos ni se alteraron mecanismos de licencia. Conservar las licencias incluidas en las dependencias al redistribuir.
 
-**Dependency audit remains unavailable:** the original audit timed out after120s. The single fresh audit explicitly authorized by the user also timed out: `timeout 300s npm audit --json` exited124 after five minutes without output. No further retry ran. Passing tests/build and coherent versions do not establish audit clearance; accept this verification gap explicitly or obtain a completed audit from another environment before treating the delivery as closed. Full evidence: [VERIFICATION.md](VERIFICATION.md).
+**Auditoría pendiente aceptada:** el primer intento agotó 120 segundos. El único intento adicional autorizado, `timeout 300s npm audit --json`, terminó con código 124 tras cinco minutos sin salida. El usuario aceptó explícitamente entregar con esa comprobación pendiente: «Si acepto.». No se afirma que la auditoría haya aprobado ni que las dependencias estén libres de vulnerabilidades. Evidencia: [VERIFICATION.md](VERIFICATION.md).
 
-## Run locally
+## Ejecución local
 
-Requirements: Node.js 24+, Java 21, Docker with Compose. Maven Wrapper is included; the first Maven run needs internet access.
+Requisitos: Node.js 24 o posterior, Java 21 y Docker con Compose. Se incluye Maven Wrapper; su primera ejecución requiere acceso a Internet.
 
-1. Start the isolated MVP database (does not reuse or remove an existing project's database):
+1. Iniciar la base de datos aislada del MVP, sin reutilizar ni eliminar la base existente:
 
    ```bash
    COMPOSE_DISABLE_ENV_FILE=true docker compose -f compose.mvp.yml up -d --wait
    ```
 
-2. In another terminal, run Spring Boot:
+2. En otra terminal, iniciar Spring Boot:
 
    ```bash
    cd backend
    ./mvnw spring-boot:run
    ```
 
-3. In another terminal, run Angular:
+3. En otra terminal, iniciar Angular:
 
    ```bash
    cd frontend
@@ -33,85 +33,90 @@ Requirements: Node.js 24+, Java 21, Docker with Compose. Maven Wrapper is includ
    npm start
    ```
 
-4. Open http://localhost:4200. The development proxy forwards `/api` to http://127.0.0.1:8080. Flyway creates the schema; initial startup seeds the official catalog and published `SiB Registros Biológicos 4.1` and `Museo 1.0` profiles.
+4. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080. Flyway crea el esquema; la primera ejecución carga el catálogo y los perfiles publicados `SiB Registros Biológicos 4.1` y `Museo 1.0`.
 
-The isolated database binds `127.0.0.1:55432` with database/user `museum` and development password `museum-local-only`. Override backend connection settings using `DB_URL`, `DB_USER`, `DB_PASSWORD`; do not commit real secrets. The original `docker-compose.yml` and local environment files are not required by this workflow. On systems without executable wrapper permissions, use `bash mvnw` from `backend`.
+PostgreSQL escucha en `127.0.0.1:55432`, con base y usuario `museum` y contraseña **solo de desarrollo** `museum-local-only`. Se puede cambiar la conexión mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No guardar secretos reales en Git. Este procedimiento no utiliza el `docker-compose.yml` original ni archivos de entorno locales. Si el sistema no permite ejecutar el wrapper directamente, usar `bash mvnw` desde `backend`.
 
-Stop the database without deleting its volume:
+Para detener PostgreSQL sin eliminar su volumen:
 
 ```bash
 COMPOSE_DISABLE_ENV_FILE=true docker compose -f compose.mvp.yml stop
 ```
 
-## Analyze a file
+## Análisis de un archivo
 
-1. Select CSV or XLSX; choose the worksheet when applicable. Use the first row for headers and subsequent rows for records. Sample files are in `examples/`.
-2. Choose one or more **published** profiles. Drafts cannot determine reproducible diagnostics.
-3. Confirm column mappings. Unknown columns and suggested Darwin Core equivalents are not silently renamed.
-4. Choose normalization deliberately and inspect its preview. Original file values remain unchanged.
-5. Set the record contexts that apply: collection deposit, permit, marine and sampling. Conditions apply to this analysis batch; split heterogeneous batches when their contexts differ.
-6. Run validation, filter the diagnostic table, then download the report. A missing-column issue has no record row; record issues use spreadsheet row numbers, starting at 2.
+1. Seleccionar un CSV o XLSX y, cuando corresponda, su hoja. La primera fila contiene los encabezados y las siguientes los registros. Hay ejemplos en `examples/`.
+2. Elegir uno o varios perfiles **publicados**. Los borradores no se utilizan para diagnósticos reproducibles.
+3. Confirmar el mapeo de columnas. Las sugerencias Darwin Core no se aplican automáticamente.
+4. Elegir la normalización y revisar su vista previa. Los valores originales del archivo no cambian.
+5. Indicar los contextos aplicables: depósito en colección, permiso, registros marinos y eventos de muestreo. Las condiciones corresponden al lote analizado; separar los lotes con contextos distintos.
+6. Validar, filtrar las incidencias y descargar el diagnóstico. La ausencia de una columna se informa en el encabezado; los errores de registros indican la fila original, a partir de la fila 2.
 
-Analysis uses a dedicated Web Worker. Only profile/catalog metadata crosses the API; local filenames, cells, rows and file contents are not uploaded. A future import must be a **separate, explicitly authorized operation** with server-side revalidation.
+El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de perfiles y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
 
-## Manage profiles
+### Idioma y conservación de datos
 
-Open the profiles workspace to create a draft, add rules, save changes, duplicate an existing version, and publish. A version is uniquely identified by its name and version string. Published rules are immutable; duplicate into a new version to change them. Stale draft edits are rejected rather than overwriting another editor's changes.
+La interfaz, las ayudas y los diagnósticos del sistema se presentan en español. Los nombres oficiales Darwin Core, las URI, los identificadores técnicos, las claves y los valores de contratos de API permanecen sin cambios. Los datos de los archivos y los textos escritos por usuarios no se traducen ni modifican automáticamente. Las definiciones oficiales del catálogo se conservan como citas de la fuente original, con su idioma indicado. La traducción de los mensajes predeterminados no debe reescribir versiones publicadas.
 
-Rules use a bounded declarative schema, not executable JavaScript. They specify a term, validation type, severity, context condition, message and evidence source. See [backend API](backend/README.md) and [frontend architecture](frontend/README.md).
+## Administración de perfiles
 
-## Catalog and SiB evidence
+La sección de perfiles permite crear un borrador, agregar reglas, guardar cambios, duplicar una versión y publicarla. El nombre y la versión identifican una combinación única. Una versión publicada es inmutable: para cambiar sus reglas se crea otra versión. Las ediciones de borradores desactualizados se rechazan, sin sobrescribir cambios de otro editor.
 
-The pinned TDWG catalog contains 414 entries, including imported Dublin Core terms and historical/deprecated terms. Each entry has a name, canonical URI, official definition, category and status. **Vocabulary membership does not imply mandatory data.** Mandatory fields belong to a profile.
+Las reglas son declarativas y limitadas, no código JavaScript ejecutable. Cada una indica campo, comprobación, severidad, condición de contexto, mensaje y fuente. Más información: [API del backend](backend/README.md) y [arquitectura del frontend](frontend/README.md).
 
-SiB rules were checked against the actual official v4.1 workbook's instruction matrix, not just the twelve candidate fields. The museum's 22 required fields follow the requested Museo 1.0 specification independently.
+## Catálogo y evidencia SiB
 
-Important SiB limitations:
+El catálogo fijado contiene **414 entradas TDWG**, incluidos términos Dublin Core e históricos u obsoletos. Cada entrada conserva nombre, URI canónica, definición oficial, categoría y estado. **Pertenecer al vocabulario no implica obligatoriedad:** los campos obligatorios dependen de cada perfil.
 
-- `disposition` and `individualCount` have discrepancies between instructions, definitions or version history. They are explicitly documented and use warnings where an unconditional rejection would be unjustified.
-- Permit context also requires a GGBN extension. This MVP validates the core worksheet only and is not a substitute for reviewing that extension.
-- A required but unknown `country` is a diagnostic, not permission to invent a value.
+Las reglas SiB se contrastaron con la matriz de instrucciones del Excel oficial 4.1, no solo con los doce campos candidatos. Los 22 campos obligatorios del perfil Museo 1.0 corresponden al requerimiento independiente del museo.
 
-See [official evidence, attribution and licenses](sources/README.md). Rebuild and verify offline seeds:
+Limitaciones importantes:
+
+- `disposition` e `individualCount` presentan discrepancias entre instrucciones, definiciones e historial. Están documentadas y producen advertencias cuando un rechazo incondicional no estaría justificado.
+- El contexto de permiso también requiere una extensión GGBN. Este MVP valida la hoja principal y no reemplaza la revisión de esa extensión.
+- Un `country` desconocido genera un diagnóstico, no una autorización para inventar el país.
+
+Las [fuentes oficiales, atribuciones y licencias](sources/README.md) están disponibles en el repositorio. Para reconstruir y verificar los datos iniciales sin conexión:
 
 ```bash
 python3 scripts/build_seeds.py
 python3 scripts/test_seeds.py
 ```
 
-Rebuilding resources does not edit published database versions. Publish a new version explicitly for revised requirements.
+Reconstruir los recursos no modifica las versiones publicadas en PostgreSQL. Un cambio de requisitos debe publicarse como una nueva versión.
 
-## Verify
+## Pruebas y compilación
 
 ```bash
 python3 scripts/test_seeds.py
 cd frontend
 npm test -- --watch=false
 npm run build
-npm audit
 cd ../backend
 ./mvnw test
 ./mvnw package -DskipTests
 ```
 
-Backend integration tests use isolated PostgreSQL containers, not the development database. Check the component READMEs for runner requirements and test coverage. `odd/tasks/museum-dwc.md` records implementation evidence and any unavailable checks; a build alone does not prove browser behavior.
+La auditoría de dependencias es una comprobación separada: `npm audit`. Los dos intentos descritos agotaron sus límites; no se ejecutan nuevos intentos automáticamente.
 
-## Architecture and next boundary
+Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. El registro `odd/tasks/museum-dwc.md` conserva tareas, decisiones y evidencia; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
+
+## Arquitectura y siguiente integración
 
 ```text
-Angular / PrimeNG CRM
- ├─ TanStack Query → profile and catalog REST metadata
- └─ local file → Web Worker → parser → opt-in normalizer → validation engine
-                                                  └─ diagnostics → local download
-Spring Boot REST → transactional profile service → PostgreSQL
-                                   Flyway schema + published-version invariants
+Aplicación de gestión Angular / PrimeNG
+ ├─ TanStack Query → metadatos REST de perfiles y catálogo
+ └─ archivo local → Web Worker → parser → normalizador optativo → motor de validación
+                                                          └─ diagnóstico → descarga local
+Spring Boot REST → servicio transaccional de perfiles → PostgreSQL
+                                    Flyway + protección de versiones publicadas
 ```
 
-Keycloak is a subsequent integration, not a simulated login screen. Before any network-facing deployment:
+Keycloak queda como una integración posterior, no como una pantalla de acceso simulada. Antes de exponer el sistema en una red:
 
-- Add Spring Security OAuth2 Resource Server with an issuer and audience, JWT verification and editor/publisher role enforcement. Never trust Angular guards alone.
-- Add an OIDC Authorization Code + PKCE client in Angular; inject authorization into metadata requests via one API boundary, without storing tokens in file data or reports.
-- Add authenticated audit identity and review CORS, CSRF strategy, TLS, request/response limits and rate limiting for the chosen deployment.
-- Implement import as a separate authenticated endpoint: file limits, untrusted-content handling, pinned profile identities, authoritative backend validation and transactional persistence. A browser diagnostic must never authorize database writes.
+- Incorporar Spring Security OAuth2 Resource Server con validación de emisor, audiencia y JWT, y autorización para lectura, edición y publicación. No confiar solo en las guardas de Angular.
+- Incorporar OIDC Authorization Code con PKCE en Angular y un único límite para agregar autorización a las solicitudes de metadatos. No guardar tokens en archivos ni diagnósticos.
+- Incorporar identidad de auditoría y revisar CORS, estrategia CSRF, TLS, límites y control de frecuencia para el despliegue elegido.
+- Implementar la importación en un endpoint autenticado independiente: límites de archivo, tratamiento de contenido no confiable, perfiles fijados, validación autoritativa en backend y persistencia transaccional. Un diagnóstico del navegador nunca debe autorizar escrituras en la base.
 
-No upload endpoint or storage of biological records exists in this MVP. Profile administration is unauthenticated and therefore **localhost-only** until Keycloak is integrated.
+El MVP no ofrece carga de archivos ni almacena registros biológicos. La administración de perfiles no tiene autenticación y debe utilizarse **solo en localhost** hasta integrar Keycloak.

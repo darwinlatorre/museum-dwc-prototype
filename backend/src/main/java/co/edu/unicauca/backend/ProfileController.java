@@ -38,7 +38,7 @@ public class ProfileController {
     public Profile publish(@PathVariable String id, HttpServletRequest request) throws IOException {
         // Check raw bytes: even JSON null, whitespace or malformed content is not an empty body.
         if (request.getInputStream().read() != -1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Publish request body must be empty");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La solicitud de publicación debe tener el cuerpo vacío.");
         }
         return service.publish(id);
     }

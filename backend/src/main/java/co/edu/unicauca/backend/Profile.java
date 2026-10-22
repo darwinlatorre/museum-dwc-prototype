@@ -35,7 +35,7 @@ public record Profile(String id, String name, String version, Status status, lon
     }
     private static <E extends Enum<E>> E strictEnum(Class<E> type, JsonNode value) {
         if (value == null || !value.isString()) {
-            throw new IllegalArgumentException(type.getSimpleName() + " must be a JSON string");
+            throw new IllegalArgumentException(type.getSimpleName() + " debe ser una cadena JSON");
         }
         return Enum.valueOf(type, value.stringValue());
     }

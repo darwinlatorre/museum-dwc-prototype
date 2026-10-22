@@ -1,83 +1,110 @@
-# Museum profile API
+# API de perfiles de validación del museo
 
-Spring Boot **4.1.1**, Java **21**, PostgreSQL and Flyway. Biological files stay in the browser; this backend only administers declarative profiles and serves the catalog.
+Spring Boot **4.1.1**, Java **21**, PostgreSQL y Flyway. Los archivos biológicos permanecen en el navegador; el backend administra perfiles declarativos y entrega el catálogo.
 
-## Run locally
+## Ejecución local
 
-Start the isolated development database using the repository's `compose.mvp.yml` instructions, then from `backend/`:
+Iniciar la base aislada mediante `compose.mvp.yml`, según el README principal. Desde `backend/`:
 
 ```sh
 bash ./mvnw spring-boot:run
 ```
 
-The API binds to **127.0.0.1:8080**. Defaults connect to `jdbc:postgresql://127.0.0.1:55432/museum`, user `museum`, development-only password `museum-local-only`. Override with environment variables `DB_URL`, `DB_USER`, `DB_PASSWORD`. No dotenv file is loaded. Never point tests or development migrations at an existing institutional database.
+Si se inicia manualmente con `java -jar`, usar una copia de ejecución distinta de `target/backend-0.0.1-SNAPSHOT.jar`. No reconstruir ni sobrescribir un JAR mientras otro proceso lo utiliza: su cargador de clases puede fallar al atender solicitudes. El entorno verificado usa una copia en `target/runtime-es/museo-es.jar`; detener el proceso antes de reemplazar esa copia.
 
-Flyway creates the schema before startup bootstrap reads `src/main/resources/data/profiles.json`. Seed IDs are inserted once; subsequent starts never overwrite stored versions. The entire seed batch is transactional. Parent-maintained `data/catalog.json` is served unchanged in meaning, without network requests. Missing/invalid resources fail startup rather than silently providing an empty catalog.
+La API escucha en **127.0.0.1:8080**. La conexión predeterminada es `jdbc:postgresql://127.0.0.1:55432/museum`, usuario `museum` y contraseña exclusiva de desarrollo `museum-local-only`. Se puede configurar mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No se cargan archivos dotenv. No apuntar pruebas ni migraciones de desarrollo a una base institucional existente.
+
+Flyway crea el esquema antes de cargar `src/main/resources/data/profiles.json`. Cada identificador inicial se inserta una sola vez; reiniciar nunca sobrescribe versiones guardadas. La carga completa es transaccional. El recurso `data/catalog.json` se entrega sin modificar su significado ni consultar servicios externos. La ausencia de recursos o un contenido inválido impiden iniciar la aplicación, en lugar de simular un catálogo vacío.
 
 ## Endpoints
 
-All request and response bodies are JSON; responses use the fixed integration contract.
+Los cuerpos de entrada y salida son JSON. Se conservan las claves técnicas en inglés para no romper el contrato; los mensajes destinados al usuario se presentan en español.
 
-| Method | Path | Request | Success |
-| --- | --- | --- | --- |
+| Método | Ruta | Solicitud | Respuesta correcta |
+|---|---|---|---|
 | GET | `/api/catalog` | — | 200, `Term[]` |
-| GET | `/api/profiles` | — | 200, all draft/published `Profile[]`, sorted by name/version/id |
-| POST | `/api/profiles` | `{name,version,description,rules}` | 201, new draft, revision 0 |
-| PUT | `/api/profiles/{id}` | `{name,version,description,rules,revision}` | 200, updated draft, revision +1 |
-| POST | `/api/profiles/{id}/duplicate` | `{name,version}` | 201, independent draft with copied description/rules, revision 0 |
-| POST | `/api/profiles/{id}/publish` | no body | 200, published profile, revision +1 |
+| GET | `/api/profiles` | — | 200, `Profile[]` con borradores y publicaciones, ordenados por nombre/versión/id |
+| POST | `/api/profiles` | `{name,version,description,rules}` | 201, borrador nuevo, revisión 0 |
+| PUT | `/api/profiles/{id}` | `{name,version,description,rules,revision}` | 200, borrador actualizado, revisión +1 |
+| POST | `/api/profiles/{id}/duplicate` | `{name,version}` | 201, borrador independiente con reglas copiadas, revisión 0 |
+| POST | `/api/profiles/{id}/publish` | cuerpo completamente vacío | 200, perfil publicado, revisión +1 |
 
 `Term`: `{name,uri,definition,category,status}`.
 
-`Profile`: `{id,name,version,status,revision,description,rules}`. IDs are server-generated UUID strings; status is `DRAFT` or `PUBLISHED`. Name and version are trimmed and their pair must be unique (case-sensitive), including drafts. Versions are explicit labels, not automatically incremented semantic versions. There is no delete endpoint: published history is permanent, and unwanted drafts remain available for editing.
+`Profile`: `{id,name,version,status,revision,description,rules}`. Los identificadores son UUID generados por el servidor. Los estados del contrato siguen siendo `DRAFT` y `PUBLISHED`, aunque la interfaz muestre «Borrador» y «Publicado». Nombre y versión se recortan en sus extremos y deben formar una combinación única, sensible a mayúsculas, incluso en borradores. Las versiones son etiquetas explícitas; no se incrementan automáticamente como versiones semánticas.
 
-`Rule`: `{field,kind,severity,condition,message,source}`:
+No hay endpoint de eliminación: el historial publicado es permanente y los borradores siguen disponibles para edición.
 
-- `kind`: `required`, `requiredColumn`, `date`, `latitude`, `longitude`.
-- `severity`: `ERROR`, `WARNING`.
-- `condition`: `always`, `collection`, `permit`, `marine`, `permitAndCollection`, `sampling`.
-- `field`, `message`, and `source` must be nonblank. Conditions describe browser-selected context, not executable expressions. `permitAndCollection` is the conjunction of those contexts; `requiredColumn` only requires a column, unlike nonempty-value `required`.
-- Empty rule arrays are allowed for new custom profiles. No script/eval or automatic universal mandatory fields exist. `county` represents municipality; no invented `municipality` requirement is added.
+### Reglas declarativas
 
-Example create body:
+`Rule`: `{field,kind,severity,condition,message,source}`.
+
+| Clave | Valores del contrato | Significado |
+|---|---|---|
+| `kind` | `required`, `requiredColumn`, `date`, `latitude`, `longitude` | Columna y valor obligatorios; solo columna; fecha; latitud; longitud |
+| `severity` | `ERROR`, `WARNING` | Error o advertencia |
+| `condition` | `always`, `collection`, `permit`, `marine`, `permitAndCollection`, `sampling` | Siempre; colección; permiso; marino; permiso y colección; muestreo |
+
+Los enumerados requieren **cadenas JSON exactas**. Los números, booleanos y valores desconocidos se rechazan; no hay conversión de posiciones numéricas a enumerados. `field`, `message` y `source` no pueden estar en blanco. Las condiciones corresponden al contexto elegido en el navegador, no a expresiones ejecutables. `permitAndCollection` exige ambos contextos; `requiredColumn` solo comprueba el encabezado.
+
+Se permite crear perfiles personalizados sin reglas. No hay `eval`, scripts ni campos universalmente obligatorios. En SiB, `county` representa el municipio; no se agregó una obligación inventada sobre `municipality`.
+
+Ejemplo de creación:
 
 ```json
 {
-  "name": "Research collection",
+  "name": "Colección de investigación",
   "version": "1.0",
-  "description": "Independent requirements",
+  "description": "Requisitos independientes de la colección",
   "rules": [{
     "field": "catalogNumber",
     "kind": "required",
     "severity": "ERROR",
     "condition": "collection",
-    "message": "Provide a collection catalog number.",
-    "source": "Museum policy"
+    "message": "Se requiere el número de catálogo de la colección.",
+    "source": "Política del museo"
   }]
 }
 ```
 
-Invalid or unknown fields/enums, null rules, blank identifiers, and missing update revisions return **400**. Rule enums require exact JSON strings; numeric ordinals are rejected. Publication requires a truly empty request body: any bytes, including an object (even `{}` or revision/rules fields), JSON `null`, a string, an array, whitespace, or malformed content, return **400** without changing the profile or its revision. Publication does not accept a revision or other content. Names/versions are limited to 200/100 characters; descriptions to 10,000; rule arrays to 2,000; rule field/message/source to 200/2,000/4,000. Missing profile IDs return **404**. Duplicate name/version pairs, stale edit revisions, repeated publication, and attempts to edit published versions return **409**, using problem JSON. Rejected writes leave versions, rules and revisions unchanged.
+### Rechazos y límites
 
-## Lifecycle and concurrency
+- **400:** entradas inválidas, campos/enumerados desconocidos, reglas nulas, identificadores vacíos o actualización sin revisión. Publicar también rechaza **cualquier cuerpo no vacío**, incluidos `{}`, `null`, espacios, contenido mal formado y bytes inválidos. Solo el cuerpo realmente vacío se admite.
+- **404:** identificador o recurso inexistente.
+- **409:** nombre/versión duplicados, revisión desactualizada, publicación repetida o intento de editar una versión publicada.
+- **405/415:** método o tipo de contenido no admitidos. La traducción conserva el estado HTTP y los encabezados de protocolo de Spring, incluidos `Allow` y `Accept` cuando corresponden.
 
-The controller delegates all lifecycle operations to one transactional service. PostgreSQL row locks serialize editing and publishing the same version. Editing also compares the caller's revision, preventing stale overwrites. Publish transitions the latest locked draft; it deliberately has no request revision in the fixed contract. Two simultaneous publishers have exactly one winner. Database uniqueness resolves concurrent name/version claims atomically.
+Las respuestas de problema conservan sus claves técnicas y no exponen SQL ni detalles internos de PostgreSQL. Los rechazos no alteran versiones, reglas ni revisiones.
 
-Rules are JSONB inside the profile row, so no independently mutable child rows exist. A database trigger rejects **every UPDATE or DELETE** whose old status is published, including status, revision, metadata and rule changes through direct SQL. Duplicate then edit/publish to make a new version; publication never changes another version. Database owners/superusers can disable triggers: use a restricted runtime role and a separate migration role before production deployment.
+Límites: nombre 200 caracteres; versión 100; descripción 10 000; hasta 2 000 reglas; campo/mensaje/fuente de cada regla 200/2 000/4 000 caracteres.
 
-## Build and tests
+## Versiones publicadas y concurrencia
 
-Requires Java 21 and Docker access. From `backend/`:
+El controlador delega las operaciones en un único servicio transaccional. Los bloqueos de fila PostgreSQL serializan la edición y publicación de una versión. La edición compara la revisión enviada por el cliente y evita sobrescrituras desactualizadas. Publicar toma el último borrador bloqueado y no acepta una revisión en el cuerpo: ese contrato exige cuerpo vacío. Dos publicaciones simultáneas tienen un único resultado ganador. La restricción única de la base resuelve las creaciones concurrentes de un mismo nombre y versión.
+
+Las reglas JSONB pertenecen a la misma fila; no existen reglas hijas que puedan cambiar de forma independiente. Un trigger rechaza todo `UPDATE` o `DELETE` de una fila previamente publicada, incluidos estado, revisión, metadatos y reglas. Para cambiarla se debe duplicar en otra versión.
+
+Los propietarios y superusuarios de PostgreSQL pueden desactivar triggers. Antes de producción, separar el rol de migración y el usuario de ejecución con permisos restringidos.
+
+La traducción no reescribe perfiles históricos ni cambia la migración V1 ya aplicada: se conserva su checksum de Flyway. Los nombres de campos, estados y reglas siguen siendo identificadores de contrato; sus etiquetas visibles pueden traducirse sin cambiar esos valores.
+
+## Pruebas y paquete ejecutable
+
+Se requiere Java 21 y acceso a Docker. Desde `backend/`:
 
 ```sh
 bash ./mvnw test
 bash ./mvnw package -DskipTests
 ```
 
-Tests start their own disposable **PostgreSQL 17 Alpine** Testcontainers database on a random port and override datasource properties. They never use the development or existing database, never skip silently when Docker is unavailable, and cover MockMvc lifecycle operations, seeds, catalog, invalid inputs, atomic conflict rejection, simultaneous edits/creation/publication and direct-SQL immutability. Testcontainers' resource reaper disposes containers after the test JVM exits.
+Las pruebas crean un contenedor **PostgreSQL 17 Alpine** desechable en un puerto aleatorio y sustituyen las propiedades de conexión. No usan la base de desarrollo ni omiten pruebas silenciosamente cuando falta Docker. Cubren el ciclo completo mediante MockMvc, datos iniciales, catálogo, entradas inválidas, rechazos sin modificaciones, edición/creación/publicación simultáneas e inmutabilidad ante SQL directo.
 
-## Security and future boundaries
+Las regresiones de idioma comprueban mensajes en español, estados y claves HTTP, preservación de encabezados y ausencia de cambios en los perfiles ante rechazos. Testcontainers elimina sus contenedores al terminar la JVM.
 
-This is an unauthenticated **local development MVP**, not an internet-facing service. No permissive CORS is configured: use the frontend development proxy for `/api`. No file-upload/import or server biological-record validation endpoint exists; multipart handling is disabled.
+## Seguridad e integraciones futuras
 
-Future Keycloak integration belongs at the HTTP boundary using Spring Security OAuth2 resource-server JWT issuer/audience validation, with explicit profile-read/profile-edit/profile-publish authorization before service invocation. Authentication, role mappings, audit attribution, HTTPS, CSRF policy for the chosen credentials, request size/rate limits, and restricted database credentials must be implemented before remote exposure. No fake authentication or trusted client identity headers are installed here. Any future secure import must use a separate bounded upload/quarantine/validation pipeline, not extend the profile payload into a file-storage API.
+Es un **MVP local sin autenticación**, no un servicio para Internet. No se habilita CORS permisivo: se usa el proxy del frontend. No existen endpoints de carga/importación ni validación de registros biológicos en servidor; multipart está deshabilitado.
+
+Keycloak deberá integrarse en el límite HTTP mediante Spring Security OAuth2 Resource Server: validación JWT de emisor y audiencia, y autorización explícita para consultar, editar y publicar perfiles antes de invocar el servicio. Antes de exponerlo se requieren roles, identidad de auditoría, HTTPS, estrategia CSRF adecuada, límites, control de frecuencia y credenciales de base restringidas. No se instala autenticación simulada ni se confía en cabeceras de identidad aportadas por el cliente.
+
+La importación futura debe usar una operación separada de recepción limitada, aislamiento de contenido y validación autoritativa; los datos biológicos nunca deben agregarse al cuerpo de administración de perfiles como atajo de carga.

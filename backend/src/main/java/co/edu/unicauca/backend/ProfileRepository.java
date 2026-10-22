@@ -39,7 +39,7 @@ public class ProfileRepository {
             WHERE id = ? AND revision = ? AND status = 'DRAFT'
             """, profile.name(), profile.version(), profile.status().name(), profile.revision(),
             profile.description(), json.writeValueAsString(profile.rules()), profile.id(), expectedRevision);
-        if (changed != 1) throw new ProfileConflictException("Profile revision has changed");
+        if (changed != 1) throw new ProfileConflictException("La revisión del perfil cambió; actualice los datos antes de guardar.");
     }
     private Profile map(ResultSet row, int index) throws SQLException {
         return new Profile(row.getString("id"), row.getString("name"), row.getString("version"),

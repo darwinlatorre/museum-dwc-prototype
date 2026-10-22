@@ -1,33 +1,39 @@
-# Official vocabulary and profile evidence
+# Vocabulario oficial y evidencia de los perfiles
 
-These pinned snapshots make initialization reproducible and allow offline analysis. They are source data, not application-wide mandatory-field rules.
+Estas copias fijadas permiten reproducir la carga inicial y analizar sin conexión. Son fuentes de datos, **no reglas universales de obligatoriedad**.
 
-| File | Official source |
+| Archivo | Fuente oficial |
 |---|---|
 | `tdwg/terms.csv` | https://raw.githubusercontent.com/tdwg/rs.tdwg.org/master/terms/terms.csv |
 | `tdwg/dc.csv` | https://raw.githubusercontent.com/tdwg/rs.tdwg.org/master/dc-for-dwc/dc-for-dwc.csv |
 | `tdwg/dcterms.csv` | https://raw.githubusercontent.com/tdwg/rs.tdwg.org/master/dcterms-for-dwc/dcterms-for-dwc.csv |
 | `sib/records-4.1.xlsx` | https://drive.google.com/uc?export=download&id=18TGecPD1dH3KgiuA0i3FXD3BoEyLz5MS |
-| `sib/instructions.json` | Lossless nonempty-cell extraction of the workbook's `Instrucciones` sheet |
+| `sib/instructions.json` | Extracción de celdas no vacías de la hoja `Instrucciones`, conservando su contenido |
 
-Start from https://dwc.tdwg.org/ and https://biodiversidad.co/recursos/plantillas-dwc/ to verify the publishers. `backend/src/main/resources/data/provenance.json` records SHA-256 hashes of original downloads. `scripts/build_seeds.py` rebuilds seeds without network access. Updating a snapshot does **not** silently update published database profiles: publish a new profile version explicitly.
+Las páginas https://dwc.tdwg.org/ y https://biodiversidad.co/recursos/plantillas-dwc/ permiten verificar a los publicadores. El archivo `backend/src/main/resources/data/provenance.json` registra los SHA-256 de las descargas originales. `scripts/build_seeds.py` reconstruye los recursos sin consultar la red.
 
-## SiB 4.1 evidence and limitations
+Actualizar una copia de origen **no actualiza silenciosamente perfiles publicados** en la base. Las revisiones de requisitos deben publicarse como nuevas versiones.
 
-The downloaded workbook identifies itself as version 4.1, May 2024. Its `Instrucciones` matrix, rows 25–53, was read directly (not inferred from header colors).
+## Evidencia y limitaciones de SiB 4.1
 
-- Eight unconditional candidate fields: occurrenceID, basisOfRecord, institutionCode, institutionID, type, country, scientificName, taxonRank.
-- Collection context: collectionCode, collectionID, catalogNumber; disposition column is flagged with the ambiguity below.
-- Permit context: collectors, quantities, preparations, event date, administrative location, elevation, coordinates and datum. The GGBN permit extension is also required by SiB, but is **not validated by this core-file MVP**.
-- Marine context additionally includes occurrenceStatus, eventID, eventDate, locality, coordinates and scientificNameID. Sampling context requires eventID/eventDate.
-- `disposition`: the matrix marks permit and collection origins. Its definition instructs `En colección` only for permitted specimens delivered to a collection and otherwise explicitly permits empty values. The seed checks column presence with a warning for permit/collection, and nonempty content for their intersection. It does not certify controlled vocabulary compliance.
-- `individualCount**`: the matrix marks permit origin while official version history calls this field recommended. The seed emits a warning, not an unconditional error. Quantity requirements remain as listed in the matrix.
-- `country` is required in the matrix, but term guidance warns against inventing a country when uncertain. Review a missing-country diagnostic with the publisher; never automatically fill it.
+El Excel descargado se identifica como versión 4.1, mayo de 2024. Se leyó directamente la matriz de la hoja `Instrucciones`, filas 25–53; no se infirió obligatoriedad a partir del color de los encabezados.
 
-Term-specific explanations: https://biodiversidad.co/elementos-darwin-core. This MVP reports profile compliance, not SiB publication certification, taxonomic verification, GGBN validation or legal permit compliance.
+- Ocho campos candidatos incondicionales: `occurrenceID`, `basisOfRecord`, `institutionCode`, `institutionID`, `type`, `country`, `scientificName` y `taxonRank`.
+- Contexto de colección: `collectionCode`, `collectionID` y `catalogNumber`; la columna `disposition` se informa con la ambigüedad explicada más abajo.
+- Contexto de permiso: recolectores, cantidades, preparaciones, fecha del evento, ubicación administrativa, elevación, coordenadas y datum. SiB también exige la extensión de permisos GGBN, que **este MVP de archivo principal no valida**.
+- Contexto marino: incluye `occurrenceStatus`, `eventID`, `eventDate`, `locality`, coordenadas y `scientificNameID`. El contexto de muestreo requiere `eventID` y `eventDate`.
+- `disposition`: la matriz marca permiso y colección. La definición indica `En colección` para especímenes recolectados con permiso y entregados a una colección; en otros casos permite un valor vacío. El perfil inicial advierte si falta la columna en permiso o colección, y exige un valor no vacío cuando concurren ambos contextos. No certifica un vocabulario controlado.
+- `individualCount**`: la matriz marca permiso, mientras que el historial oficial lo considera recomendado. El perfil emite una advertencia y no un error incondicional. Las reglas sobre cantidades conservan lo indicado por la matriz.
+- `country`: la matriz lo exige, pero la guía advierte que no debe inventarse cuando se desconoce. Un diagnóstico por país faltante debe revisarse con el publicador, no corregirse automáticamente.
 
-## Attribution and licenses
+Las explicaciones por término están en https://biodiversidad.co/elementos-darwin-core. El MVP informa cumplimiento de perfiles; no certifica publicación SiB, verificación taxonómica, extensiones GGBN ni cumplimiento legal de permisos.
 
-Darwin Core vocabulary: Biodiversity Information Standards (TDWG), https://dwc.tdwg.org/, published under CC BY 4.0 (https://raw.githubusercontent.com/tdwg/dwc/master/LICENSE). The catalog preserves official English definitions and canonical URIs, including Dublin Core imports. `status` is derived from `term_deprecated` (current/deprecated), not from obligation.
+## Idioma, atribución y licencias
 
-SiB workbook and extracted instruction data: Plata C, Ortiz R, Marentes E, Velásquez J, Diaz J, Escobar D, Castro C, Leuro N, Sánchez L. 2024. *Plantilla para la publicación de registros biológicos*. Sistema de Información sobre Biodiversidad de Colombia, versión 4.1, Bogotá, D.C. Workbook and derived SiB profile data are attributed and shared under **CC BY-SA 4.0**, https://creativecommons.org/licenses/by-sa/4.0/. Museum requirements are supplied by this project's requester, not by TDWG or SiB.
+Se preservan sin traducción los archivos oficiales, los nombres Darwin Core, las URI, las definiciones citadas y las demás evidencias originales. La interfaz identifica las definiciones del catálogo como texto original en inglés. Esta conservación permite contrastar la fuente exacta y evita presentar una traducción no oficial como definición normativa. Los textos de la aplicación y sus diagnósticos predeterminados se muestran en español, sin reescribir registros publicados.
+
+**Darwin Core:** Biodiversity Information Standards (TDWG), https://dwc.tdwg.org/, bajo **CC BY 4.0**; licencia verificada en https://raw.githubusercontent.com/tdwg/dwc/master/LICENSE. El catálogo conserva las definiciones originales y las URI canónicas, incluidos los términos Dublin Core importados. `status` se deriva de `term_deprecated` (`current`/`deprecated`), no de la obligatoriedad.
+
+**Excel SiB y datos extraídos:** Plata C, Ortiz R, Marentes E, Velásquez J, Diaz J, Escobar D, Castro C, Leuro N, Sánchez L. 2024. *Plantilla para la publicación de registros biológicos*. Sistema de Información sobre Biodiversidad de Colombia, versión 4.1, Bogotá, D.C. El Excel y los datos del perfil SiB derivados se atribuyen y comparten bajo **CC BY-SA 4.0**, https://creativecommons.org/licenses/by-sa/4.0/.
+
+Los requisitos del Museo 1.0 fueron aportados por el solicitante de este proyecto, no por TDWG ni SiB.

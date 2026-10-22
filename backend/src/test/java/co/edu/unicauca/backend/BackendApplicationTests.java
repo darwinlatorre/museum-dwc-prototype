@@ -237,6 +237,39 @@ class BackendApplicationTests {
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"))
             .andExpect(jsonPath("$.revision").value(1));
     }
+    @Test void errorsAreSpanishAndKeepContractsAndStoredProfiles() throws Exception {
+        JsonNode draft = create();
+        String id = draft.get("id").asText();
+        String before = profiles();
+        for (String invalid : new String[]{"{}", "{"}) {
+            mvc.perform(post("/api/profiles").contentType("application/json").content(invalid))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Solicitud incorrecta"))
+                .andExpect(jsonPath("$.detail").value("El contenido del perfil no es válido."))
+                .andExpect(jsonPath("$.status").value(400));
+            assertThat(profiles()).isEqualTo(before);
+        }
+        mvc.perform(post("/api/profiles").contentType("application/json")
+                .content(body(draft.get("name").asText(), "1.0")))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.title").value("Conflicto"))
+            .andExpect(jsonPath("$.detail").value("El nombre y la versión del perfil deben ser únicos; las versiones publicadas son inmutables."));
+        mvc.perform(post("/api/profiles/" + id + "/publish").contentType("application/json").content("{}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.detail").value("La solicitud de publicación debe tener el cuerpo vacío."));
+        mvc.perform(post("/api/profiles/missing/publish"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.title").value("No encontrado"))
+            .andExpect(jsonPath("$.detail").value("No se encontró el perfil."));
+        mvc.perform(post("/api/upload").contentType("application/octet-stream").content("archivo"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.detail").value("No se encontró el recurso solicitado."));
+        mvc.perform(delete("/api/profiles"))
+            .andExpect(status().isMethodNotAllowed())
+            .andExpect(jsonPath("$.title").value("Método no permitido"))
+            .andExpect(header().exists("Allow"));
+        assertThat(profiles()).isEqualTo(before);
+    }
     @Test void databaseRejectsEveryPublishedMutation() throws Exception {
         JsonNode draft = create();
         String id = draft.get("id").asText();

@@ -30,7 +30,7 @@ public class ProfileService {
     public Profile update(String id, Profile.Update request) {
         Profile current = draft(id);
         if (current.revision() != request.revision()) {
-            throw new ProfileConflictException("Profile revision has changed");
+            throw new ProfileConflictException("La revisión del perfil cambió; actualice los datos antes de guardar.");
         }
         Profile next = content(id, request.content(), Profile.Status.DRAFT, current.revision() + 1);
         repository.update(next, current.revision());
@@ -55,7 +55,7 @@ public class ProfileService {
     public void initialize(List<Profile> seeds) {
         for (Profile seed : seeds) {
             if (seed.status() != Profile.Status.PUBLISHED || seed.revision() != 0) {
-                throw new IllegalStateException("Seeds must be published at revision zero");
+                throw new IllegalStateException("Los perfiles iniciales deben estar publicados con revisión cero.");
             }
             UUID.fromString(seed.id());
             insert(seed.id(), new Profile.Create(seed.name(), seed.version(), seed.description(), seed.rules()),
@@ -76,11 +76,11 @@ public class ProfileService {
     private Profile draft(String id) {
         Profile profile = repository.find(id, true).orElseThrow(ProfileService::notFound);
         if (profile.status() != Profile.Status.DRAFT) {
-            throw new ProfileConflictException("Published profiles are immutable; duplicate to a new version");
+            throw new ProfileConflictException("Las versiones publicadas son inmutables; duplique el perfil en una nueva versión.");
         }
         return profile;
     }
     private static ResponseStatusException notFound() {
-        return new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found");
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el perfil.");
     }
 }
