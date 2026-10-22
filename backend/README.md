@@ -10,7 +10,7 @@ Iniciar la base aislada mediante `compose.mvp.yml`, según el README principal. 
 bash ./mvnw spring-boot:run
 ```
 
-Si se inicia manualmente con `java -jar`, usar una copia de ejecución distinta de `target/backend-0.0.1-SNAPSHOT.jar`. No reconstruir ni sobrescribir un JAR mientras otro proceso lo utiliza: su cargador de clases puede fallar al atender solicitudes. El entorno verificado usa una copia en `target/runtime-es/museo-es.jar`; detener el proceso antes de reemplazar esa copia.
+Si se inicia manualmente con `java -jar`, usar una copia de ejecución distinta de `target/backend-0.0.1-SNAPSHOT.jar`. No reconstruir ni sobrescribir un JAR mientras otro proceso lo utiliza: su cargador de clases puede fallar al atender solicitudes. La aceptación actual usa una copia en `target/runtime-evolution/museo-evolution.jar`; detener el proceso antes de reemplazar esa copia. Las compilaciones normales pueden regenerar el JAR principal sin sobrescribir el que está en uso.
 
 La API escucha en **127.0.0.1:8080**. La conexión predeterminada es `jdbc:postgresql://127.0.0.1:55432/museum`, usuario `museum` y contraseña exclusiva de desarrollo `museum-local-only`. Se puede configurar mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No se cargan archivos dotenv. No apuntar pruebas ni migraciones de desarrollo a una base institucional existente.
 

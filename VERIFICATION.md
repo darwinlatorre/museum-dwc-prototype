@@ -1,5 +1,94 @@
 # Evidencia de verificación del MVP
 
+## Estado actual: evolución del museo, aceptación integrada
+
+**El recorrido integrado observado funciona con `Museo + SiB` 1.0.** El padre revisó el informe, las capturas internas de escritorio/móvil y los resúmenes; contrastó directamente JSON/CSV, HAR, archivos de origen y GET públicos. Aprobó 28 incidencias equivalentes (27 errores y una advertencia), dos GET sin cuerpos, nueve perfiles y estado TDWG intactos, tres archivos originales sin cambios y ausencia de errores registrados. Las suites y builds finales del padre aprobaron: **6 semillas + 51 backend + 61 frontend = 118 pruebas**. No se modificaron fuentes de producción, perfiles, dependencias ni procesos durante el recorrido de navegador; el cierre documental no agrega una auditoría ni aprobación nativa.
+
+### Evidencia recibida del padre, no ejecutada nuevamente aquí
+
+| Alcance | Resultado y procedencia |
+|---|---|
+| T1 / S1–S7, S10, S12–S13 | Commit `5b5562e`; 61 pruebas frontend y compilación aprobadas. CRUD real previo conservó los seis perfiles originales y textos arbitrarios; publicación bloqueada y duplicado independiente. |
+| T2 / S11 | Commit `043a221`; verificación independiente de JPA aprobada, incluidos rechazos equivalentes y conservación de datos. |
+| T3 / S9.1–S9.5 | Commit `56151d9`; verificación independiente finalmente satisfecha. El primer verificador no entregó dictamen; hubo autorización humana para un nuevo intento. El probe adicional falló inicialmente por falta de `@Import(CatalogSyncTests.Fakes.class)` en el harness, no por un defecto productivo. El rechequeo acotado pasó 1/1 con las mismas aserciones. |
+| T4 / S8 y conjunto final | Commit `283645d`; job25 del padre terminó correctamente: 6 pruebas de semillas, 51 de API, 61 de frontend, empaquetado Maven y compilación frontend. Advertencia de tamaño: 634,97 kB frente al objetivo de 500 kB; no se alteró el límite. |
+| TDWG real | Job27 del padre: 414 términos, tres fuentes oficiales del mismo commit `4b2c4f2dccaf1b3659877feef8d9e61176112fe5`, sin `lastFailure`; ocho perfiles anteriores intactos y nuevo compuesto exacto. Evidencia: [estado](.browser/evolution-live-catalog-status.json) y [nueve perfiles](.browser/evolution-live-profiles.json). |
+
+La API usada por el navegador fue el runtime separado `backend/target/runtime-evolution/museo-evolution.jar`, ya iniciado por el padre en localhost:8080; Angular permaneció en localhost:4200. No se repitieron suites, builds ni auditoría. La sincronización real ya había ocurrido: no se provocó otra descarga TDWG.
+
+### Recorrido ejecutado con navegador público
+
+Se utilizó directamente agent-browser **0.39.1**, con el Chromium existente y la sesión propia `museum-final-20261022-accept`, cerrada al terminar. Escritorio: 1440×1000; móvil: 390×844. Solo se seleccionó el perfil combinado para los análisis. La normalización permaneció desactivada.
+
+| Regla / prueba | Resultado observado |
+|---|---|
+| S8, S7: perfil combinado | Visible como publicado 1.0, 56 reglas. Diálogo de solo lectura, campos y picker deshabilitados; descripción española con límites de uso y procedencias Museo/SiB conservadas en su idioma original. No se repitió CRUD. |
+| Diálogo escritorio/móvil | Capturas revisadas visualmente. En móvil mide 362 px dentro de 390 px; documento sin desbordamiento horizontal. Contenido con `overflow:auto`, desplazable hasta regla 56, cierre visible. Foco inicial en «Cerrar editor»; Tab permaneció dentro del diálogo; Escape lo cerró y devolvió el foco a «Ver reglas». No es una auditoría exhaustiva de accesibilidad. |
+| CSV válido | `examples/museum-and-sib-valid.csv`: un registro, 30 columnas, **0 errores / 0 advertencias / 0 normalizaciones**, con Otros. Al probar antes Colección apareció una advertencia por la columna `disposition` ausente, coherente con la regla condicional; no se oculta esa diferencia de contexto. |
+| XLSX existente | `examples/records.xlsx` contiene `With errors` y `Complete`; selección real por teclado de `Complete`: un registro, 30 columnas, **cero incidencias** con combinado y Otros. No se regeneró el libro. |
+| S5: CSV inválido | `examples/records-with-errors.csv`, combinado y Otros: **28 incidencias = 27 errores + 1 advertencia**, no los 30 del recorrido histórico con dos perfiles. Son 24 incidencias de encabezado y cuatro de celdas: `scientificName` fila 3, `eventDate` fila 2, `decimalLatitude` fila 2 y `decimalLongitude` fila 3. Error con fondo rojizo, borde, mensaje destacado y texto «! Error»; advertencia con indicador propio. |
+| Filtros y descargas | Búsqueda `scientificName` + severidad Error dejó una incidencia visible, fila 3. JSON y CSV descargados bajo el prefijo autorizado contienen las **28 incidencias**, iguales campo a campo y en orden, pese al filtro. Claves `field,row,description,severity,profile,version`, enumerados `ERROR/WARNING`, campos técnicos y filas originales intactos. Mensajes nuevos del compuesto en español. |
+| Análisis exclusivamente local | HAR iniciado antes de cargar el CSV inválido y detenido después del diagnóstico: **dos GET** a `worker-JB32ZKYB.js?worker_file&type=module`; ningún POST, upload, `postData` ni cuerpo de solicitud. No aparecen nombre de archivo ni valores de celdas en las solicitudes. El HAR registra estado de respuesta 0: prueba el tráfico emitido, no se usa como prueba HTTP200. |
+| S2–S4: mapeo | Origen destacado mediante fondo y peso 900; chips separados por 9,1 px. Clic en `Usar catalogNumber` activó `aria-pressed=true`; Limpiar lo retiró; selección `otherCatalogNumbers` desde picker actualizó el chip correspondiente. Duplicar destino desde `unknownField` mostró «Cada campo de destino puede usarse una sola vez.» y bloqueó continuar; se limpió esa asignación para continuar. No se creó fixture adicional. |
+| S1, S13: contextos | Las cinco etiquetas coinciden literalmente con S1. Permiso, colección, muestreo y marinos se marcaron simultáneamente; Otros desmarcó los cuatro; marcar colección desmarcó Otros. Se probaron controles públicos, sin inyectar estado ni cambiar el contrato worker. |
+| S6: footer | En contenido corto, footer estático en y967–1000, debajo de main que termina en y946. En listado largo (main de 1479,5 px), tras scrollY626, footer y967,28–1000,28, después de main; no superposición. Capturas revisadas también en diagnóstico móvil. |
+| S10, S9: catálogo | Categorías con etiquetas, no URI. `Sin categoría` + `current` + búsqueda `associatedMedia` devolvió exactamente ese término; Restablecer volvió a 414. GET del catálogo confirmó 52 categorías vacías, sin inventar clases de reemplazo. Definiciones oficiales inglesas permanecen originales. |
+| Navegación y conservación | Navegar a catálogo y perfiles y volver conservó archivo, diagnóstico 27+1 y filtro. GET públicos posteriores al análisis y mapeo coincidieron íntegramente con los nueve perfiles y el estado de catálogo del padre, incluidos hash activo, intentos y fechas. Los tres archivos originales coinciden byte a byte con HEAD. |
+| Consola | Sin errores de aplicación ni excepciones de navegador registrados. Solo mensajes de desarrollo Angular/Vite y aviso NG0751 de carga anticipada de bloques diferidos con HMR. |
+
+### Evidencia local y comandos
+
+Los archivos de `.browser/` son evidencia local excluida de Git, no artefactos publicados. Resumen verificable: [probe-summary.json](.browser/evolution-final/probe-summary.json); [HAR](.browser/evolution-final/analysis.har), [JSON](.browser/evolution-final/diagnostic.json), [CSV](.browser/evolution-final/diagnostic.csv), [XLSX](.browser/evolution-final/xlsx-complete.txt), [filtro](.browser/evolution-final/errors-filtered.txt), [navegación](.browser/evolution-final/diagnostic-after-navigation.txt).
+
+Capturas guardadas **y leídas visualmente**:
+
+- [Diálogo escritorio estable](.browser/evolution-final/screenshot-1792703147111.png), [móvil](.browser/evolution-final/screenshot-1792703014528.png), [regla 56 tras scroll](.browser/evolution-final/screenshot-1792703034579.png).
+- [Mapeo seleccionado](.browser/evolution-final/screenshot-1792703047278.png), [mapeo móvil](.browser/evolution-final/screenshot-1792702893084.png).
+- [Diagnóstico móvil](.browser/evolution-final/screenshot-1792702987577.png), [filtro escritorio](.browser/evolution-final/screenshot-1792702988095.png), [CSV válido](.browser/evolution-final/screenshot-1792702964430.png), [XLSX válido](.browser/evolution-final/screenshot-1792702979995.png).
+- [Footer corto](.browser/evolution-final/screenshot-1792703145490.png), [listado largo](.browser/evolution-final/screenshot-1792703145996.png), [diagnóstico/footer](.browser/evolution-final/screenshot-1792703100208.png).
+
+Selección de comandos efectivamente usados, no un script completo de reproducción (variables muestran el ejecutable y sesión exactos; refs corresponden al snapshot de ese momento):
+
+```bash
+B=/home/dark/.npm/_npx/6de2aa2fded2970c/node_modules/.bin/agent-browser
+S=museum-final-20261022-accept
+"$B" --version
+"$B" skills get core
+"$B" --session "$S" --executable-path /home/dark/projects/universidad/.browser/chrome-headless-shell-linux64/chrome-headless-shell --download-path /home/dark/projects/universidad/.browser/evolution-final open http://localhost:4200
+"$B" --session "$S" snapshot -i
+"$B" --session "$S" network har start
+"$B" --session "$S" upload 'input[type=file]' /home/dark/projects/universidad/examples/records-with-errors.csv
+"$B" --session "$S" find role button click --name 'Validar localmente' --exact
+"$B" --session "$S" wait --text 'Descargar JSON'
+"$B" --session "$S" network har stop /home/dark/projects/universidad/.browser/evolution-final/analysis.har
+"$B" --session "$S" fill @e1552 scientificName
+"$B" --session "$S" download @e1547 /home/dark/projects/universidad/.browser/evolution-final/diagnostic.json
+"$B" --session "$S" download @e1548 /home/dark/projects/universidad/.browser/evolution-final/diagnostic.csv
+"$B" --session "$S" set viewport 390 844
+"$B" --session "$S" screenshot --screenshot-dir /home/dark/projects/universidad/.browser/evolution-final --json
+"$B" --session "$S" scroll down 29000 --selector .p-dialog-content
+"$B" --session "$S" press Escape
+"$B" --session "$S" wait --fn '!document.querySelector("[role=dialog]")'
+"$B" --session "$S" console
+"$B" --session "$S" errors
+"$B" --session "$S" close
+```
+
+Las interacciones, esperas corregidas, descargas, HAR y cierre terminaron correctamente. El probe Python estándar comparó los GET públicos, exportaciones CSV/JSON y bytes de HEAD; terminó con código 0 y dejó el resumen enlazado. No hay RED significativo para documentación pasiva: se hizo comprobación funcional y lectura estructural, sin afirmar pruebas automatizadas nuevas.
+
+### Incidentes de automatización y límites actuales
+
+- `wait --text 'Diagnóstico de la colección'` agotó 25 s: el título real es «Diagnóstico». Se corrigió la espera a «Descargar JSON»; el diagnóstico ya existía. No fue una avería de análisis.
+- Algunos selectores supuestos no existían (`input[type=checkbox][value=other]`, `input[aria-label="Buscar incidencias"]`) o un diálogo todavía estaba animando al intentar navegar. Se usaron snapshots y espera de desaparición del diálogo. El intento final de limpiar búsqueda no se ejecutó: el filtro permaneció activo, declarado en las capturas.
+- Intentar continuar con destino duplicado dejó el botón deshabilitado, por lo que una espera posterior de diagnóstico agotó 25 s. Al limpiar **unknownField**, desapareció el conflicto y se completó el análisis. Limpiar solamente catalogNumber no quita su destino implícito original; esto no se presentó como un fallo productivo.
+- La CLI aceptó inicialmente rutas posicionales de screenshot pero guardó por defecto fuera del proyecto. Ruta externa conocida reportada por el worker: `/home/dark/.agent-browser/tmp/screenshots/screenshot-1792702857070.png`; podría haber otras capturas iniciales en esa ubicación predeterminada. Se informó al padre, que no leyó, movió ni borró esos archivos. Su limpieza requeriría autorización específica y no se presenta como realizada. El formato corregido `--screenshot-dir` guardó las capturas posteriores dentro del prefijo autorizado. Una captura temprana también tomó el diálogo durante animación: se conservó como evidencia no concluyente y se sustituyó por la captura estable enlazada.
+- En móvil, tablas, progreso y navegación usan desplazamiento horizontal interno; se observa recorte de columnas fuera de su viewport, sin desbordamiento horizontal global. No se afirma que todas las columnas quepan simultáneamente en 390 px. No se revalidó cada caso T1, CRUD de perfiles, todos los contextos biológicos ni todas las opciones del catálogo.
+- No se atribuye a este navegador la verificación arquitectónica S11/S12 ni toda la sincronización S9: su respaldo está en T1–T4 y en los resultados del padre/independientes descritos arriba. No se reclama aprobación nativa ni auditoría aprobada.
+
+## Historial previo a la evolución
+
+Las secciones siguientes conservan resultados y fallos anteriores; sus conteos y bloqueos no describen el estado integrado actual.
+
 La entrega funcional fue aceptada explícitamente con la auditoría de dependencias pendiente: **«Si acepto.»**. Esa aceptación no transforma un timeout en una auditoría aprobada ni autoriza reintentos. La traducción posterior al español se registra como trabajo adicional, con comprobaciones propias al final de este documento.
 
 No se afirma aprobación de revisión nativa, publicación remota ni despliegue de producción.

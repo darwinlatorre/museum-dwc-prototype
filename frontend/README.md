@@ -17,7 +17,7 @@ Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al ba
 
 1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una hoja.
 2. Elegir uno o varios perfiles publicados. Los borradores no se ejecutan.
-3. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Abrir la flecha para buscar; usar las flechas del teclado y Enter para elegir. También se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias separadas muestran su selección. «Limpiar» deja el destino sin asignar y desmarca la sugerencia. Los nombres exactos se reconocen sin cambios. No se permiten dos columnas de origen con el mismo destino.
+3. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Abrir la flecha para buscar; usar las flechas del teclado y Enter para elegir. También se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias separadas muestran su selección. «Limpiar» retira la asignación explícita y desmarca la sugerencia; no elimina la columna ni desactiva el reconocimiento implícito de su encabezado original. Los nombres Darwin Core exactos se reconocen sin cambios. No se permiten dos columnas de origen con el mismo destino.
 4. Si se desea, activar el recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. Revisar los cambios de los primeros 20 registros. Ambas opciones están desactivadas inicialmente y solo cambian una copia de trabajo.
 5. Indicar los contextos y validar localmente:
    - Asociados a un permiso de recolección o acceso a recursos genéticos.

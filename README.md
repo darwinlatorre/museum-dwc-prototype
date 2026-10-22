@@ -33,7 +33,7 @@ Requisitos: Node.js 24 o posterior, Java 21 y Docker con Compose. Se incluye Mav
    npm start
    ```
 
-4. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080. Flyway crea el esquema; la primera ejecución carga el catálogo y los perfiles publicados `SiB Registros Biológicos 4.1` y `Museo 1.0`.
+4. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080. Flyway crea el esquema; la primera ejecución carga el catálogo y los perfiles publicados `SiB Registros Biológicos 4.1`, `Museo 1.0` y `Museo + SiB 1.0`.
 
 PostgreSQL escucha en `127.0.0.1:55432`, con base y usuario `museum` y contraseña **solo de desarrollo** `museum-local-only`. Se puede cambiar la conexión mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No guardar secretos reales en Git. Este procedimiento no utiliza el `docker-compose.yml` original ni archivos de entorno locales. Si el sistema no permite ejecutar el wrapper directamente, usar `bash mvnw` desde `backend`.
 
@@ -49,7 +49,7 @@ COMPOSE_DISABLE_ENV_FILE=true docker compose -f compose.mvp.yml stop
 2. Elegir uno o varios perfiles **publicados**. Los borradores no se utilizan para diagnósticos reproducibles.
 3. Confirmar el mapeo de columnas. Las sugerencias Darwin Core no se aplican automáticamente.
 4. Elegir la normalización y revisar su vista previa. Los valores originales del archivo no cambian.
-5. Indicar los contextos aplicables: depósito en colección, permiso, registros marinos y eventos de muestreo. Las condiciones corresponden al lote analizado; separar los lotes con contextos distintos.
+5. Indicar los contextos aplicables: asociados a un permiso de recolección o acceso a recursos genéticos, colección biológica, eventos de muestreo y marinos. Los cuatro son combinables. «Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados» desmarca los cuatro; seleccionar cualquiera de ellos desmarca «Otros». Las condiciones corresponden al lote analizado; separar los lotes con contextos distintos.
 6. Validar, filtrar las incidencias y descargar el diagnóstico. La ausencia de una columna se informa en el encabezado; los errores de registros indican la fila original, a partir de la fila 2.
 
 El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de perfiles y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
@@ -60,13 +60,17 @@ La interfaz, las ayudas y los diagnósticos del sistema se presentan en español
 
 ## Administración de perfiles
 
-La sección de perfiles permite crear un borrador, agregar reglas, guardar cambios, duplicar una versión y publicarla. El nombre y la versión identifican una combinación única. Una versión publicada es inmutable: para cambiar sus reglas se crea otra versión. Las ediciones de borradores desactualizados se rechazan, sin sobrescribir cambios de otro editor.
+La sección de perfiles abre un diálogo para crear o revisar una versión, con datos del perfil y reglas agrupadas. El selector Darwin Core es el mismo control PrimeNG con búsqueda utilizado al mapear columnas. Se puede crear un borrador, agregar reglas, guardar cambios, duplicar una versión y publicarla. El nombre y la versión identifican una combinación única. Una versión publicada es inmutable: para cambiar sus reglas se crea otra versión. Las ediciones de borradores desactualizados se rechazan, sin sobrescribir cambios de otro editor.
+
+El perfil **Museo + SiB 1.0** reúne los requisitos de ambos: 56 reglas distintas y 28 campos obligatorios siempre, conservando las condiciones y advertencias SiB. Se puede elegir solo ese perfil para comprobar ambos conjuntos; no hace falta seleccionar además sus dos originales. Es una composición local, no un perfil oficial ni una certificación SiB. Las versiones originales permanecen intactas.
 
 Las reglas son declarativas y limitadas, no código JavaScript ejecutable. Cada una indica campo, comprobación, severidad, condición de contexto, mensaje y fuente. Más información: [API del backend](backend/README.md) y [arquitectura del frontend](frontend/README.md).
 
 ## Catálogo y evidencia SiB
 
-El catálogo fijado contiene **414 entradas TDWG**, incluidos términos Dublin Core e históricos u obsoletos. Cada entrada conserva nombre, URI canónica, definición oficial, categoría y estado. **Pertenecer al vocabulario no implica obligatoriedad:** los campos obligatorios dependen de cada perfil.
+La copia inicial contiene **414 entradas TDWG**, incluidos términos Dublin Core e históricos u obsoletos. La fuente oficial es https://dwc.tdwg.org/terms/ y los CSV mantenidos por TDWG. Cada entrada conserva nombre, URI canónica, definición y categoría oficiales; `current`/`deprecated` proyecta la marca oficial de obsolescencia. Las categorías ausentes permanecen vacías, sin inferirlas del tipo RDF. **Pertenecer al vocabulario no implica obligatoriedad:** los campos obligatorios dependen de cada perfil.
+
+El backend intenta sincronizar el catálogo automáticamente cada día, con una primera ejecución 60 segundos después del arranque. Descarga las tres fuentes fijadas al mismo commit y activa una instantánea completa en PostgreSQL solo después de validarla. Si falla la descarga o validación, conserva la última versión válida, también tras reiniciar. No marca como obsoleto un término solo porque desaparezca: rechaza ese candidato incompleto. `GET /api/catalog/status` permite consultar revisión, fecha, conteos y último fallo; la configuración y los límites se describen en [backend/README.md](backend/README.md).
 
 Las reglas SiB se contrastaron con la matriz de instrucciones del Excel oficial 4.1, no solo con los doce campos candidatos. Los 22 campos obligatorios del perfil Museo 1.0 corresponden al requerimiento independiente del museo.
 
@@ -99,7 +103,7 @@ cd ../backend
 
 La auditoría de dependencias es una comprobación separada: `npm audit`. Los dos intentos descritos agotaron sus límites; no se ejecutan nuevos intentos automáticamente.
 
-Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. El registro `odd/tasks/museum-dwc.md` conserva tareas, decisiones y evidencia; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
+Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. Los registros `odd/tasks/museum-dwc.md` y `odd/tasks/museum-evolution.md` conservan las tareas, decisiones y evidencias del módulo inicial y de su evolución; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
 
 ## Arquitectura y siguiente integración
 
@@ -108,7 +112,7 @@ Aplicación de gestión Angular / PrimeNG
  ├─ TanStack Query → metadatos REST de perfiles y catálogo
  └─ archivo local → Web Worker → parser → normalizador optativo → motor de validación
                                                           └─ diagnóstico → descarga local
-Spring Boot REST → servicio transaccional de perfiles → PostgreSQL
+Spring Boot REST → servicio transaccional → repositorio JPA / entidad de perfil → PostgreSQL
                                     Flyway + protección de versiones publicadas
 ```
 
