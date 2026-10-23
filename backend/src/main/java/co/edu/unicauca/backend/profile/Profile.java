@@ -45,17 +45,8 @@ public record Profile(String id, String name, String version, Status status, lon
                        @NotBlank @Size(max = 2000) String message,
                        @NotBlank @Size(max = 4000) String source) {}
 
-    public record Create(@NotBlank @Size(max = 200) String name,
-                         @NotBlank @Size(max = 100) String version,
-                         @NotNull @Size(max = 10000) String description,
-                         @NotNull @Size(max = 2000) List<@NotNull @Valid Rule> rules) {}
-    public record Update(@NotBlank @Size(max = 200) String name,
-                         @NotBlank @Size(max = 100) String version,
-                         @NotNull @Size(max = 10000) String description,
-                         @NotNull @Size(max = 2000) List<@NotNull @Valid Rule> rules,
-                         @NotNull @PositiveOrZero Long revision) {
-        Create content() { return new Create(name, version, description, rules); }
-    }
-    public record Duplicate(@NotBlank @Size(max = 200) String name,
-                            @NotBlank @Size(max = 100) String version) {}
+    public record Content(@NotBlank @Size(max = 200) String name,
+                          @NotBlank @Size(max = 100) String version,
+                          @NotNull @Size(max = 10000) String description,
+                          @NotNull @Size(max = 2000) List<@NotNull @Valid Rule> rules) {}
 }

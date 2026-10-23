@@ -47,11 +47,11 @@ public class ProfileEntity {
         this.rules = rules;
     }
 
-    String id() { return id; }
-    String name() { return name; }
-    String version() { return version; }
-    Profile.Status status() { return status; }
-    long revision() { return revision; }
-    String description() { return description; }
-    String rules() { return rules; }
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getVersion() { return version; }
+    public Profile.Status getStatus() { return status; }
+    public long getRevision() { return revision; }
+    public String getDescription() { return description; }
+    public String getRules() { return rules; }
 }

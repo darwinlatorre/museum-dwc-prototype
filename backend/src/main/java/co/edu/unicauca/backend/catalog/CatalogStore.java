@@ -48,7 +48,7 @@ public class CatalogStore {
     public Status status() {
         CatalogSnapshot snapshot = current();
         Map<String, String> hashes = new java.util.TreeMap<>();
-        json.readTree(snapshot.rawSources).properties().forEach(entry -> hashes.put(entry.getKey(), CatalogParser.hash(entry.getValue().asText())));
+        json.readTree(snapshot.rawSources).properties().forEach(entry -> hashes.put(entry.getKey(), CatalogParser.hash(entry.getValue().asString())));
         return new Status(new Active(snapshot.sourceRevision, snapshot.sourceHash, snapshot.snapshotVersion,
             snapshot.activatedAt, snapshot.termCount, snapshot.added, snapshot.modified, snapshot.deprecated, hashes),
             snapshot.generation, snapshot.lastAttempt, snapshot.lastFailure);

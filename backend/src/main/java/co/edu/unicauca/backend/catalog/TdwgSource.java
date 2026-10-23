@@ -21,7 +21,7 @@ class TdwgSource implements CatalogSource {
     TdwgSource(ObjectMapper json) { this.json = json; }
 
     @Override public SourceSet fetch() throws IOException {
-        String revision = json.readTree(download(URI.create(COMMIT), 128 * 1024)).path("object").path("sha").asText();
+        String revision = json.readTree(download(URI.create(COMMIT), 128 * 1024)).path("object").path("sha").asString();
         if (!revision.matches("[0-9a-f]{40}")) throw new IOException("La revisión oficial TDWG no es válida.");
         var documents = new LinkedHashMap<String, String>();
         for (String path : PATHS) documents.put(path, download(URI.create(RAW + revision + "/" + path), MAX_BYTES));

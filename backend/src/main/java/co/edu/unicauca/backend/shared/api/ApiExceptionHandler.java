@@ -1,6 +1,6 @@
 package co.edu.unicauca.backend.shared.api;
 
-import co.edu.unicauca.backend.profile.ProfileConflictException;
+import co.edu.unicauca.backend.shared.exceptions.ProfileConflictException;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.Ordered;

@@ -1,6 +1,9 @@
-package co.edu.unicauca.backend;
+package co.edu.unicauca.backend.profile;
 
-import co.edu.unicauca.backend.profile.ProfileBootstrap;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,7 +15,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = "catalog.sync.enabled=false")
 @AutoConfigureMockMvc
-class BackendApplicationTests {
+class ProfileIntegrationTests {
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry registry) {
@@ -39,7 +41,26 @@ class BackendApplicationTests {
     }
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
-    @Autowired JdbcTemplate jdbc;
+    @Autowired EntityManager entityManager;
+    @Autowired PlatformTransactionManager transactionManager;
+
+    // Every native write owns a transaction: a rejected PostgreSQL statement must
+    // roll back before subsequent HTTP/read assertions use a fresh transaction.
+    int nativeWrite(String sql, Object... parameters) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            var query = entityManager.createNativeQuery(sql);
+            for (int i = 0; i < parameters.length; i++) query.setParameter(i + 1, parameters[i]);
+            return query.executeUpdate();
+        });
+    }
+
+    String nativeText(String sql, Object... parameters) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            var query = entityManager.createNativeQuery(sql, String.class);
+            for (int i = 0; i < parameters.length; i++) query.setParameter(i + 1, parameters[i]);
+            return (String) query.getSingleResult();
+        });
+    }
 
     String body(String name, String version) {
         return """
@@ -307,9 +328,9 @@ class BackendApplicationTests {
             "condition":"sampling","message":"Mensaje histórico","source":"Archivo histórico"}]
             """;
         // Simulate a row persisted before the ORM migration, without using its repository.
-        jdbc.update("""
+        nativeWrite("""
             insert into profiles(id,name,version,status,revision,description,rules)
-            values (?,?,'old','PUBLISHED',7,'Descripción histórica',?::jsonb)
+            values (?1,?2,'old','PUBLISHED',7,'Descripción histórica',cast(?3 as jsonb))
             """, id, name, rules);
         String before = profiles();
         JsonNode stored = profile(id);
@@ -382,15 +403,15 @@ class BackendApplicationTests {
         String id = draft.get("id").asText();
         mvc.perform(post("/api/profiles/" + id + "/publish")).andExpect(status().isOk());
         String before = profiles();
-        assertThatThrownBy(() -> jdbc.update("update profiles set description = 'changed' where id = ?", id))
-            .isInstanceOf(org.springframework.dao.DataAccessException.class);
-        assertThatThrownBy(() -> jdbc.update("delete from profiles where id = ?", id))
-            .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> nativeWrite("update profiles set description = 'changed' where id = ?1", id))
+            .isInstanceOf(PersistenceException.class);
+        assertThatThrownBy(() -> nativeWrite("delete from profiles where id = ?1", id))
+            .isInstanceOf(PersistenceException.class);
         assertThat(profiles()).isEqualTo(before);
     }
 
     String rowHash() throws Exception {
-        String rows = jdbc.queryForObject("select coalesce(jsonb_agg(to_jsonb(p) order by id)::text,'[]') from profiles p", String.class);
+        String rows = nativeText("select coalesce(jsonb_agg(to_jsonb(p) order by id)::text,'[]') from profiles p");
         return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
             .digest(rows.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
     }
@@ -430,14 +451,14 @@ class BackendApplicationTests {
         }
         mvc.perform(post("/api/profiles/" + id + "/publish")).andExpect(status().isOk());
         String published = rowHash();
-        assertThat(jdbc.queryForObject("select jsonb_typeof(rules) from profiles where id=?", String.class, id)).isEqualTo("array");
+        assertThat(nativeText("select jsonb_typeof(rules) from profiles where id=?1", id)).isEqualTo("array");
         String independent = "{\"name\":\"Verificador copia\",\"version\":\"2\"}";
         mvc.perform(post("/api/profiles/" + id + "/duplicate").contentType("application/json").content(independent))
             .andExpect(status().isCreated()).andExpect(jsonPath("$.description").value("Independent rules"))
             .andExpect(jsonPath("$.rules[0].message").value("County column needed"));
-        String old = jdbc.queryForObject("select to_jsonb(p)::text from profiles p where id=?", String.class, id);
-        assertThatThrownBy(() -> jdbc.update("update profiles set rules='[]'::jsonb where id=?", id))
-            .isInstanceOf(org.springframework.dao.DataAccessException.class);
-        assertThat(jdbc.queryForObject("select to_jsonb(p)::text from profiles p where id=?", String.class, id)).isEqualTo(old);
+        String old = nativeText("select to_jsonb(p)::text from profiles p where id=?1", id);
+        assertThatThrownBy(() -> nativeWrite("update profiles set rules='[]'::jsonb where id=?1", id))
+            .isInstanceOf(PersistenceException.class);
+        assertThat(nativeText("select to_jsonb(p)::text from profiles p where id=?1", id)).isEqualTo(old);
     }
 }
