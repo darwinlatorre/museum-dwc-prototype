@@ -6,6 +6,8 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 
 - `README.md`: ejecución, alcance y restricciones.
 - `frontend/README.md` y `backend/README.md`: arquitectura y contratos.
+- `frontend/ARCHITECTURE.md`: organización por funcionalidades y límites de dependencia.
+- `frontend/DESIGN_SYSTEM.md`: tokens, primitivas, preset y propiedad de estilos.
 - `sources/README.md`: fuentes oficiales y atribuciones.
 - `VERIFICATION.md`: evidencia observada, historial y limitaciones.
 - `odd/tasks/`: especificaciones, decisiones y tareas. La evolución `museum-evolution.md` tiene T1–T5 completadas; el refinamiento Java/UX está en `museum-refinement.md`. No reabrir trabajo anterior sin una nueva necesidad.
@@ -21,7 +23,10 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Mantener servicios en localhost. Autenticación e importación biológica al servidor son trabajo futuro, no funcionalidades existentes.
 - Separar DTO de entrada/salida en `profile/dto/req` y `profile/dto/res`; mantener el modelo y servicio independientes del transporte. Usar getters JavaBean en entidades y excepciones propias en `shared/exceptions`.
 - Mantener las pruebas de perfiles en su paquete `profile`, con JPA/EntityManager y PostgreSQL desechable; no sustituirlas por mocks que eliminen cobertura de trigger o concurrencia.
-- Reutilizar el selector DwC compartido de una sola entrada y sus contratos de valor, limpieza y deshabilitación; preservar el workbench montado y las guardas de navegación/generación.
+- Frontend por funcionalidad: `features/catalog`, `features/profiles`, `features/importer`. Modelos con su propietario; `core/api` solo metadatos y `core/i18n` presentación. No agregar componentes regados en la raíz ni un cajón `shared/models`.
+- Contratos entre funcionalidades con `import type`, no vistas desde `core`/`shared`. Mantener el motor independiente de transporte/vistas y la URL de módulo del worker relativa a su workbench.
+- Reutilizar `shared/design-system`: una paleta CSS, `MuseumPreset` conectado en `app.config.ts`, tokens de espacios/radios y primitivas comunes. Estilos de feature globales importados desde `src/styles.scss` para conservar overlays; no duplicar colores o reglas para cada control. No cambiar el comportamiento nativo de selects sin una necesidad explícita.
+- Reutilizar el selector DwC de `shared/ui/dwc-picker` y sus contratos de valor libre, limpieza y deshabilitación; preservar el workbench montado y las guardas de navegación/generación.
 - La sincronización manual y la programada comparten la misma maquinaria. Evaluar `SUCCESS`/`FAILED`/`SUPERSEDED`, no solo HTTP200; los intentos viejos nunca reemplazan activaciones ni fallos nuevos.
 - No sobrescribir un JAR en ejecución: ejecutar una copia separada del artefacto de compilación.
 - No publicar cambios ni crear PR por iniciativa propia: el alcance actual es local.
@@ -32,10 +37,12 @@ Desde la raíz:
 
 ```bash
 python3 scripts/test_seeds.py
-(cd frontend && npm test -- --watch=false && npm run build)
+(cd frontend && node scripts/check-architecture.mjs && npm test -- --watch=false && npm run build)
 (cd backend && bash ./mvnw test && bash ./mvnw package -DskipTests)
 git diff --check
 ```
+
+Para reducir presión del host en esta sesión se usó `.browser/frontend-architecture/vitest.serial.config.mjs` con `maxWorkers: 1` y `fileParallelism: false`, mediante `npm test -- --watch=false --runner-config ../.browser/frontend-architecture/vitest.serial.config.mjs`. Es configuración local ignorada, no cambia aserciones ni límites; no existe necesariamente en un clon nuevo. Un timeout se registra como fallo, no se reintenta automáticamente ni se suben límites para ocultarlo.
 
 Las pruebas backend requieren Docker y crean PostgreSQL desechable mediante Testcontainers; no usan la base viva del MVP. La ejecución manual de la aplicación usa la base aislada indicada en `README.md`. No sustituir ninguna por la base original. Para documentación pasiva, usar comprobaciones estructurales proporcionales; no repetir suites innecesariamente.
 
@@ -53,4 +60,4 @@ Las pruebas backend requieren Docker y crean PostgreSQL desechable mediante Test
 - Responder en español con el detalle adecuado a cada pedido. Separar trabajo pendiente, limitaciones aceptadas y funcionalidades futuras.
 - La auditoría npm agotó el tiempo autorizado y quedó pendiente con aceptación humana: no repetirla ni afirmar que aprobó.
 - La revisión nativa no produjo aprobación. La advertencia de tamaño del bundle y la captura accidental externa están documentadas; no inventar su resolución.
-- No confundir la evidencia histórica con pruebas nuevas. La evolución anterior registró118pruebas; el refinamiento Java/UX comprobó145(68backend,71frontend,6semillas), con aceptación integrada. No implica una auditoría exhaustiva de seguridad o accesibilidad.
+- No confundir la evidencia histórica con pruebas nuevas. La evolución anterior registró118pruebas; el refinamiento Java/UX comprobó145(68backend,71frontend,6semillas). La reorganización frontend comprobó89pruebasfrontend ybuild, más Nodechecker yChromium; no sumar resultados históricos como si fueran una nueva suite integral. No implica una auditoría exhaustiva de seguridad o accesibilidad.

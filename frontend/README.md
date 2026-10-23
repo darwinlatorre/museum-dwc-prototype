@@ -90,16 +90,18 @@ Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fi
 
 | Módulo | Responsabilidad |
 |---|---|
-| `analysis/model.ts` | Contratos compartidos de interfaz, worker y perfiles; límites |
-| `analysis/parser.ts` | Lectura estricta de CSV y conversión de matrices de hojas de cálculo |
-| `analysis/normalizer.ts` | Transformaciones optativas e inmutables con registro de cambios |
-| `analysis/validator.ts` | Reglas independientes por perfil y comprobaciones básicas |
-| `analysis/analysis.worker.ts` | Lectura y validación local; cancelación por terminación e identificadores que descartan respuestas antiguas |
-| `analysis/export.ts` | JSON y CSV con neutralización de fórmulas |
-| `api.ts` | Límite exclusivo de metadatos; TanStack Query administra lecturas, invalidación y errores |
-| `shared/dwc-picker.ts` | Selector PrimeNG compartido; adaptador CVA interno a señales de Angular 21, sin estado de selección duplicado |
-| `import/column-mapping.ts` | Presentación de encabezados y sugerencias; emite cambios al helper `map` del workbench |
-| `import/record-context.ts` | Controles de contexto; el workbench conserva el estado y el contrato de cuatro booleanos |
+| `features/catalog` | Catálogo, HTML, SCSS, pruebas y contrato `Term` |
+| `features/profiles` | Perfiles, editor, HTML, SCSS, pruebas y sus contratos de reglas |
+| `features/importer/workbench` | Orquestación de importación, navegación y worker |
+| `features/importer/components` | Mapeo y contexto, cada componente en su carpeta |
+| `features/importer/engine` | Parser, normalizador, validador, exportación y worker local |
+| `features/importer/models` | Dataset, límites, contexto, resultados, normalización y protocolo del worker |
+| `core/api` y `core/i18n` | Transporte exclusivo de metadatos y presentación localizada |
+| `shared/ui/dwc-picker` | Selector reutilizable de una entrada, adaptado a Signal Forms |
+| `shared/design-system` | Paleta CSS única, tokens, primitivas, adaptación PrimeNG y preset |
+| `testing` | Pruebas de composición y costuras entre funcionalidades |
+
+La estructura y sus límites están en [ARCHITECTURE.md](ARCHITECTURE.md); los tokens y patrones visuales, en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Desde `frontend/`, ejecutar `node scripts/check-architecture.mjs` para detectar rutas antiguas, contratos duplicados e importaciones indebidas. No reemplaza pruebas ni build.
 
 El workbench conserva la orquestación del worker, invalidación, destinos únicos y exportación; permanece montado al navegar. Los componentes de presentación no reimplementan parser, normalización, validación ni exportación.
 

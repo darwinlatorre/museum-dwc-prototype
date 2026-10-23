@@ -1,6 +1,43 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: baseline visual previo a reorganizar frontend
+## Estado actual: arquitectura frontend y sistema de diseño integrados
+
+**Resultado funcional comprobado:** frontend por funcionalidades `catalog`, `profiles`, `importer`, modelos con propietario único, transporte/i18n en `core`, selector en `shared/ui` y sistema de diseño real en `shared/design-system`. Componentes grandes con HTML externo; no quedan rutas antiguas ni barrels de compatibilidad. `src/styles.scss` importa primitivas y especializaciones en orden explícito. `MuseumPreset` y CSS consumen una sola paleta; shell/primitivas usan tokens semánticos, espacios y radios. No se cambió API, parser, validación, dependencias ni datos.
+
+### Unidades y evidencia
+
+| Unidad | Evidencia observada |
+|---|---|
+| Baseline UI | `a0e6ca9`: RED3fallos/10pases→13/13focused y navegador S4–S6. Job48suite83/84 agotó hook10s; build omitido. Solo tras autorización humana explícita, job49 serial84/84+buildPASS sin ampliar límites ni cambiar aserciones. |
+| Empaquetado | `491397d`: writer estructuralNode0/diffcheck0, sin Angular. Padre transfirió su patch frontend del worktree aislado, reejecutó checker y contrastó ocho cuerpos de motor/API/i18n/picker idénticos salvo imports contra baseline. Tres ejemplos originales byte iguales. |
+| Sistema de diseño | `f838b81`: writer extrajo SCSS/preset y escribió cinco tests; no los ejecutó. El padre integró preset/shell y ejecutó realmente esos cinco junto a la suite. |
+| Costura integrada | **Job50: checkerNodePASS,20/20focalizadas,89/89suite frontend ybuildPASS**, con runner local secuencial. Worker de62,17kB emitido. Bundle643,88kB/500kB: advertencia, presupuesto intacto. |
+
+No se inventó RED para movimientos preservadores. Las unidades de extracción superan400líneas por mover bloques cohesivos con pruebas/docs; no se minificó para reducir el diff. El checker `node scripts/check-architecture.mjs` usa solo Node y protege ubicaciones, imports/recursos, dirección de dependencias, contratos únicos y URL del worker; no reemplaza pruebas ni navegador.
+
+### Navegador posterior al refactor
+
+Chromium real mediante CLI existente, sesión `museum-architecture-final-01a16167`,1440×1000 y390×844, **cerrada**. Solo controles públicos y lecturas DOM; sin inyección de estado ni respuestas simuladas.
+
+- Worker realmente carga desde su nueva ubicación: CSV inválido con combinado27errores+1advertencia, CSV válido0/0, XLSX `Complete`1registro/30columnas0/0. Se eligió hoja con teclado nativo. Volver a mapeo y al diagnóstico conservó el resultado.
+- Descargas JSON/CSV contienen las mismas28incidencias, con filas de origen; contraste completo tras convertir representación CSV de fila a número/null.
+- Selección de equivalencia: relleno/borde `rgb(25,76,58)`, texto blanco y sin sombra interior; foco de input sin outline, fila resaltada, separadores de1px y sin zebra. Etiqueta específica de hoja conservada.
+- Perfil publicado Museo+SiB: todas las entradas/selectores/textarea deshabilitados, selector con `catalogNumber`; diálogo cerrado sin guardar. Nueve perfiles completos iguales antes/después, incluidos tres borradores; sin eliminación/ocultamiento.
+- Sincronización móvil real: pendiente con spinner→SUCCESS. Botón238×44,09375px y región de estado112px con **rectángulos completos idénticos** en los tres estados. Selectores44,09375px/14px; documento390px, sin desbordamiento global y pie separado del main. HAR manual:1POSTvacío+GET.
+- HAR del análisis CSV/XLSX:8GET, sin cuerpos ni nombres de los tres archivos en solicitudes, sin subidas. No se usa status0 deHAR como prueba de HTTP200; el éxito de sincronización se observó en UI y su respuesta de operación.
+- Registro de errores de página vacío. Capturas abiertas e inspeccionadas: `screenshot-1792782980782.png` (mapeo escritorio), `screenshot-1792783072082.png` (publicado), `screenshot-1792783073209.png` (carga móvil), `screenshot-1792783091759.png` (mapeo móvil). Resumen machine y artefactos en `.browser/frontend-architecture/final/`, ignorados porGit.
+
+Comandos realmente usados: `node scripts/check-architecture.mjs`; `npm test -- --watch=false --runner-config ../.browser/frontend-architecture/vitest.serial.config.mjs` (con includes focalizados antes de suite completa); `npm run build`. CLI con `--session museum-architecture-final-01a16167 --screenshot-dir /home/dark/projects/universidad/.browser/frontend-architecture/final --download-path` en ese directorio: upload de ejemplos mediante input público, selección de perfil, clics en pasos/equivalencias, foco/hover, `download`JSON/CSV, `network har start/stop`, hoja mediante ArrowDown/Enter, publicado/cierre explícito, sincronización y `close`. Evaluaciones de lectura midieron cajas/estilos/disabled, nunca mutaron estado de aplicación.
+
+### Incidentes y límites preservados
+
+Primer explorador agotó4min trasfind, sin mapa. Un único intento acotado autorizado entregó evidencia limitada, luego contrastada. Primer dispatch del escritor de empaquetado fue rechazado antes de crear tarea por intersección conservadora de globs; no se ignoró la guardia: se creó/registró un worktree del mismo clon en `.browser/worktrees/frontend-packaging`. Sus cambios frontend se trasladaron mediante patch; ese worktree auxiliar conserva su copia/staging, sin limpieza destructiva ni instalación de dependencias. La copia de registro allí no es autoridad del feature: el registro canónico es `odd/tasks/frontend-architecture.md` en la raíz.
+
+El timeout job48 permanece como fallo observado; no demuestra defecto productivo ni su causa se deduce solo de carga/swap del host. Job49 fue exactamente la ejecución adicional autorizada. El runner temporal solo limita paralelismo; no aumenta timeouts ni omite pruebas. Los resultados del baseline no se atribuyen a los writers ni sustituyen job50.
+
+ASSESS de writers y rangos committedOnly de ambas unidades siguió no evaluable por untracked: plan de verificación propia, sin revisión/aprobación nativa. No nueva auditoría; la auditoría previamente agotada sigue pendiente aceptada. Backend y semillas no se reejecutaron porque no cambiaron. No push/PR ni archivos ajenos modificados, tampoco limpieza de capturas/scratchs externos históricos.
+
+## Historial: baseline visual previo a reorganizar frontend
 
 T1 de `odd/tasks/frontend-architecture.md`: etiqueta «Seleccione la hoja de cálculo que desea analizar»; equivalencia seleccionada con fondo y borde `rgb(25,76,58)`, texto blanco y `box-shadow:none` incluso en hover; input y selector enfocados sin outline amarillo, conservando borde verde, resaltado de fila y foco de teclado en botones/enlaces.
 
