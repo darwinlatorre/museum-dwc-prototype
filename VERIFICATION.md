@@ -1,6 +1,65 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: evolución del museo, aceptación integrada
+## Estado actual: refinamiento Java/JPA e importación
+
+**Aceptación funcional comprobada por el padre:** separación DTO/JPA, progreso navegable, selector único, marco estable y sincronización manual. Los nueve perfiles, incluidos tres borradores, permanecen íntegros y visibles; no hubo eliminación ni ocultamiento. Registro: `odd/tasks/museum-refinement.md`.
+
+### Pruebas y atribución actuales
+
+| Unidad | Evidencia observada |
+|---|---|
+| T1, S1–S7 | `724f167`: DTO `profile/dto/req` y `dto/res`, getters JavaBean, excepción `shared/exceptions`, Jackson `.asString()`, pruebas en `profile` con EntityManager. Escritor: 52 pruebas/paquete y 50 observaciones HTTP diferenciales; 41 rechazos conservaron perfiles completos. Independiente: 52/52, trigger real y concurrencia aprobados. |
+| T2, S8–S11 | `12ae950`: escritor RED5→66/66 y build; preservación base62. Independiente: 66/66/build y sonda real Profiles/FormField67 candidato/62 base. Sonda exacta fijada en `5d77e84`; padre1/1. Geometría real y capturas contrastadas abajo. |
+| T3, S12 | `bc7b139`: padre RED API24/7fallos por ruta inexistente y carrera que no pudo empezar; UI4fallos por botón ausente. GREEN59backend/paquete y UI4focused. Costura:6semillas+71frontend/build. Independiente:59/71,16 observaciones HTTP diferenciales exactas y12rechazos binarios con entidad intacta. Sin bloqueadores de producto. |
+| Regresiones T3 | `923cc83`: padre fijó rechazo binario y ocho carreras usando estado público. Job34:9/9; job35: **68/68 backend**, sin omisiones. La suite frontend71 y semillas6 ya habían pasado en job30. **Total actual:145 pruebas (68+71+6)**; build Angular y paquete Maven aprobados. No se repitieron las suites del verificador. |
+| Límites | Bundle inicial636,27kB frente a objetivo500kB: advertencia, no se alteró el presupuesto. Auditoría npm pendiente aceptada, sin nuevo intento. ASSESS nativo no evaluable por archivos untracked; no hay aprobación nativa ni recibo reclamados. |
+
+El verificador T1 tuvo una primera suite con exit1:45 contabilizadas/37errores/8aprobadas antes de iniciar DB/MockMvc, por `TESTCONTAINERS_PULL_POLICY=org.testcontainers.images.NeverPullPolicy` inexistente. Se autorizó una sola corrección del harness: retirar esa variable y ejecutar la misma suite, sin cambiar código/aserciones; exit0,52/52. Package ya había aprobado y no se repitió.
+
+El verificador T3 observó una sonda extra10casos/1fallo: comparaba la semilla JSON indentada con la serialización compacta después de una activación válida. No fue un defecto reproducido del producto. Sus otras garantías de generación/resultado/contadores pasaron; no reejecutó la revisión. El padre adaptó las regresiones a GET públicos, comparando atributos JSON tras activación válida y bytes/metadatos tras intentos obsoletos, y observó9/9 y68/68 completos. No se presenta esa variante corregida como ejecución del verificador.
+
+### Navegador real y conservación
+
+Chromium existente mediante agent-browser0.39.1, sesión propia `museum-refinement-01a16167`, **cerrada al terminar**. Escritorio1440×1000 y móvil390×844. Solo controles públicos y lecturas DOM; sin inyección de estado Angular, datos simulados ni API mutada para aparentar éxito.
+
+- Sin archivo: pasos futuros deshabilitados. Tras cargar/seleccionar el combinado, clic en pasos y Enter permitieron ir a mapeo/contexto/diagnóstico. Volver a mapeo y regresar conservó selección `catalogNumber`, archivo y diagnóstico27errores+1advertencia.
+- Un input por picker; escribir `catalog` filtró a `catalogNumber`, `CatalogNumberNumeric`, `otherCatalogNumbers`; selección por opción aplicada. Texto `rgb(32,58,52)`, opacidad1. Panel estable326px/campo325,66px en escritorio; diferencia menor de1px también en móvil. Controles de edición/sugerencias44,09px de alto; paginación separada.
+- Main de escritorio1150×853,22px tanto en mapeo largo como contexto corto; móvil mantuvo altura607,94px entre mapeo y diagnóstico. Documento390px en viewport390px. Footer fuera del área desplazable, sin superposición. Tablas y progreso requieren desplazamiento horizontal interno en móvil; no caben todas las columnas a la vez.
+- Publicado Museo+SiB: input y limpieza deshabilitados, un solo campo por selector; diálogo dentro del viewport. Borrador: se escribió valor libre con espacios y se descartó sin guardar. No se afirma una auditoría exhaustiva de accesibilidad ni Escape universal desde cualquier subcontrol.
+- Botón «Sincronizar con TDWG»: estado «Sincronizando…» deshabilitado, seguido por éxito real. HAR manual: un POST `/api/catalog/sync` sin cuerpo y un GET del catálogo; estado público posterior con más intentos,414términos/tresfuentes y sin fallo. Nueve perfiles completos iguales antes/después.
+- CSV válido y XLSX `Complete`:0errores/0advertencias/0normalizaciones. CSV inválido, combinado y Otros:27errores+1advertencia. Descargas JSON/CSV:28incidencias equivalentes, filas originales. La navegación entre secciones conservó el diagnóstico válido.
+- HAR de fase validación CSV y carga del CSV válido: tres GET, sin POST/cuerpos/nombres de esos archivos. No se usa el estado0 del HAR como prueba de HTTP200. XLSX se comprobó funcionalmente; no se afirma una captura HAR nueva de su carga.
+- API final: nueve perfiles y tres borradores iguales al baseline completo; los tres ejemplos originales iguales byte a byte a HEAD. Registro de errores del navegador vacío.
+
+Evidencia local (ignorada por Git): [resumen del padre](.browser/refinement-acceptance/parent-summary.json), [HAR manual](.browser/refinement-acceptance/manual-sync.har), [HAR local](.browser/refinement-acceptance/local-analysis.har), [JSON](.browser/refinement-acceptance/diagnostic.json), [CSV](.browser/refinement-acceptance/diagnostic.csv), [XLSX](.browser/refinement-acceptance/xlsx-complete-diagnostic.txt), [perfiles finales](.browser/refinement-acceptance/live-profiles-final.json). Capturas **abiertas e inspeccionadas**: [sincronización](.browser/refinement-acceptance/screenshot-1792726907007.png), [selector escritorio estable](.browser/refinement-acceptance/screenshot-1792727255460.png), [selector móvil](.browser/refinement-acceptance/screenshot-1792727494512.png), [diagnóstico móvil](.browser/refinement-acceptance/screenshot-1792727561747.png), [publicado móvil](.browser/refinement-acceptance/screenshot-1792727698133.png).
+
+Extracto de comandos efectivamente usados; las refs pertenecen al snapshot de ese momento y no son identificadores estables de la aplicación:
+
+```bash
+B=/home/dark/.npm/_npx/6de2aa2fded2970c/node_modules/.bin/agent-browser
+S=museum-refinement-01a16167
+P=/home/dark/projects/universidad/.browser/refinement-acceptance
+"$B" skills get core
+"$B" --session "$S" --screenshot-dir "$P" --download-path "$P" --executable-path /home/dark/projects/universidad/.browser/chrome-headless-shell-linux64/chrome-headless-shell open http://localhost:4200
+"$B" --session "$S" set viewport 1440 1000
+"$B" --session "$S" find role button click --name 'Catálogo Darwin Core' --exact
+"$B" --session "$S" network har start
+"$B" --session "$S" find role button click --name 'Sincronizar con TDWG' --exact
+"$B" --session "$S" network har stop "$P/manual-sync.har"
+"$B" --session "$S" upload 'input[type=file]' /home/dark/projects/universidad/examples/records-with-errors.csv
+"$B" --session "$S" download @e241 "$P/diagnostic.json"
+"$B" --session "$S" set viewport 390 844
+"$B" --session "$S" --screenshot-dir "$P" screenshot
+"$B" --session "$S" close
+```
+
+### Incidentes de automatización actuales
+
+Una evaluación inicial no encontró el panel y falló; se midió después con el selector DOM real y esperando el fin de la animación, sin cambiar producto. Hubo clics de navegación cubiertos por el encabezado del diálogo, una espera de25s agotada tras Escape con foco en un subcontrol y una ref `e10` caducada después de cambiar de sección. No se cuentan como pruebas aprobadas ni como defectos productivos: se utilizó cierre explícito, se confirmó DOM sin diálogo y se navegó con localizador semántico actualizado. El recorrido posterior y la conservación de datos sí fueron comprobados. No se relanzaron agentes ni auditorías por esos incidentes.
+
+No se leyó, movió ni borró la captura externa de la aceptación anterior; tampoco se limpiaron scratches externos de los agentes desde el padre. No se afirma limpieza. Todos los screenshots de este refinamiento usaron `--screenshot-dir` dentro del proyecto.
+
+## Historial: evolución del museo, aceptación integrada
 
 **El recorrido integrado observado funciona con `Museo + SiB` 1.0.** El padre revisó el informe, las capturas internas de escritorio/móvil y los resúmenes; contrastó directamente JSON/CSV, HAR, archivos de origen y GET públicos. Aprobó 28 incidencias equivalentes (27 errores y una advertencia), dos GET sin cuerpos, nueve perfiles y estado TDWG intactos, tres archivos originales sin cambios y ausencia de errores registrados. Las suites y builds finales del padre aprobaron: **6 semillas + 51 backend + 61 frontend = 118 pruebas**. No se modificaron fuentes de producción, perfiles, dependencias ni procesos durante el recorrido de navegador; el cierre documental no agrega una auditoría ni aprobación nativa.
 
