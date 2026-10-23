@@ -66,6 +66,7 @@ Solo se informa éxito cuando responde correctamente la API. Los errores permane
 Contrato de API:
 
 - `GET /api/catalog` y `GET /api/profiles`.
+- `POST /api/catalog/sync` con cuerpo completamente vacío; resultado `{outcome,status}`.
 - `POST /api/profiles` con `{name,version,description,rules}`.
 - `PUT /api/profiles/{id}` con los mismos campos y `revision`.
 - `POST /api/profiles/{id}/duplicate` con `{name,version}`.
@@ -77,7 +78,9 @@ No se usa ningún endpoint de carga de archivos.
 
 La búsqueda, la categoría y el estado se combinan. «Restablecer filtros» vuelve a mostrar todos los términos. Las categorías muestran el último segmento de su URI solo como etiqueta; el filtro conserva el valor canónico. «Sin categoría» indica ausencia, no una clasificación oficial nueva. Los estados y las definiciones siguen siendo los de la fuente.
 
-Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fila y mensaje, además del color. Las descargas siguen incluyendo el diagnóstico completo aunque la tabla esté filtrada. El pie ocupa el fondo de la ventana cuando hay poco contenido y sigue al contenido cuando la página crece; no se superpone.
+«Sincronizar con TDWG» solicita una actualización real, no solo otro GET del catálogo. El botón muestra «Sincronizando…» y queda deshabilitado mientras espera. Se diferencia éxito confirmado, fallo con última versión válida conservada e intento reemplazado por otro más reciente; un HTTP 200 no basta para anunciar éxito. Al terminar se invalida la caché compartida del catálogo para actualizar los términos, sin modificar perfiles ni enviar archivos. Ante un fallo de transporte se informa que el resultado no pudo confirmarse, sin afirmar que el servidor no hizo cambios.
+
+Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fila y mensaje, además del color. Las descargas siguen incluyendo el diagnóstico completo aunque la tabla esté filtrada. El pie queda fuera del área principal desplazable, al fondo del marco de la ventana, sin superponerse al contenido.
 
 ## Arquitectura
 

@@ -268,6 +268,95 @@ class CatalogSyncTests {
             assertThat(metadata().get("active").get("revision").asText()).isEqualTo(candidate.revision());
         } finally { release.countDown(); sourceGate = null; }
     }
+    @Test @org.junit.jupiter.api.Order(2)
+    void manualSyncReportsConfirmedSuccessWithoutChangingProfiles() throws Exception {
+        String profiles = profileBytes();
+        JsonNode before = json.readTree(getCatalog());
+        long attempts = metadata().get("attempts").asLong();
+        source.next = feeds(terms(), "f".repeat(40));
+        JsonNode response = manual();
+        assertThat(response.get("outcome").asString()).isEqualTo("SUCCESS");
+        assertThat(response.get("status")).isEqualTo(metadata());
+        assertThat(metadata().get("attempts").asLong()).isEqualTo(attempts + 1);
+        assertThat(metadata().get("active").get("revision").asString()).isEqualTo("f".repeat(40));
+        assertThat(metadata().get("lastFailure").isNull()).isTrue();
+        assertThat(json.readTree(getCatalog())).isEqualTo(before);
+        assertThat(profileBytes()).isEqualTo(profiles);
+    }
+
+    @Test @org.junit.jupiter.api.Order(3)
+    void manualFailureReportsFailurePreservesLastValidAndCanRecover() throws Exception {
+        String profiles = profileBytes();
+        String payload = getCatalog();
+        JsonNode before = metadata();
+        source.failure = new IOException("Fallo simulado");
+        JsonNode failed = manual();
+        assertThat(failed.get("outcome").asString()).isEqualTo("FAILED");
+        assertThat(failed.get("status")).isEqualTo(metadata());
+        assertThat(metadata().get("active")).isEqualTo(before.get("active"));
+        assertThat(metadata().get("attempts").asLong()).isEqualTo(before.get("attempts").asLong() + 1);
+        assertThat(metadata().get("lastFailure").asString())
+            .isEqualTo("No se pudo actualizar el catálogo TDWG; se conserva la última versión válida.");
+        assertThat(getCatalog()).isEqualTo(payload);
+        source.failure = null;
+        source.next = feeds(terms(), "f".repeat(40));
+        assertThat(manual().get("outcome").asString()).isEqualTo("SUCCESS");
+        assertThat(metadata().get("lastFailure").isNull()).isTrue();
+        assertThat(getCatalog()).isEqualTo(payload);
+        assertThat(profileBytes()).isEqualTo(profiles);
+    }
+
+    @ParameterizedTest @org.junit.jupiter.api.Order(4)
+    @ValueSource(strings = {" ", "null", "{}", "garbage"})
+    void manualSyncRejectsEveryNonemptyBodyWithoutChangingCounters(String body) throws Exception {
+        JsonNode before = metadata();
+        String payload = getCatalog();
+        String profiles = profileBytes();
+        var result = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .post("/api/catalog/sync").content(body)).andExpect(status().isBadRequest())
+            .andReturn().getResponse();
+        assertThat(json.readTree(result.getContentAsString()).get("detail").asString())
+            .isEqualTo("La solicitud de sincronización debe tener el cuerpo vacío.");
+        assertThat(metadata()).isEqualTo(before);
+        assertThat(getCatalog()).isEqualTo(payload);
+        assertThat(profileBytes()).isEqualTo(profiles);
+    }
+
+    @Test @org.junit.jupiter.api.Order(5)
+    void manualAttemptCannotClaimSuccessAfterNewerScheduledActivation() throws Exception {
+        String profiles = profileBytes();
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        var older = source.next;
+        sourceGate = () -> {
+            started.countDown();
+            try { assertThat(release.await(10, TimeUnit.SECONDS)).isTrue(); }
+            catch (InterruptedException exception) { throw new IOException(exception); }
+            return older;
+        };
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var pending = executor.submit(this::manual);
+            assertThat(started.await(10, TimeUnit.SECONDS)).isTrue();
+            source.next = feeds(terms(), "e".repeat(40));
+            refresh().run();
+            JsonNode latest = metadata();
+            release.countDown();
+            JsonNode result = pending.get(10, TimeUnit.SECONDS);
+            assertThat(result.get("outcome").asString()).isEqualTo("SUPERSEDED");
+            assertThat(result.get("status")).isEqualTo(latest);
+            assertThat(metadata()).isEqualTo(latest);
+            assertThat(profileBytes()).isEqualTo(profiles);
+        } finally { release.countDown(); sourceGate = null; }
+    }
+
+    JsonNode manual() throws Exception {
+        return json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .post("/api/catalog/sync")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    }
+    String profileBytes() throws Exception {
+        return mvc.perform(get("/api/profiles")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
     interface Gate { CatalogSource.SourceSet fetch() throws IOException; }
     static volatile Gate sourceGate;
     // Run before later cases introduce synthetic URIs into the shared snapshot.

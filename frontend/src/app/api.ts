@@ -1,6 +1,18 @@
 import { Injectable } from '@angular/core';
 import { Profile, ProfileInput, Term } from './analysis/model';
 
+export interface CatalogSyncResult {
+  outcome: 'SUCCESS' | 'FAILED' | 'SUPERSEDED';
+  status: {
+    active: {
+      revision: string; hash: string; snapshotVersion: number; activatedAt: string;
+      termCount: number; added: number; modified: number; deprecated: number;
+      sourceHashes: Record<string, string>;
+    };
+    attempts: number; lastAttempt: string | null; lastFailure: string | null;
+  };
+}
+
 /** Metadata only: this service deliberately has no upload method. */
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -24,6 +36,7 @@ export class Api {
     return response.json() as Promise<T>;
   }
   catalog = (signal?: AbortSignal) => this.request<Term[]>('catalog', 'GET', undefined, signal);
+  syncCatalog = () => this.request<CatalogSyncResult>('catalog/sync', 'POST');
   profiles = (signal?: AbortSignal) =>
     this.request<Profile[]>('profiles', 'GET', undefined, signal);
   create = (body: ProfileInput) => this.request<Profile>('profiles', 'POST', body);

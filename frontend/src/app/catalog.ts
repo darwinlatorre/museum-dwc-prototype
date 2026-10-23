@@ -1,4 +1,6 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { injectMutation, injectQueryClient } from '@tanstack/angular-query-experimental';
+import { Api } from './api';
 import { form, FormField } from '@angular/forms/signals';
 import { TableModule } from 'primeng/table';
 import { Term } from './analysis/model';
@@ -16,6 +18,13 @@ import { Term } from './analysis/model';
         </p>
       </div>
       <span class="count">{{ terms().length }} términos</span>
+    </div>
+    <div class="toolbar">
+      <button type="button" [disabled]="sync.isPending()" [attr.aria-busy]="sync.isPending()"
+        (click)="synchronize()">{{ sync.isPending() ? 'Sincronizando…' : 'Sincronizar con TDWG' }}</button>
+      @if (notice()) {
+        <p role="status" aria-live="polite" [class.error]="sync.isError() || sync.data()?.outcome === 'FAILED'">{{ notice() }}</p>
+      }
     </div>
     <div class="toolbar">
       <label
@@ -78,6 +87,25 @@ import { Term } from './analysis/model';
 })
 export class Catalog {
   terms = input.required<Term[]>();
+  private readonly api = inject(Api);
+  private readonly client = injectQueryClient();
+  readonly sync = injectMutation(() => ({
+    mutationFn: () => this.api.syncCatalog(),
+    retry: false,
+    onSettled: () => this.client.invalidateQueries({ queryKey: ['catalog'] }),
+  }));
+  readonly notice = computed(() => {
+    if (this.sync.isError()) return 'No se pudo confirmar la sincronización. Consulte el estado del catálogo antes de reintentar.';
+    switch (this.sync.data()?.outcome) {
+      case 'SUCCESS': return 'Catálogo sincronizado con TDWG.';
+      case 'FAILED': return 'No se pudo sincronizar. Se conserva la última versión válida.';
+      case 'SUPERSEDED': return 'Otra sincronización reemplazó este intento; se conserva el estado más reciente.';
+      default: return '';
+    }
+  });
+  synchronize() {
+    if (!this.sync.isPending()) this.sync.mutate();
+  }
   model = signal({ search: '', category: '', status: '' });
   filters = form(this.model);
   // The sentinel is presentation-only: an absent category is never written to metadata.

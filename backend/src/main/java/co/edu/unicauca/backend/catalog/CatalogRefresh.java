@@ -22,12 +22,26 @@ class CatalogRefresh implements Runnable {
     @Override
     @Scheduled(fixedDelayString = "${catalog.sync.delay:86400000}", initialDelayString = "${catalog.sync.initial-delay:60000}")
     public void run() {
+        attempt();
+    }
+
+    Result synchronize() {
+        Attempt attempt = attempt();
+        var status = store.status();
+        Outcome outcome = attempt.generation() != null && status.attempts() != attempt.generation()
+            ? Outcome.SUPERSEDED : attempt.success() ? Outcome.SUCCESS : Outcome.FAILED;
+        return new Result(outcome, status);
+    }
+
+    private Attempt attempt() {
         Long generation = null;
+        boolean success = false;
         try {
             generation = store.beginAttempt();
             // Network and parsing deliberately run outside the activation transaction.
             var candidate = parser.parse(source.fetch());
             store.activate(generation, candidate);
+            success = true;
         } catch (IOException | RuntimeException exception) {
             LOG.warn("No se pudo actualizar el catálogo TDWG; se conserva la última versión válida.");
             if (generation != null) {
@@ -35,5 +49,10 @@ class CatalogRefresh implements Runnable {
                 catch (RuntimeException persistenceFailure) { LOG.warn("No se pudo registrar el fallo de sincronización TDWG."); }
             }
         }
+        return new Attempt(generation, success);
     }
+
+    enum Outcome { SUCCESS, FAILED, SUPERSEDED }
+    record Result(Outcome outcome, CatalogStore.Status status) {}
+    private record Attempt(Long generation, boolean success) {}
 }
