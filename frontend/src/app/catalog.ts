@@ -17,14 +17,26 @@ import { Term } from './analysis/model';
           oficial TDWG (inglés).
         </p>
       </div>
-      <span class="count">{{ terms().length }} términos</span>
+      <div class="catalog-actions">
+        <span class="count">{{ terms().length }} términos</span>
+        <button class="catalog-sync-button" type="button" [disabled]="sync.isPending()"
+          [attr.aria-busy]="sync.isPending()" aria-describedby="catalog-sync-status"
+          (click)="synchronize()">
+          <span class="sync-indicator" [class.is-spinning]="sync.isPending()" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20 7v5h-5M4 17v-5h5" />
+              <path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" />
+            </svg>
+          </span>
+          <span>{{ sync.isPending() ? 'Sincronizando…' : 'Sincronizar con TDWG' }}</span>
+        </button>
+      </div>
     </div>
-    <div class="toolbar">
-      <button type="button" [disabled]="sync.isPending()" [attr.aria-busy]="sync.isPending()"
-        (click)="synchronize()">{{ sync.isPending() ? 'Sincronizando…' : 'Sincronizar con TDWG' }}</button>
-      @if (notice()) {
-        <p role="status" aria-live="polite" [class.error]="sync.isError() || sync.data()?.outcome === 'FAILED'">{{ notice() }}</p>
-      }
+    <div id="catalog-sync-status" class="catalog-sync-status" role="status" aria-live="polite" aria-atomic="true"
+      [class.sync-failure]="!sync.isPending() && (sync.isError() || sync.data()?.outcome === 'FAILED')"
+      [class.sync-success]="!sync.isPending() && sync.data()?.outcome === 'SUCCESS'">
+      {{ sync.isPending() ? 'Consultando TDWG. Puede seguir consultando y filtrando el catálogo.'
+        : notice() || 'Vocabulario oficial TDWG. Actualizar no modifica perfiles ni archivos.' }}
     </div>
     <div class="toolbar">
       <label

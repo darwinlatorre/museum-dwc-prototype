@@ -80,4 +80,24 @@ describe('Preservación pública del análisis local', () => {
     await f.whenStable();
     expect(root.textContent).not.toContain('Descargar JSON');
   });
+  it('explains which workbook sheet to analyze and reads the selected sheet locally', async () => {
+    const f = TestBed.createComponent(ImportWorkbench);
+    f.componentRef.setInput('profiles', [profile]);
+    f.componentRef.setInput('terms', []);
+    await f.whenStable();
+    const root = f.nativeElement as HTMLElement;
+    const input = root.querySelector('input[type=file]')!;
+    Object.defineProperty(input, 'files', { value: [new File(['isolated workbook'], 'original.xlsx')] });
+    input.dispatchEvent(new Event('change'));
+    await f.whenStable();
+    DelayedWorker.all.at(-1)!.respond({ kind: 'sheets', sheets: ['Inventario', 'Observaciones'] });
+    await f.whenStable();
+    const label = [...root.querySelectorAll('label')].find(l => l.querySelector('select'))!;
+    expect(label.textContent).toContain('Seleccione la hoja de cálculo que desea analizar');
+    expect([...label.querySelectorAll('option')].map(o => o.textContent?.trim())).toEqual(['Inventario', 'Observaciones']);
+    [...root.querySelectorAll('button')].find(b => b.textContent?.trim() === 'Leer la hoja seleccionada')!.click();
+    await f.whenStable();
+    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'parse', sheet: 'Inventario' });
+  });
+
 });

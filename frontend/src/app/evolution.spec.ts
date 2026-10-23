@@ -94,6 +94,17 @@ describe('Evolución de los controles públicos', () => {
     vi.unstubAllGlobals();
   });
 
+  it('permite escoger cantidad en normalización y diagnóstico sin cambiar el resultado completo', async () => {
+    const f = await workbench();
+    await click(f, 'Revisar normalización');
+    expect(f.nativeElement.querySelector('.p-paginator-rpp-dropdown')).toBeTruthy();
+    await click(f, 'Confirmar opciones y continuar');
+    await click(f, 'Validar localmente');
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('.p-paginator-rpp-dropdown')).toBeTruthy();
+    expect(f.componentInstance.issues()?.length).toBe(2);
+  });
+
   it('combina los cuatro contextos y hace Otros exclusivo sin cambiar el contrato del worker', async () => {
     const f = await workbench();
     await context(f);
@@ -129,11 +140,11 @@ describe('Evolución de los controles públicos', () => {
     const root = f.nativeElement as HTMLElement;
     expect(root.querySelector('th[scope=row]')?.textContent).toContain('catalog');
     expect(root.querySelector('.mapping-table app-dwc-picker')).toBeTruthy();
-    await click(f, 'Usar catalogNumber');
-    expect(button(root, 'Usar catalogNumber').getAttribute('aria-pressed')).toBe('true');
-    expect(button(root, 'Usar otherCatalogNumbers').getAttribute('aria-pressed')).toBe('false');
+    await click(f, 'catalogNumber');
+    expect(button(root, 'catalogNumber').getAttribute('aria-pressed')).toBe('true');
+    expect(button(root, 'otherCatalogNumbers').getAttribute('aria-pressed')).toBe('false');
     await click(f, 'Limpiar Mapear catalog');
-    expect(button(root, 'Usar catalogNumber').getAttribute('aria-pressed')).toBe('false');
+    expect(button(root, 'catalogNumber').getAttribute('aria-pressed')).toBe('false');
     const picker = root.querySelector('input[aria-label="Mapear catalog"]') as HTMLInputElement;
     expect(picker).toBeTruthy();
     (picker.closest('p-select')!.querySelector('[role=button]') as HTMLElement).click();
@@ -146,8 +157,8 @@ describe('Evolución de los controles públicos', () => {
     expect(option).toBeTruthy();
     option.click();
     await f.whenStable();
-    expect(button(root, 'Usar otherCatalogNumbers').getAttribute('aria-pressed')).toBe('true');
-    await click(f, 'Usar catalogNumber');
+    expect(button(root, 'otherCatalogNumbers').getAttribute('aria-pressed')).toBe('true');
+    await click(f, 'catalogNumber');
     const raw = root.querySelector('input[aria-label="Mapear raw"]') as HTMLInputElement;
     await change(f, raw, 'catalogNumber');
     expect(root.textContent).toContain('Cada campo de destino puede usarse una sola vez.');
@@ -162,7 +173,7 @@ describe('Evolución de los controles públicos', () => {
     const step = (i: number) => root.querySelectorAll<HTMLButtonElement>('.steps button')[i];
     expect(root.querySelectorAll('.steps button')).toHaveLength(6);
     expect(step(5).disabled).toBe(true);
-    await click(f, 'Usar catalogNumber');
+    await click(f, 'catalogNumber');
     await context(f);
     field(root, 'Colección biológica.').click();
     await f.whenStable();
@@ -173,7 +184,7 @@ describe('Evolución de los controles públicos', () => {
     expect(root.querySelector('input[type=file]')).toBeTruthy();
     step(2).click();
     await f.whenStable();
-    expect(button(root, 'Usar catalogNumber').getAttribute('aria-pressed')).toBe('true');
+    expect(button(root, 'catalogNumber').getAttribute('aria-pressed')).toBe('true');
     step(4).click();
     await f.whenStable();
     expect(field(root, 'Colección biológica.').checked).toBe(true);
@@ -202,7 +213,7 @@ describe('Evolución de los controles públicos', () => {
     expect([...steps].slice(1).every((b) => b.disabled)).toBe(true);
     const f = await workbench();
     const root = f.nativeElement as HTMLElement;
-    await click(f, 'Usar catalogNumber');
+    await click(f, 'catalogNumber');
     await change(f, root.querySelector('input[aria-label="Mapear raw"]')!, 'catalogNumber');
     expect([...root.querySelectorAll<HTMLButtonElement>('.steps button')].slice(3).every((b) => b.disabled)).toBe(true);
   });

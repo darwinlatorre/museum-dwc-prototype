@@ -46,12 +46,12 @@
     </p>
     @if (sheets().length) {
       <label
-        >Hoja de cálculo<select [formField]="sheetForm.name">
+        >Seleccione la hoja de cálculo que desea analizar<select [formField]="sheetForm.name">
           @for (name of sheets(); track name) {
             <option [value]="name">{{ name }}</option>
           }
         </select></label
-      ><p-button label="Leer la hoja seleccionada" [disabled]="busy()" (onClick)="loadSheet()" />
+      ><p-button class="sheet-read-action" label="Leer la hoja seleccionada" [disabled]="busy()" (onClick)="loadSheet()" />
     }
   </section>
 }
@@ -128,7 +128,9 @@
         >
       </div>
       <h4>Vista previa de cambios en los primeros 20 registros</h4>
-      <p-table [value]="preview()" [paginator]="true" [rows]="10">
+      <p-table [value]="preview()" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50, 100]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="{first}–{last} de {totalRecords} cambios">
         <ng-template #header
           ><tr>
             <th>Fila de origen</th>

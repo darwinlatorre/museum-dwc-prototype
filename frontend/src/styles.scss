@@ -3,7 +3,10 @@
   color: #203a34;
   background: #f3f6f5;
   font-size: 14px;
-  --mapping-control-height: 3.15rem;
+  --select-control-height: 3.15rem;
+  --select-control-border: #aebfb6;
+  --select-control-radius: 5px;
+  --mapping-control-height: var(--select-control-height);
   --pine: #194c3a;
   --ink: #203a34;
   --muted: #526960;
@@ -30,11 +33,14 @@ textarea {
   outline-offset: 3px;
 }
 button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid #b07918;
+a:focus-visible {
+  outline: 2px solid var(--pine);
+}
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: none;
 }
 button {
   cursor: pointer;
@@ -203,8 +209,7 @@ small {
 .editor fieldset { min-width: 0; }
 .p-dialog-content { overflow-wrap: anywhere; }
 .dwc-picker .p-select,
-.dwc-picker > button,
-.mapping-table .suggestion-chips button {
+.dwc-picker > button {
   min-height: var(--mapping-control-height);
   height: var(--mapping-control-height);
 }
@@ -221,11 +226,44 @@ small {
 }
 .dwc-picker .p-select-label:focus-visible { outline-offset: -3px; }
 .dwc-picker-panel .p-select-option { min-height: var(--mapping-control-height); }
+.rule-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rule-grid > * { min-width: 0; }
 .mapping-table .p-datatable-table { table-layout: fixed; min-width: 52rem; }
-.mapping-table app-dwc-picker .dwc-picker { display: grid; }
-.mapping-table .dwc-picker > button { width: 100%; }
-.mapping-table .suggestion-chips { display: grid; min-width: 0; }
-.mapping-table .suggestion-chips button { width: 100%; }
+.mapping-table th:first-child { width: 20%; }
+.mapping-table th:nth-child(2) { width: 36%; }
+.mapping-table app-dwc-picker .dwc-picker { display: flex; align-items: center; }
+.mapping-table .dwc-picker > button {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  height: auto;
+  padding: .35rem .5rem;
+  font-size: .85rem;
+}
+.mapping-table .suggestion-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  min-width: 0;
+  align-items: center;
+  gap: .4rem;
+  padding: .2rem 0;
+}
+.mapping-table .suggestion-chips button {
+  min-height: 2.25rem;
+  height: auto;
+  width: auto;
+  flex: 0 0 auto;
+  padding: .35rem .5rem;
+  font-size: .85rem;
+  white-space: nowrap;
+}
+.mapping-table .p-datatable-tbody > tr > td,
+.mapping-table .p-datatable-tbody > tr > .source-header {
+  vertical-align: middle !important;
+  padding: .55rem .75rem !important;
+}
+.sheet-read-action { display: block; margin-top: 1rem; }
 .editor .dwc-picker > button { margin-top: 0; }
 .p-select-overlay { max-width: calc(100vw - 2rem); }
 .p-select-option { overflow-wrap: anywhere; white-space: normal; }
@@ -234,11 +272,10 @@ small {
   vertical-align: top;
   padding: 0.85rem 1rem;
   min-width: 10rem;
-  border-left: 4px solid var(--pine);
+  border-left: 1px solid var(--pine);
   color: var(--ink) !important;
 }
 .source-header strong { font-size: 1rem; overflow-wrap: anywhere; }
-.source-header small { margin: 0 0 0.4rem; }
 .suggestion-chips {
   display: flex;
   flex-wrap: wrap;
@@ -246,11 +283,12 @@ small {
   min-width: 14rem;
 }
 .suggestion-chips button { overflow-wrap: anywhere; }
-.suggestion-chips button[aria-pressed='true'] {
+.suggestion-chips button[aria-pressed='true'],
+.suggestion-chips button[aria-pressed='true']:hover {
   background: var(--pine);
   border-color: var(--pine);
   color: white;
-  box-shadow: inset 0 0 0 2px white;
+  box-shadow: none;
 }
 .p-datatable .issue-error td {
   background: #fff1ed;
@@ -449,6 +487,7 @@ small {
     align-items: stretch;
   }
   .form-grid,
+  .rule-grid,
   .context-grid {
     grid-template-columns: 1fr;
   }
@@ -475,4 +514,106 @@ small {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Shared visual contract; native select semantics and editable DwC values stay intact. */
+select,
+.p-select,
+.p-select.p-component {
+  min-height: var(--select-control-height);
+  height: var(--select-control-height);
+  border: 1px solid var(--select-control-border);
+  border-radius: var(--select-control-radius);
+  background-color: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+  font-size: 1rem;
+  box-shadow: none;
+  max-width: 100%;
+}
+select {
+  appearance: none;
+  padding: .6rem 2.4rem .6rem .7rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23526960' stroke-width='1.8' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .7rem center;
+}
+select:hover:not(:disabled), .p-select:not(.p-disabled):hover { border-color: var(--pine); }
+select:focus-visible, .p-select:focus-within {
+  border-color: var(--pine);
+  outline: none;
+  box-shadow: none;
+}
+select:disabled, .p-select.p-disabled { background-color: #f1f5f2; opacity: .65; cursor: not-allowed; }
+.p-select-label { align-self: center; color: var(--ink); }
+.p-select-dropdown { width: 2.4rem; color: var(--muted); }
+.p-select-overlay { border: 1px solid var(--select-control-border); border-radius: var(--select-control-radius); }
+.p-select-option { min-height: var(--select-control-height); }
+.p-paginator .p-select { min-width: 5rem; }
+
+.mapping-table .p-datatable-tbody > tr > td,
+.mapping-table .p-datatable-tbody > tr > .source-header {
+  border-bottom: 1px solid #c2d2c9;
+  background: #fff !important;
+}
+.mapping-table .p-datatable-tbody > tr:hover > td,
+.mapping-table .p-datatable-tbody > tr:hover > .source-header,
+.mapping-table .p-datatable-tbody > tr:focus-within > td,
+.mapping-table .p-datatable-tbody > tr:focus-within > .source-header { background: #e2eee6 !important; }
+
+.catalog-actions { display: flex; flex-direction: column; align-items: flex-end; gap: .75rem; flex-shrink: 0; }
+.catalog-sync-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  width: 17rem;
+  height: var(--select-control-height);
+  min-height: var(--select-control-height);
+  white-space: nowrap;
+  background: var(--pine);
+  color: white;
+  border-color: var(--pine);
+  font-weight: 600;
+}
+.catalog-sync-button:hover:not(:disabled) { background: #235f48; }
+.catalog-sync-button:disabled { opacity: 1; background: #edf4ef; color: var(--pine); border-color: #b8cbc0; cursor: progress; }
+.sync-indicator { display: inline-flex; width: 1.2rem; height: 1.2rem; flex: 0 0 auto; }
+.sync-indicator svg { width: 100%; height: 100%; }
+.sync-indicator.is-spinning { animation: catalog-spin 1.2s linear infinite; }
+@keyframes catalog-spin { to { transform: rotate(360deg); } }
+.catalog-sync-status {
+  display: flex;
+  align-items: center;
+  min-height: 5rem;
+  padding: .85rem 1rem;
+  margin: -.4rem 0 1rem;
+  border-left: 3px solid #b8cbc0;
+  border-radius: 4px;
+  background: #f3f7f4;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.catalog-sync-status.sync-success { border-color: #30785c; color: var(--pine); }
+.catalog-sync-status.sync-failure { border-color: #ae4030; color: #732b22; background: #fff1ed; }
+@media (max-width: 800px) {
+  app-catalog .section-heading { flex-wrap: wrap; }
+  .catalog-actions { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; }
+  .catalog-sync-status { min-height: 8rem; }
+}
+@media (prefers-reduced-motion: reduce) { .sync-indicator.is-spinning { animation: none; } }
+
+.p-select {
+  --p-select-border-color: var(--select-control-border);
+  --p-select-hover-border-color: var(--pine);
+  --p-select-focus-border-color: var(--pine);
+  --p-select-border-radius: var(--select-control-radius);
+  --p-select-background: white;
+  --p-select-disabled-background: #f1f5f2;
+  --p-select-color: var(--ink);
+  --p-select-dropdown-color: var(--muted);
+  --p-select-option-focus-background: #edf4ef;
+  --p-select-option-selected-background: #e2eee6;
+  --p-select-option-selected-color: var(--pine);
 }

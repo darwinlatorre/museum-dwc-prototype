@@ -1,6 +1,79 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: refinamiento Java/JPA e importación
+## Estado actual: baseline visual previo a reorganizar frontend
+
+T1 de `odd/tasks/frontend-architecture.md`: etiqueta «Seleccione la hoja de cálculo que desea analizar»; equivalencia seleccionada con fondo y borde `rgb(25,76,58)`, texto blanco y `box-shadow:none` incluso en hover; input y selector enfocados sin outline amarillo, conservando borde verde, resaltado de fila y foco de teclado en botones/enlaces.
+
+REDjob47:3fallos/10pases. Job48:13/13focalizadas, pero suite83/84 con timeout10s en preparación de app.spec; comandoexit1 tras4m44 y build no ejecutado por&&. No se reintentó automáticamente. Diagnóstico de metadatos del host mostró carga alta y swap llena, sin demostrar causalidad. Usuario autorizó exactamente un intento secuencial (`authorize_one_serial_frontend_suite`), con maxWorkers1/fileParallelismfalse y sin ampliar límites o cambiar aserciones. **Job49:84/84 ybuildPASS**,15s. Configuración local temporal `.browser/frontend-architecture/vitest.serial.config.mjs`, no configuración del producto. Warning640,61kB/500kB conservado.
+
+Chromiumreal1440×1000, acciones públicas: CSV de ejemplo, perfil combinado, mapeo, selección de equivalencia, hover y foco de input; XLSX y espera de etiqueta exacta. Medidas `.browser/frontend-architecture/t1-selection.json` y `t1-focus.json`; captura `screenshot-1792781196092.png` abierta e inspeccionada. Sesión propia `museum-architecture-01a16167` cerrada, sin guardar perfiles. Modelo API/worker y dependencias intactos; no repetir backend/semillas para estas reglas de presentación.
+
+ASSESS no evaluable por untracked; plan de verificación propia, sin revisión/aprobación nativa reclamada. La reorganización T2/T3 y la aceptación final T4 aún están pendientes en el registro, no se presentan como terminadas aquí. Sin nueva auditoría ni push/PR; archivos ajenos preservados.
+
+## Historial: bordes de mapeo suavizados
+
+Últimas correcciones solicitadas: sin fondos alternos; separadores horizontales **1px**, borde izquierdo de `source-header` **1px**, resaltado al enfocar y pasar el cursor conservado. README y regresión CSS actualizados; sin cambios de lógica, datos o backend.
+
+Pruebas: job43 RED1fallo/8pases→job44GREEN9/9+81/81/build; el pedido adicional del borde izquierdo produjo job45 RED1fallo/8pases→**job46 final9/9focalizadas+81/81suite ybuildPASS**. Warningbundle640,57kB/500kB, presupuesto intacto. Backend/semillas no repetidos por ser presentación localizada.
+
+Chromium real: dos filas blancas en reposo; enfocar el input de la primera produce `rgb(226,238,230)` solo en esa fila, dejando la segunda blanca. Bordes izquierdo e inferior medidos1px. Capturas `.browser/mapping-soft/screenshot-1792768395065.png` (antes del ajuste izquierdo) y `screenshot-1792768534534.png` (final), ambas abiertas e inspeccionadas; `neutral.json`, `focused.json`, `left-final.json` conservan las medidas. Acciones públicas: cargar CSV de ejemplo, elegir perfil, ir a mapeo y enfocar input; evaluaciones DOM de lectura, sin inyectar estado ni guardar perfiles. Sesión propia `museum-mapping-soft-01a16167` cerrada.
+
+RDD on; ASSESS no evaluable por untracked, plan de verificación propia sin independiente; sin aprobación nativa. Sin nueva auditoría, commit/push/PR ni cambios en archivos ajenos.
+
+## Historial: separación, selectores, TDWG y paginación
+
+Cambio frontend posterior a la distribución compacta; conserva sus ajustes y no modifica backend, dependencias, API, validación ni los nueve perfiles.
+
+| Pedido | Comprobación observada |
+|---|---|
+| Separar encabezados | Filas de mapeo con fondos alternos, separador2px y realce al pasar el cursor/enfocar. Encabezado de origen una sola vez en cabecera, sin repetir «Origen» en cada fila. Captura escritorio abierta e inspeccionada. |
+| Estandarizar listbox | Nativos, PrimeNG y paginadores:44,09375px de altura,14px de tipografía,borde `rgb(174,191,182)` y radio5px, medidos en catálogo. Tokens compartidos para foco, deshabilitado y opciones PrimeNG. No se migraron los controles nativos: su ventana de opciones depende del navegador/SO. |
+| Mejorar TDWG | Acción junto al encabezado/contador, filtros separados, icono/spinner y región de estado permanente. Móvil390×844: botón **238×44,09375px** y estado **112px** con rectángulos completos idénticos en reposo, pendiente y éxito; documento390px. `pending:true`,spinner observado y éxito real. HAR final:1POST `/api/catalog/sync` sin cuerpo+GET. |
+| Cantidad por tabla | Catálogo15→30 filas visibles; mapeo12→25; normalización10→25 de30cambios; diagnóstico20→28 al elegir50; perfiles seleccionados25 con9filas. Cantidades iniciales anteriores conservadas. |
+
+La normalización se ejerció con una copia local del CSV válido, agregando espacios a sus30celdas, sin modificar el original. El recorte explícito produjo30cambios y0errores/0advertencias. CSV erróneo con combinado:27errores+1advertencia antes/después de elegir50. Nueve perfiles completos iguales en GET antes/después; registro de errores de página vacío. Sesión propia `museum-consistency-01a16167` cerrada.
+
+**Pruebas:** job39 RED4aserciones fallidas por funciones ausentes,15pases y una prueba nueva que agotó5s; ese timeout es un fallo, no se lo presenta como RED funcional confirmado ni se aumentó el límite. Tras implementar el candidato nuevo, job40 aprobó20/20focalizadas,80/80suite/build. La inspección real detectó dos defectos adicionales: etiqueta TDWG partida con salto de altura53,75→44,09px y fuente nativa12,88px frente14px del paginador. Se fijaron regresiones: job41 RED2fallos/7pases; corrección de altura/ancho fijos, nowrap y tipografía común. **Job42 final:9/9focalizadas,81/81suite ybuildPASS**. Bundle640,84kB frente500kB: advertencia sin cambiar presupuesto. Backend y semillas no se reejecutaron porque no se tocaron.
+
+**Incidentes de automatización, no pases:** primera evaluación tras HMR buscó el botón en una sección distinta; se navegó a catálogo y esperó el control. Un intento de cantidad en preview vacío no abrió opciones porque estaba deshabilitado; se comprobó luego con30cambios reales. Una búsqueda de opción50 fue anterior al montaje del overlay; se esperó su estado observable. Un selector demasiado amplio apuntó al workbench oculto al navegar a perfiles y recibió clic cubierto; se acotó a `app-profiles`. No hubo inyección de estado, simulación de respuestas ni escrituras de perfiles.
+
+Comandos del candidato final: `cd frontend && npm test -- --watch=false --include=src/app/layout.spec.ts && npm test -- --watch=false && npm run build`. Navegador existente con sesión propia y `--screenshot-dir /home/dark/projects/universidad/.browser/control-consistency`; `network har start/stop`, clic en sincronizar, lecturas DOM de cajas/estilos, espera de botón habilitado; en paginadores, clic en `.p-paginator-rpp-dropdown .p-select-dropdown`, espera de `[role=listbox] [role=option]` y selección por nombre. Para perfiles se acotó a `app-profiles`. Archivos cargados únicamente mediante input público; se cerró la sesión con `close`.
+
+Evidencia local ignorada: `.browser/control-consistency/` conserva geometrías, cantidades, HAR y perfiles. Capturas abiertas: `screenshot-1792762006303.png` (filas escritorio), `screenshot-1792762212426.png` (catálogo móvil corregido), `screenshot-1792762304388.png` (pendiente final), `screenshot-1792762305755.png` (mapeo móvil). Las primeras capturas desktop de sincronización documentan el candidato previo a corregir la altura, no son prueba del tamaño final.
+
+RDD sigue on; ASSESS final no evaluable por untracked, plan de verificación propia sin verificador independiente. No se inició revisión ni se afirma aprobación nativa. Sin nueva auditoría, commit/push/PR ni modificación de archivos ajenos. README actualizado; límites y comprobaciones históricas quedan separados debajo.
+
+## Historial: distribución compacta y main expandible
+
+Cambio exclusivamente frontend posterior a `6936cd3`; no reabre las tareas anteriores ni modifica API, parser, validación, dependencias o perfiles.
+
+- `main` mantiene el mínimo anterior y crece verticalmente con el contenido. Chromium1440×1000: antes/después corto **1150×853,21875px** exactos; mapeo largo **969,4375px** de alto. Ancho de documento1440 en viewport1440. El pie sigue el flujo debajo del contenido.
+- Reglas: seis campos en **tres columnas/dos filas** en escritorio; botón «Eliminar regla» debajo sin cambio. Móvil: una columna, diálogo362px dentro de viewport390px. Perfil nuevo de comprobación descartado, sin guardar.
+- «Colección biológica.» es la primera opción de contexto; ninguna opción queda preseleccionada por este cambio. Combinación/exclusividad y claves del worker conservadas.
+- Mapeo: destino y «Limpiar» pequeño en el mismo eje; todas las sugerencias en una franja horizontal a la derecha, sin prefijo «Usar». Filas medidas60,47px, botones31,5px. Cuando no caben, hay desplazamiento local; móvil tabla728px en región341px, documento390px/viewport390px. Selección de sugerencia y limpieza comprobadas en controles públicos.
+- Excel: margen superior medido **14px** entre selector y acción de lectura. Hoja `Complete` elegida con teclado nativo y leída:1registro/30columnas.
+- CSV erróneo, perfil combinado y Otros:27errores+1advertencia. GET perfiles antes/después: mismos nueve objetos completos. Sin errores registrados de página. Sesión propia `museum-compact-01a16167` cerrada.
+
+**Pruebas nuevas observadas:** RED9fallos/5pases; primer intento GREEN13pases/1fallo por regex que omitía los atributos de encapsulación Angular del CSS compilado. Corregida únicamente esa aserción manteniendo la comprobación de ancho automático. Resultado: **14/14 focused y76/76 suite frontend**, buildPASS (job38). Advertencia de bundle inicial636,88kB frente500kB; no se modificó el presupuesto. Backend y semillas no se reejecutaron: no se cambió su comportamiento ni código. No convertir la suma con resultados históricos en una suite nueva.
+
+**Límite de automatización:** `agent-browser select ... Complete` informó éxito, pero la primera lectura resultó2registros/6columnas de `With errors`; esa captura no prueba lectura de `Complete`. Después, con teclado ArrowDown/Enter sobre el selector nativo, el valor observado fue `Complete` y la lectura1×30. No se cambió el producto para acomodar la herramienta. Una lectura de diagnóstico tomada durante «Procesando localmente» tampoco se contó como resultado: después se esperó «27 errores» y se capturó el diagnóstico concluido.
+
+Comandos de pruebas:
+
+```bash
+cd frontend
+npm test -- --watch=false --include=src/app/layout.spec.ts --include=src/app/app.spec.ts --include=src/app/evolution.spec.ts
+npm test -- --watch=false
+npm run build
+```
+
+Navegador existente, sin instalar/actualizar; `--session museum-compact-01a16167 --screenshot-dir /home/dark/projects/universidad/.browser/compact-layout`, ejecutable Chromium del proyecto. Se usaron `upload 'input[type=file]' .../examples/records-with-errors.csv`, `check @e13`, `click @e20`, selección/limpieza, `set viewport 390 844`, contexto/Otros/validación; luego «Crear perfil»/«Agregar regla»/«Cerrar editor» sin guardar. Para Excel: `focus '.upload select'`, `press ArrowDown`, `press Enter`, `get value '.upload select'`, clic en «Leer la hoja seleccionada», `wait --text '30 columnas'` y `close`. Evaluaciones DOM exclusivamente de lectura midieron cajas/estilos; no se inyectó estado ni se simularon respuestas.
+
+Artefactos locales ignorados por Git: `.browser/compact-layout/` contiene baseline, geometrías, nueve perfiles antes/después, diagnóstico, lectura XLSX y errores. Capturas abiertas e inspeccionadas: `screenshot-1792730139787.png` (mapeo escritorio), `screenshot-1792730173703.png` (móvil), `screenshot-1792730219666.png` (regla3×2), `screenshot-1792730247578.png` (selector XLSX móvil; el margen del botón se prueba con geometría, no con su visibilidad en ese recorte).
+
+RDD sigue on; ASSESS devolvió `unassessable` por archivos untracked y plan de verificación propia, sin verificador independiente. No se inició revisión nativa ni se afirma aprobación. No nueva auditoría. Archivos ajenos, datos y perfiles intactos; sin push/PR.
+
+## Historial: refinamiento Java/JPA e importación
 
 **Aceptación funcional comprobada por el padre:** separación DTO/JPA, progreso navegable, selector único, marco estable y sincronización manual. Los nueve perfiles, incluidos tres borradores, permanecen íntegros y visibles; no hubo eliminación ni ocultamiento. Registro: `odd/tasks/museum-refinement.md`.
 

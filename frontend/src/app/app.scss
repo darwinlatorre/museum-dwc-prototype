@@ -1,7 +1,6 @@
 :host {
   display: flex;
-  height: 100dvh;
-  min-height: 0;
+  min-height: 100dvh;
 }
 .sidebar {
   width: 248px;
@@ -116,8 +115,8 @@ main {
   flex: 1;
   min-height: 0;
   width: calc(100% - 3rem);
-  overflow: auto;
-  scrollbar-gutter: stable;
+  min-width: 0;
+  overflow-x: clip;
 }
 footer {
   flex-shrink: 0;
@@ -154,7 +153,7 @@ footer {
 @media (max-width: 700px) {
   :host {
     flex-direction: column;
-    min-height: 0;
+    min-height: 100dvh;
   }
   .sidebar {
     flex-shrink: 0;

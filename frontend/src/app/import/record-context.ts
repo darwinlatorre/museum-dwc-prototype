@@ -23,8 +23,8 @@ export class RecordContext {
   readonly contextChanged = output<Context>();
   readonly otherChanged = output<boolean>();
   readonly options: { key: keyof Context; label: string }[] = [
-    { key: 'permit', label: 'Asociados a un permiso de recolección o acceso a recursos genéticos.' },
     { key: 'collection', label: 'Colección biológica.' },
+    { key: 'permit', label: 'Asociados a un permiso de recolección o acceso a recursos genéticos.' },
     { key: 'sampling', label: 'Eventos de muestreo.' },
     { key: 'marine', label: 'Marinos.' },
   ];

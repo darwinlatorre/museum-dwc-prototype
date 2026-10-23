@@ -31,12 +31,18 @@ describe('Sincronización manual del catálogo', () => {
     await fixture.whenStable();
     const trigger = button();
     expect(trigger).toBeTruthy();
+    expect(trigger.closest('.catalog-actions')).toBeTruthy();
+    const feedback = fixture.nativeElement.querySelector('[role=status]');
+    expect(feedback).toBeTruthy();
     trigger.click();
     await vi.waitFor(() => expect(trigger.disabled).toBe(true));
     trigger.click();
     expect(request).toHaveBeenCalledTimes(1);
     expect(request).toHaveBeenCalledWith('/api/catalog/sync', expect.objectContaining({ method: 'POST', body: undefined }));
     expect(fixture.nativeElement.textContent).toContain('Sincronizando');
+    expect(trigger.querySelector('.sync-indicator.is-spinning')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[role=status]')).toBe(feedback);
+    expect(feedback.textContent).toContain('Puede seguir consultando');
     finish();
     await vi.waitFor(() => expect(fixture.nativeElement.textContent).toContain('Catálogo sincronizado con TDWG.'));
     await fixture.whenStable();

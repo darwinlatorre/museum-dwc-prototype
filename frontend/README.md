@@ -15,13 +15,13 @@ Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al ba
 
 ## Analizar una colección
 
-1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una hoja.
+1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una pestaña en «Seleccione la hoja de cálculo que desea analizar» y pulsar «Leer la hoja seleccionada».
 2. Elegir uno o varios perfiles publicados. Los borradores no se ejecutan.
 3. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Escribir y filtrar en el único campo que muestra el destino actual; la flecha abre directamente la lista, alineada al ancho del campo. Usar las flechas del teclado y Enter para elegir. También se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias separadas muestran su selección. «Limpiar» retira la asignación explícita y desmarca la sugerencia; no elimina la columna ni desactiva el reconocimiento implícito de su encabezado original. Los nombres Darwin Core exactos se reconocen sin cambios. No se permiten dos columnas de origen con el mismo destino.
 4. Si se desea, activar el recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. Revisar los cambios de los primeros 20 registros. Ambas opciones están desactivadas inicialmente y solo cambian una copia de trabajo.
 5. Indicar los contextos y validar localmente:
-   - Asociados a un permiso de recolección o acceso a recursos genéticos.
    - Colección biológica.
+   - Asociados a un permiso de recolección o acceso a recursos genéticos.
    - Eventos de muestreo.
    - Marinos.
    - Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados.
@@ -31,7 +31,11 @@ Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al ba
 
 Los botones del progreso permiten volver a los pasos disponibles sin perder archivo, mapeo, opciones, contexto ni diagnóstico vigente. Se requiere un archivo leído para elegir perfiles, al menos un perfil publicado para mapear y destinos únicos para continuar. El diagnóstico solo está disponible tras validar; editar entradas lo invalida. La navegación por sí sola no cancela ni reinicia el worker.
 
-El área principal conserva su ancho y alto disponible según la ventana, con desplazamiento interno para contenidos largos y tablas anchas. El pie queda fuera de esa región; en móvil el marco se adapta al espacio restante tras la navegación y la cabecera. Los controles de mapeo comparten altura y la lista tiene el ancho del campo de destino, sin un segundo marco de entrada.
+El área principal conserva como mínimo el espacio disponible de la ventana y crece verticalmente con su contenido; el pie se desplaza debajo, sin superponerse. El ancho sigue limitado al espacio disponible. Las tablas anchas se desplazan dentro de su propia región, sin ensanchar la página.
+
+Cada encabezado de origen ocupa una fila de mapeo: selector de destino, «Limpiar» compacto a su lado y equivalencias a la derecha. Las filas mantienen un fondo uniforme, separadores finos de 1 px —incluido el borde izquierdo del encabezado— y resaltado al enfocar o pasar el cursor, sin repetir «Origen» junto a cada encabezado. Las equivalencias muestran solo el nombre del término, con botones pequeños en una franja horizontal desplazable cuando no caben. La opción seleccionada mantiene relleno verde sólido y texto blanco, también al pasar el cursor, sin borde blanco interior. Los campos indican foco con el borde verde y el resaltado de fila, sin contorno amarillo; los botones y enlaces conservan una indicación verde para navegación por teclado. No se aplican automáticamente. El desplegable conserva el ancho del campo y una única entrada de búsqueda. En Excel, «Leer la hoja seleccionada» queda separado del selector por un margen superior.
+
+Los selectores de formularios, filtros, destinos y cantidad por página comparten altura, borde, tipografía, flecha y estados de foco/deshabilitado. Se conservan la edición libre del destino DwC y los controles nativos existentes; la ventana de opciones nativa sigue dependiendo del navegador/sistema operativo. Todas las tablas permiten elegir cantidad por página: perfiles, mapeo, vista previa de normalización, diagnóstico y catálogo. Se mantienen sus cantidades iniciales anteriores y los filtros/exportaciones no se limitan a la página visible.
 
 ### Límites y conservación del origen
 
@@ -59,7 +63,7 @@ Los términos Darwin Core, URI, nombres científicos y valores de los archivos p
 
 ## Administrar perfiles
 
-Crear un perfil abre un diálogo modal con datos del perfil y grupos de reglas: campo, comprobación, condición, severidad, mensaje y fuente. Guardar como borrador, editarlo o publicarlo explícitamente. Escape o «Cerrar editor» cierran el diálogo sin guardar; el foco vuelve al control que lo abrió. Un error al guardar mantiene el diálogo, el contenido y el mensaje de error. Las versiones publicadas son de solo lectura, incluido el selector de campos: se duplican en otra versión para evolucionar las reglas.
+Crear un perfil abre un diálogo modal con datos del perfil y grupos de reglas: campo, comprobación, condición, severidad, mensaje y fuente. Los seis campos de cada regla se distribuyen en tres columnas y dos filas en escritorio; en pantallas angostas se apilan para conservar su legibilidad. «Eliminar regla» mantiene su ubicación debajo del grupo. Guardar como borrador, editarlo o publicarlo explícitamente. Escape o «Cerrar editor» cierran el diálogo sin guardar; el foco vuelve al control que lo abrió. Un error al guardar mantiene el diálogo, el contenido y el mensaje de error. Las versiones publicadas son de solo lectura, incluido el selector de campos: se duplican en otra versión para evolucionar las reglas.
 
 Solo se informa éxito cuando responde correctamente la API. Los errores permanecen visibles; no hay persistencia local ni éxito simulado como reemplazo de una solicitud fallida. El backend rechaza cambios concurrentes mediante `revision`; actualizar los datos del servidor antes de volver a guardar.
 
@@ -78,9 +82,9 @@ No se usa ningún endpoint de carga de archivos.
 
 La búsqueda, la categoría y el estado se combinan. «Restablecer filtros» vuelve a mostrar todos los términos. Las categorías muestran el último segmento de su URI solo como etiqueta; el filtro conserva el valor canónico. «Sin categoría» indica ausencia, no una clasificación oficial nueva. Los estados y las definiciones siguen siendo los de la fuente.
 
-«Sincronizar con TDWG» solicita una actualización real, no solo otro GET del catálogo. El botón muestra «Sincronizando…» y queda deshabilitado mientras espera. Se diferencia éxito confirmado, fallo con última versión válida conservada e intento reemplazado por otro más reciente; un HTTP 200 no basta para anunciar éxito. Al terminar se invalida la caché compartida del catálogo para actualizar los términos, sin modificar perfiles ni enviar archivos. Ante un fallo de transporte se informa que el resultado no pudo confirmarse, sin afirmar que el servidor no hizo cambios.
+«Sincronizar con TDWG» solicita una actualización real, no solo otro GET del catálogo. La acción se ubica junto al encabezado y al total de términos, separada de los filtros. El botón mantiene su ancho al mostrar «Sincronizando…», con indicador animado (sin animación si se prefiere movimiento reducido), y queda deshabilitado mientras espera. Una región de estado permanente anuncia actividad y resultado sin insertar o retirar barras; se puede seguir filtrando el catálogo durante la consulta. Se diferencia éxito confirmado, fallo con última versión válida conservada e intento reemplazado por otro más reciente; un HTTP 200 no basta para anunciar éxito. Al terminar se invalida la caché compartida del catálogo para actualizar los términos, sin modificar perfiles ni enviar archivos. Ante un fallo de transporte se informa que el resultado no pudo confirmarse, sin afirmar que el servidor no hizo cambios.
 
-Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fila y mensaje, además del color. Las descargas siguen incluyendo el diagnóstico completo aunque la tabla esté filtrada. El pie queda fuera del área principal desplazable, al fondo del marco de la ventana, sin superponerse al contenido.
+Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fila y mensaje, además del color. Las descargas siguen incluyendo el diagnóstico completo aunque la tabla esté filtrada. El pie queda debajo del área principal, al fondo de la ventana si hay poco contenido y más abajo cuando el contenido crece, sin superponerse.
 
 ## Arquitectura
 

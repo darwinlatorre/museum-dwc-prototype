@@ -33,6 +33,9 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
       [value]="filtered()"
       [paginator]="true"
       [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50, 100]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="{first}–{last} de {totalRecords} perfiles"
       [tableStyle]="{ 'min-width': '42rem' }"
     >
       <ng-template #header
@@ -120,7 +123,7 @@ const empty = (): ProfileInput => ({ name: '', version: '', description: '', rul
               @for (rule of editor.rules; track $index; let i = $index) {
                 <fieldset>
                   <legend>Regla {{ i + 1 }}</legend>
-                  <div class="form-grid">
+                  <div class="form-grid rule-grid">
                     <div>
                       <span class="field-label">Campo Darwin Core</span>
                       <app-dwc-picker [terms]="terms()" [formField]="rule.field"
