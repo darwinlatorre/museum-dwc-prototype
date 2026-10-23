@@ -8,7 +8,7 @@ import { DwcPicker } from '../shared/dwc-picker';
   selector: 'app-column-mapping',
   imports: [TableModule, DwcPicker],
   template: `
-    <p-table [value]="headers()" [paginator]="true" [rows]="12">
+    <p-table class="mapping-table" [value]="headers()" [paginator]="true" [rows]="12">
       <ng-template #header>
         <tr><th>Encabezado de origen</th><th>Campo Darwin Core de destino</th><th>Posible equivalencia</th></tr>
       </ng-template>

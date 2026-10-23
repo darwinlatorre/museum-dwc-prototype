@@ -128,6 +128,7 @@ describe('Evolución de los controles públicos', () => {
     const f = await workbench();
     const root = f.nativeElement as HTMLElement;
     expect(root.querySelector('th[scope=row]')?.textContent).toContain('catalog');
+    expect(root.querySelector('.mapping-table app-dwc-picker')).toBeTruthy();
     await click(f, 'Usar catalogNumber');
     expect(button(root, 'Usar catalogNumber').getAttribute('aria-pressed')).toBe('true');
     expect(button(root, 'Usar otherCatalogNumbers').getAttribute('aria-pressed')).toBe('false');
@@ -137,8 +138,10 @@ describe('Evolución de los controles públicos', () => {
     expect(picker).toBeTruthy();
     (picker.closest('p-select')!.querySelector('[role=button]') as HTMLElement).click();
     await f.whenStable();
-    const search = document.querySelector('input[role=searchbox]') as HTMLInputElement;
-    await change(f, search, 'otherCatalog');
+    expect(document.querySelector('input[role=searchbox]')).toBeNull();
+    expect(picker.closest('app-dwc-picker')!.querySelectorAll('input')).toHaveLength(1);
+    await change(f, picker, 'otherCatalog');
+    expect([...document.querySelectorAll('[role=option]')].map((o) => o.textContent?.trim())).toEqual(['otherCatalogNumbers']);
     const option = [...document.querySelectorAll('[role=option]')].find((o) => o.textContent?.includes('otherCatalogNumbers')) as HTMLElement;
     expect(option).toBeTruthy();
     option.click();
@@ -151,6 +154,57 @@ describe('Evolución de los controles públicos', () => {
     expect(button(root, 'Revisar normalización').disabled).toBe(true);
     await click(f, 'Limpiar Mapear raw');
     expect(button(root, 'Revisar normalización').disabled).toBe(false);
+  });
+
+  it('permite volver por el progreso sin perder archivo, mapeo, contexto ni diagnóstico', async () => {
+    const f = await workbench();
+    const root = f.nativeElement as HTMLElement;
+    const step = (i: number) => root.querySelectorAll<HTMLButtonElement>('.steps button')[i];
+    expect(root.querySelectorAll('.steps button')).toHaveLength(6);
+    expect(step(5).disabled).toBe(true);
+    await click(f, 'Usar catalogNumber');
+    await context(f);
+    field(root, 'Colección biológica.').click();
+    await f.whenStable();
+    await click(f, 'Validar localmente');
+    const count = requests.length;
+    step(0).click();
+    await f.whenStable();
+    expect(root.querySelector('input[type=file]')).toBeTruthy();
+    step(2).click();
+    await f.whenStable();
+    expect(button(root, 'Usar catalogNumber').getAttribute('aria-pressed')).toBe('true');
+    step(4).click();
+    await f.whenStable();
+    expect(field(root, 'Colección biológica.').checked).toBe(true);
+    step(5).click();
+    await f.whenStable();
+    expect(root.textContent).toContain('Original error');
+    expect(root.textContent).toContain('isolated.csv');
+    expect(step(5).getAttribute('aria-current')).toBe('step');
+    expect(requests).toHaveLength(count);
+    step(1).click();
+    await f.whenStable();
+    (root.querySelector('input[type=checkbox]') as HTMLInputElement).click();
+    await f.whenStable();
+    expect(step(2).disabled).toBe(true);
+    expect(step(4).disabled).toBe(true);
+    expect(step(5).disabled).toBe(true);
+  });
+
+  it('bloquea el progreso sin archivo y con destinos repetidos', async () => {
+    const empty = TestBed.createComponent(ImportWorkbench);
+    empty.componentRef.setInput('terms', terms);
+    empty.componentRef.setInput('profiles', [profile]);
+    await empty.whenStable();
+    const steps = empty.nativeElement.querySelectorAll('.steps button') as NodeListOf<HTMLButtonElement>;
+    expect(steps).toHaveLength(6);
+    expect([...steps].slice(1).every((b) => b.disabled)).toBe(true);
+    const f = await workbench();
+    const root = f.nativeElement as HTMLElement;
+    await click(f, 'Usar catalogNumber');
+    await change(f, root.querySelector('input[aria-label="Mapear raw"]')!, 'catalogNumber');
+    expect([...root.querySelectorAll<HTMLButtonElement>('.steps button')].slice(3).every((b) => b.disabled)).toBe(true);
   });
 
   it('distingue errores por texto y conserva las descargas completas al filtrar', async () => {

@@ -3,6 +3,7 @@
   color: #203a34;
   background: #f3f6f5;
   font-size: 14px;
+  --mapping-control-height: 3.15rem;
   --pine: #194c3a;
   --ink: #203a34;
   --muted: #526960;
@@ -201,7 +202,31 @@ small {
 .editor h3 { margin-top: 0; }
 .editor fieldset { min-width: 0; }
 .p-dialog-content { overflow-wrap: anywhere; }
-.p-select { min-height: 42px; }
+.dwc-picker .p-select,
+.dwc-picker > button,
+.mapping-table .suggestion-chips button {
+  min-height: var(--mapping-control-height);
+  height: var(--mapping-control-height);
+}
+.dwc-picker .p-select { align-items: center; }
+.dwc-picker .p-select-label {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  height: 100%;
+  color: var(--ink) !important;
+  opacity: 1;
+  margin: 0;
+}
+.dwc-picker .p-select-label:focus-visible { outline-offset: -3px; }
+.dwc-picker-panel .p-select-option { min-height: var(--mapping-control-height); }
+.mapping-table .p-datatable-table { table-layout: fixed; min-width: 52rem; }
+.mapping-table app-dwc-picker .dwc-picker { display: grid; }
+.mapping-table .dwc-picker > button { width: 100%; }
+.mapping-table .suggestion-chips { display: grid; min-width: 0; }
+.mapping-table .suggestion-chips button { width: 100%; }
+.editor .dwc-picker > button { margin-top: 0; }
 .p-select-overlay { max-width: calc(100vw - 2rem); }
 .p-select-option { overflow-wrap: anywhere; white-space: normal; }
 .p-datatable .source-header {
@@ -292,10 +317,24 @@ small {
   gap: 0.4rem;
   min-width: 135px;
   flex: 1;
-  padding: 0.7rem 0.4rem 1rem;
+  padding: 0 0 0.3rem;
   color: #687c72;
   font-size: 0.85rem;
 }
+.steps button {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  width: 100%;
+  min-height: 3.15rem;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  font-weight: inherit;
+}
+.steps button:focus-visible { outline-offset: -3px; }
 .steps li span {
   display: inline-grid;
   place-items: center;

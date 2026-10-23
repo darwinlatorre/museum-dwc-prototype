@@ -2,6 +2,11 @@ import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/test
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { App } from './app';
 import { Api } from './api';
+import { Component } from '@angular/core';
+
+// Compile the actual stylesheet: jsdom cannot provide browser geometry.
+@Component({ template: '', styleUrl: '../styles.scss' })
+class MappingStyleContract {}
 
 describe('Collection workspace', () => {
   beforeEach(async () => {
@@ -20,6 +25,22 @@ describe('Collection workspace', () => {
     await TestBed.compileComponents();
   });
 
+  it('reserva un marco de trabajo estable y controles de mapeo con un tamaño común', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const styleFixture = TestBed.createComponent(MappingStyleContract);
+    await styleFixture.whenStable();
+    const shell = [...document.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+    expect(shell).toContain('height: 100dvh');
+    expect(shell).toMatch(/main[^{}]*\{[^}]*min-height:\s*0/s);
+    expect(shell).toMatch(/main[^{}]*\{[^}]*overflow:\s*auto/s);
+    expect(shell).toMatch(/main[^{}]*\{[^}]*width:/s);
+    expect(shell).toContain('--mapping-control-height:');
+    expect(shell).toMatch(/\.mapping-table[^{}]*button[^{}]*\{[^}]*height: var\(--mapping-control-height\)/s);
+    expect(shell).toMatch(/\.dwc-picker[^{}]*\.p-select-label[^{}]*\{[^}]*border: 0 !important/s);
+    expect(shell).toMatch(/\.mapping-table[^{}]*app-dwc-picker[^{}]*\.dwc-picker[^{}]*\{[^}]*display: grid/s);
+  });
+
   it('shows accessible navigation and local import guidance', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
@@ -32,5 +53,15 @@ describe('Collection workspace', () => {
     expect(root.querySelector('nav')?.getAttribute('aria-label')).toBe('Navegación principal');
     expect(root.textContent).toContain('El archivo permanece en este dispositivo');
     expect(root.querySelector('input[type=file]')?.getAttribute('accept')).toBe('.csv,.xlsx');
+    const mounted = root.querySelector('app-import');
+    const navigation = root.querySelectorAll<HTMLButtonElement>('nav button');
+    navigation[1].click();
+    await fixture.whenStable();
+    expect(root.querySelector('app-import')).toBe(mounted);
+    expect(mounted?.parentElement?.hidden).toBe(true);
+    navigation[0].click();
+    await fixture.whenStable();
+    expect(root.querySelector('app-import')).toBe(mounted);
+    expect(mounted?.parentElement?.hidden).toBe(false);
   });
 });

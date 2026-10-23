@@ -17,7 +17,7 @@ Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al ba
 
 1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una hoja.
 2. Elegir uno o varios perfiles publicados. Los borradores no se ejecutan.
-3. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Abrir la flecha para buscar; usar las flechas del teclado y Enter para elegir. También se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias separadas muestran su selección. «Limpiar» retira la asignación explícita y desmarca la sugerencia; no elimina la columna ni desactiva el reconocimiento implícito de su encabezado original. Los nombres Darwin Core exactos se reconocen sin cambios. No se permiten dos columnas de origen con el mismo destino.
+3. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Escribir y filtrar en el único campo que muestra el destino actual; la flecha abre directamente la lista, alineada al ancho del campo. Usar las flechas del teclado y Enter para elegir. También se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias separadas muestran su selección. «Limpiar» retira la asignación explícita y desmarca la sugerencia; no elimina la columna ni desactiva el reconocimiento implícito de su encabezado original. Los nombres Darwin Core exactos se reconocen sin cambios. No se permiten dos columnas de origen con el mismo destino.
 4. Si se desea, activar el recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. Revisar los cambios de los primeros 20 registros. Ambas opciones están desactivadas inicialmente y solo cambian una copia de trabajo.
 5. Indicar los contextos y validar localmente:
    - Asociados a un permiso de recolección o acceso a recursos genéticos.
@@ -28,6 +28,10 @@ Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al ba
 
    Los cuatro primeros son combinables. Otros desmarca los cuatro y cualquiera de ellos desmarca Otros. No agrega condiciones al contrato de validación. La condición técnica `permitAndCollection` sigue requiriendo permiso y colección a la vez.
 6. Filtrar y paginar el diagnóstico; descargar todas las incidencias como JSON o CSV. Cada una conserva campo, fila de origen, descripción, severidad, perfil y versión. En CSV se antepone un apóstrofo a las celdas que podrían ejecutarse como fórmulas de hoja de cálculo.
+
+Los botones del progreso permiten volver a los pasos disponibles sin perder archivo, mapeo, opciones, contexto ni diagnóstico vigente. Se requiere un archivo leído para elegir perfiles, al menos un perfil publicado para mapear y destinos únicos para continuar. El diagnóstico solo está disponible tras validar; editar entradas lo invalida. La navegación por sí sola no cancela ni reinicia el worker.
+
+El área principal conserva su ancho y alto disponible según la ventana, con desplazamiento interno para contenidos largos y tablas anchas. El pie queda fuera de esa región; en móvil el marco se adapta al espacio restante tras la navegación y la cabecera. Los controles de mapeo comparten altura y la lista tiene el ancho del campo de destino, sin un segundo marco de entrada.
 
 ### Límites y conservación del origen
 

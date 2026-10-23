@@ -10,9 +10,11 @@
 </div>
 <ol class="steps" aria-label="Progreso de importación">
   @for (stage of stages; track stage; let i = $index) {
-    <li [class.current]="step() === i" [attr.aria-current]="step() === i ? 'step' : null">
-      <span>{{ i + 1 }}</span
-      >{{ stage }}
+    <li [class.current]="step() === i">
+      <button type="button" [disabled]="!canVisit(i)" (click)="visit(i)"
+        [attr.aria-current]="step() === i ? 'step' : null">
+        <span aria-hidden="true">{{ i + 1 }}</span>{{ stage }}
+      </button>
     </li>
   }
 </ol>
@@ -58,7 +60,7 @@
     <strong>{{ file()?.name }}</strong
     ><span>{{ dataset.rows.length }} registros</span
     ><span>{{ dataset.headers.length }} columnas</span
-    ><button (click)="cancel(); step.set(0)">Cambiar archivo</button>
+    ><button (click)="cancel(); visit(0)">Cambiar archivo</button>
   </div>
   @switch (step()) {
     @case (1) {
@@ -86,7 +88,7 @@
         }
       </div>
       <div class="wizard-footer">
-        <p-button label="Mapear columnas" [disabled]="!selected().length" (onClick)="step.set(2)" />
+        <p-button label="Mapear columnas" [disabled]="!canVisit(2)" (onClick)="visit(2)" />
       </div>
     }
     @case (2) {
@@ -101,11 +103,11 @@
         <p role="alert" class="error">Cada campo de destino puede usarse una sola vez.</p>
       }
       <div class="wizard-footer">
-        <button (click)="step.set(1)">Atrás</button
+        <button (click)="visit(1)">Atrás</button
         ><p-button
           label="Revisar normalización"
-          [disabled]="!mappingValid()"
-          (onClick)="step.set(3)"
+          [disabled]="!canVisit(3)"
+          (onClick)="visit(3)"
         />
       </div>
     }
@@ -150,8 +152,8 @@
         >
       </p-table>
       <div class="wizard-footer">
-        <button (click)="step.set(2)">Atrás</button
-        ><p-button label="Confirmar opciones y continuar" (onClick)="step.set(4)" />
+        <button (click)="visit(2)">Atrás</button
+        ><p-button label="Confirmar opciones y continuar" (onClick)="visit(4)" />
       </div>
     }
     @case (4) {
@@ -168,7 +170,7 @@
         Este diagnóstico no constituye una certificación del SiB.
       </p>
       <div class="wizard-footer">
-        <button (click)="step.set(3)">Atrás</button
+        <button (click)="visit(3)">Atrás</button
         ><p-button label="Validar localmente" [disabled]="busy()" (onClick)="validate()" />
       </div>
     }
@@ -265,10 +267,10 @@
         </p>
       }
       <div class="wizard-footer">
-        <button (click)="step.set(1)">Cambiar perfiles</button
-        ><button (click)="step.set(2)">Cambiar mapeo</button
-        ><button (click)="step.set(3)">Cambiar normalización</button
-        ><p-button label="Revisar contexto / ejecutar de nuevo" (onClick)="step.set(4)" />
+        <button (click)="visit(1)">Cambiar perfiles</button
+        ><button (click)="visit(2)">Cambiar mapeo</button
+        ><button (click)="visit(3)">Cambiar normalización</button
+        ><p-button label="Revisar contexto / ejecutar de nuevo" (onClick)="visit(4)" />
       </div>
     }
   }

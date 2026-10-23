@@ -88,6 +88,20 @@ export class ImportWorkbench implements OnDestroy {
   });
   mappedHeaders = computed(() => this.data()?.headers.map((h) => this.mapping()[h] || h) ?? []);
   mappingValid = computed(() => new Set(this.mappedHeaders()).size === this.mappedHeaders().length);
+  hasProfiles = computed(() => this.published().some((p) => this.selected().includes(p.id)));
+  canVisit(index: number) {
+    if (index < 0 || index >= this.stages.length) return false;
+    if (index === 0) return true;
+    if (!this.data()) return false;
+    if (index === 1) return true;
+    if (!this.hasProfiles()) return false;
+    if (index === 2) return true;
+    if (!this.mappingValid()) return false;
+    return index !== 5 || this.issues() !== undefined;
+  }
+  visit(index: number) {
+    if (this.canVisit(index)) this.step.set(index);
+  }
   private worker?: Worker;
   private generation = 0;
   constructor() {
