@@ -1,0 +1,64 @@
+.definition { max-width: 550px; min-width: 280px; line-height: 1.55; }
+.catalog-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .75rem;
+  flex-shrink: 0;
+}
+.catalog-sync-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  width: 17rem;
+  height: var(--select-control-height);
+  min-height: var(--select-control-height);
+  white-space: nowrap;
+  background: var(--pine);
+  color: white;
+  border-color: var(--pine);
+  font-weight: 600;
+}
+.catalog-sync-button:hover:not(:disabled) { background: var(--museum-primary-600); }
+.catalog-sync-button:disabled {
+  opacity: 1;
+  background: #edf4ef;
+  color: var(--pine);
+  border-color: var(--museum-button-border);
+  cursor: progress;
+}
+.sync-indicator { display: inline-flex; width: 1.2rem; height: 1.2rem; flex: 0 0 auto; }
+.sync-indicator svg { width: 100%; height: 100%; }
+.sync-indicator.is-spinning { animation: catalog-spin 1.2s linear infinite; }
+@keyframes catalog-spin { to { transform: rotate(360deg); } }
+.catalog-sync-status {
+  display: flex;
+  align-items: center;
+  min-height: 5rem;
+  padding: .85rem 1rem;
+  margin: -.4rem 0 1rem;
+  border-left: 3px solid var(--museum-button-border);
+  border-radius: 4px;
+  background: #f3f7f4;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.catalog-sync-status.sync-success { border-color: var(--museum-primary-500); color: var(--pine); }
+.catalog-sync-status.sync-failure {
+  border-color: var(--museum-error-border);
+  color: var(--museum-error-text);
+  background: var(--museum-error-surface);
+}
+@media (max-width: 800px) {
+  app-catalog .section-heading { flex-wrap: wrap; }
+  .catalog-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .catalog-sync-status { min-height: 8rem; }
+}
+/* La regla global de movimiento reducido también cubre este indicador. */

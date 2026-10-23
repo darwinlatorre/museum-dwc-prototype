@@ -1,0 +1,64 @@
+/* Fuente única de la escala primaria: CSS y MuseumPreset consumen estos valores. */
+:root {
+  --museum-primary-50: #edf6f2;
+  --museum-primary-100: #d3e8de;
+  --museum-primary-200: #a9d0bd;
+  --museum-primary-300: #7ab497;
+  --museum-primary-400: #509578;
+  --museum-primary-500: #30785c;
+  --museum-primary-600: #235f48;
+  --museum-primary-700: #194c3a;
+  --museum-primary-800: #163e31;
+  --museum-primary-900: #143329;
+  --museum-primary-950: #0b211a;
+
+  --museum-font-family: 'Segoe UI', Frutiger, 'Helvetica Neue', sans-serif;
+  --museum-text: #203a34;
+  --museum-text-muted: #526960;
+  --museum-heading: #1b3930;
+  --museum-link: #23634d;
+  --museum-page: #f3f6f5;
+  --museum-surface: white;
+  --museum-line: #dce5e0;
+  --museum-control-border: #aebfb6;
+  --museum-button-border: #b8cbc0;
+  --museum-radius-sm: 4px;
+  --museum-radius-md: 5px;
+  --museum-radius-lg: 6px;
+  --museum-radius-panel: 8px;
+  --museum-control-radius: var(--museum-radius-md);
+  --museum-space-1: .25rem;
+  --museum-space-2: .5rem;
+  --museum-space-3: .75rem;
+  --museum-space-4: 1rem;
+  --museum-space-5: 1.25rem;
+  --museum-space-6: 1.5rem;
+  --museum-space-8: 2rem;
+  --museum-space-10: 2.5rem;
+  --museum-nav-surface: var(--museum-primary-800);
+  --museum-nav-text: #e8f1eb;
+  --museum-nav-muted: #b3cdbf;
+  --museum-nav-accent: #b6d7bf;
+  --museum-nav-link: #d9e8de;
+  --museum-nav-active: #2b5744;
+  --museum-nav-divider: #426653;
+  --museum-workspace-border: #e0e8e3;
+  --museum-footer-text: #647a6e;
+  --museum-control-height: 3.15rem;
+  --museum-table-heading: #f1f5f2;
+  --museum-error-surface: #fff1ed;
+  --museum-error-border: #ae4030;
+  --museum-error-text: #732b22;
+  --museum-error-line: #edc7bb;
+
+  /* Alias públicos conservados para componentes y shell. */
+  --pine: var(--museum-primary-700);
+  --ink: var(--museum-text);
+  --muted: var(--museum-text-muted);
+  --line: var(--museum-line);
+  --select-control-height: var(--museum-control-height);
+  --select-control-border: var(--museum-control-border);
+  --select-control-radius: var(--museum-control-radius);
+  --mapping-control-height: var(--select-control-height);
+  --p-primary-color: var(--museum-primary-600);
+}

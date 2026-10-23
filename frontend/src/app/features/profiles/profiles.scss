@@ -1,0 +1,24 @@
+.editor { padding: 0.25rem; }
+.editor h3 { margin-top: 0; }
+.editor fieldset {
+  min-width: 0;
+  border: 1px solid var(--line);
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 6px;
+}
+.editor legend { font-weight: 600; padding: 0 0.5rem; }
+.editor fieldset button { margin-top: 1rem; }
+.editor .dwc-picker > button { margin-top: 0; }
+.editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.rule-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rule-grid > * { min-width: 0; }
+@media (max-width: 800px) {
+  .rule-grid { grid-template-columns: 1fr; }
+  .editor-footer { align-items: flex-start; flex-direction: column; }
+}

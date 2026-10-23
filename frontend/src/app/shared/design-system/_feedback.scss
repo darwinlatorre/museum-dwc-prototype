@@ -1,0 +1,34 @@
+.count, .badge {
+  display: inline-block;
+  background: #edf0eb;
+  border: 1px solid #d7ded5;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--museum-radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.published {
+  color: var(--museum-primary-600);
+  background: #e6f3ec;
+  border-color: #bfdccd;
+}
+.danger {
+  color: #913727;
+  background: #fff0eb;
+  border-color: var(--museum-error-line);
+}
+.error {
+  border-left: 4px solid var(--museum-error-border);
+  background: var(--museum-error-surface);
+  padding: var(--museum-space-4) var(--museum-space-5);
+  color: var(--museum-error-text);
+  margin: var(--museum-space-4) 0;
+}
+.notice {
+  background: #e9f3ed;
+  border-left: 4px solid var(--museum-primary-500);
+  padding: var(--museum-space-4);
+  color: var(--pine);
+  margin: var(--museum-space-4) 0;
+}

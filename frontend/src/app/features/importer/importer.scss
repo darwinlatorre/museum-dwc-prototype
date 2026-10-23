@@ -1,0 +1,151 @@
+.steps {
+  display: flex;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+  margin: 0 0 1.5rem;
+  overflow: auto;
+}
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 135px;
+  flex: 1;
+  padding: 0 0 0.3rem;
+  color: #687c72;
+  font-size: 0.85rem;
+}
+.steps button {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  width: 100%;
+  min-height: 3.15rem;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  font-weight: inherit;
+}
+.steps button:focus-visible { outline-offset: -3px; }
+.steps li span {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid #c1cfc7;
+  border-radius: 50%;
+}
+.steps .current { color: var(--pine); font-weight: 700; border-bottom: 3px solid var(--pine); }
+.steps .current span { background: var(--pine); color: white; border-color: var(--pine); }
+.upload { border: 1px dashed #9bb7a8; background: #f6faf7; padding: 2.5rem; max-width: 800px; }
+.upload h3 { margin-top: 0; }
+.file-picker { margin: 1.5rem 0; }
+.file-picker input { display: block; margin: 1rem 0; }
+.sheet-read-action { display: block; margin-top: 1rem; }
+.file-summary {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.8rem 0 1.2rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.4rem;
+  flex-wrap: wrap;
+}
+.file-summary button { margin-left: auto; }
+.profile-options { display: grid; gap: 0.8rem; }
+.profile-options label, .context-grid label {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  padding: 1rem;
+  border-radius: 5px;
+}
+.profile-options input, .context-grid input { margin-top: 0; }
+.checks { display: flex; gap: 1.5rem; margin: 1.5rem 0; }
+.checks label { display: flex; align-items: center; gap: 0.5rem; }
+.checks input { margin: 0; }
+.context-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+.wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  padding: 1.5rem 0;
+  flex-wrap: wrap;
+}
+/* Anchos y excepciones compactas: una sola definición por contexto. */
+.mapping-table .p-datatable-table { table-layout: fixed; min-width: 52rem; }
+.mapping-table th:first-child { width: 20%; }
+.mapping-table th:nth-child(2) { width: 36%; }
+.mapping-table app-dwc-picker .dwc-picker { display: flex; align-items: center; }
+.mapping-table .dwc-picker > button {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  height: auto;
+  padding: .35rem .5rem;
+  font-size: .85rem;
+}
+.suggestion-chips { display: flex; flex-wrap: wrap; gap: 0.65rem; min-width: 14rem; }
+.suggestion-chips button { overflow-wrap: anywhere; }
+.mapping-table .suggestion-chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  min-width: 0;
+  align-items: center;
+  gap: .4rem;
+  padding: .2rem 0;
+}
+.mapping-table .suggestion-chips button {
+  min-height: 2.25rem;
+  height: auto;
+  width: auto;
+  flex: 0 0 auto;
+  padding: .35rem .5rem;
+  font-size: .85rem;
+  white-space: nowrap;
+}
+.suggestion-chips button[aria-pressed='true'],
+.suggestion-chips button[aria-pressed='true']:hover {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: white;
+  box-shadow: none;
+}
+.p-datatable .source-header {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.85rem 1rem;
+  min-width: 10rem;
+  border-left: 1px solid var(--pine);
+  color: var(--ink) !important;
+}
+.source-header strong { font-size: 1rem; overflow-wrap: anywhere; }
+.mapping-table .p-datatable-tbody > tr > td,
+.mapping-table .p-datatable-tbody > tr > .source-header {
+  vertical-align: middle !important;
+  padding: .55rem .75rem !important;
+  border-bottom: 1px solid #c2d2c9;
+  background: #fff !important;
+}
+.mapping-table .p-datatable-tbody > tr:hover > td,
+.mapping-table .p-datatable-tbody > tr:hover > .source-header,
+.mapping-table .p-datatable-tbody > tr:focus-within > td,
+.mapping-table .p-datatable-tbody > tr:focus-within > .source-header { background: #e2eee6 !important; }
+.p-datatable .issue-error td {
+  background: var(--museum-error-surface);
+  border-bottom: 1px solid var(--museum-error-line);
+}
+.p-datatable .issue-error td:first-child { border-left: 4px solid var(--museum-error-border); }
+.issue-error .issue-message { color: var(--museum-error-text); }
+.issue-warning .issue-message { font-weight: 500; }
+@media (max-width: 800px) {
+  .checks { flex-direction: column; align-items: stretch; }
+  .context-grid { grid-template-columns: 1fr; }
+  .upload { padding: 1.2rem; }
+  .file-summary { gap: 0.7rem; }
+}
