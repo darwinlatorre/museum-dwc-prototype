@@ -357,6 +357,80 @@ class CatalogSyncTests {
         return mvc.perform(get("/api/profiles")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
     }
 
+    String publicSnapshotHash() throws Exception {
+        return CatalogParser.hash(json.writeValueAsString(metadata()) + "\n" + getCatalog());
+    }
+
+    @Test
+    void manualRejectsBinaryBodiesWithoutChangingPublicSnapshot() throws Exception {
+        for (byte[] body : List.of(new byte[]{0}, new byte[]{(byte) 255}, new byte[]{10, 13, 9},
+                "\uFEFF".getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+            for (String type : List.of("application/json", "application/octet-stream", "text/plain")) {
+                String before = publicSnapshotHash();
+                var response = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                    .post("/api/catalog/sync").contentType(type).content(body))
+                    .andExpect(status().isBadRequest()).andReturn().getResponse();
+                assertThat(json.readTree(response.getContentAsString()).get("detail").asString())
+                    .isEqualTo("La solicitud de sincronización debe tener el cuerpo vacío.");
+                assertThat(publicSnapshotHash()).isEqualTo(before);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7})
+    void manualAndScheduledGenerationsPreserveLatestOutcome(int mode) throws Exception {
+        boolean manualOlder = (mode & 4) == 0;
+        boolean oldFails = (mode & 2) != 0;
+        boolean newFails = (mode & 1) != 0;
+        var original = source.next;
+        String payload = getCatalog();
+        JsonNode active = metadata().get("active");
+        long attempts = metadata().get("attempts").asLong();
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        sourceGate = () -> {
+            entered.countDown();
+            try {
+                if (!release.await(10, TimeUnit.SECONDS)) throw new IOException("gate timeout");
+            } catch (InterruptedException exception) { throw new IOException(exception); }
+            if (oldFails) throw new IOException("old failed");
+            return original;
+        };
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var pending = executor.submit(() -> {
+                if (manualOlder) return manual();
+                refresh().run();
+                return (JsonNode) null;
+            });
+            assertThat(entered.await(10, TimeUnit.SECONDS)).isTrue();
+            source.next = feeds(terms(), "9".repeat(40));
+            source.failure = newFails ? new IOException("new failed") : null;
+            if (manualOlder) refresh().run();
+            else assertThat(manual().get("outcome").asString()).isEqualTo(newFails ? "FAILED" : "SUCCESS");
+            JsonNode latest = metadata();
+            String hash = publicSnapshotHash();
+            release.countDown();
+            JsonNode result = pending.get(10, TimeUnit.SECONDS);
+            if (manualOlder) {
+                assertThat(result.get("outcome").asString()).isEqualTo("SUPERSEDED");
+                assertThat(result.get("status")).isEqualTo(latest);
+            }
+            assertThat(publicSnapshotHash()).isEqualTo(hash);
+            assertThat(metadata().get("attempts").asLong()).isEqualTo(attempts + 2);
+            // A valid activation may compact JSON; official attribute strings remain exact.
+            assertThat(json.readTree(getCatalog())).isEqualTo(json.readTree(payload));
+            if (newFails) {
+                assertThat(latest.get("active")).isEqualTo(active);
+                assertThat(latest.get("lastFailure").asString())
+                    .isEqualTo("No se pudo actualizar el catálogo TDWG; se conserva la última versión válida.");
+            } else {
+                assertThat(latest.get("active").get("revision").asString()).isEqualTo("9".repeat(40));
+                assertThat(latest.get("lastFailure").isNull()).isTrue();
+            }
+        } finally { release.countDown(); sourceGate = null; source.failure = null; }
+    }
+
     interface Gate { CatalogSource.SourceSet fetch() throws IOException; }
     static volatile Gate sourceGate;
     // Run before later cases introduce synthetic URIs into the shared snapshot.
