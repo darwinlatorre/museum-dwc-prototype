@@ -5,7 +5,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import { routes } from './app.routes';
-import { spanish } from './localization';
+import { spanish } from './core/i18n/localization';
 const Museum = definePreset(Aura, {
   semantic: {
     primary: {

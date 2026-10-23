@@ -1,0 +1,87 @@
+<div class="section-heading">
+  <div>
+    <h2>Catálogo Darwin Core</h2>
+    <p>
+      Vocabulario oficial, no una lista de campos obligatorios. Los perfiles definen los
+      requisitos. Las definiciones, categorías y estados se conservan en el idioma de la fuente
+      oficial TDWG (inglés).
+    </p>
+  </div>
+  <div class="catalog-actions">
+    <span class="count">{{ terms().length }} términos</span>
+    <button class="catalog-sync-button" type="button" [disabled]="sync.isPending()"
+      [attr.aria-busy]="sync.isPending()" aria-describedby="catalog-sync-status"
+      (click)="synchronize()">
+      <span class="sync-indicator" [class.is-spinning]="sync.isPending()" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M20 7v5h-5M4 17v-5h5" />
+          <path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" />
+        </svg>
+      </span>
+      <span>{{ sync.isPending() ? 'Sincronizando…' : 'Sincronizar con TDWG' }}</span>
+    </button>
+  </div>
+</div>
+<div id="catalog-sync-status" class="catalog-sync-status" role="status" aria-live="polite" aria-atomic="true"
+  [class.sync-failure]="!sync.isPending() && (sync.isError() || sync.data()?.outcome === 'FAILED')"
+  [class.sync-success]="!sync.isPending() && sync.data()?.outcome === 'SUCCESS'">
+  {{ sync.isPending() ? 'Consultando TDWG. Puede seguir consultando y filtrando el catálogo.'
+    : notice() || 'Vocabulario oficial TDWG. Actualizar no modifica perfiles ni archivos.' }}
+</div>
+<div class="toolbar">
+  <label
+    >Buscar en todos los atributos<input
+      type="search"
+      [formField]="filters.search"
+      placeholder="Nombre, definición, URI, categoría o estado"
+  /></label>
+  <label
+    >Categoría<select [formField]="filters.category">
+      <option value="">Todas las categorías</option>
+      @for (category of categories(); track category) {
+        <option [value]="category">{{ categoryLabel(category) }}</option>
+      }
+    </select></label
+  >
+  <label>Estado<select [formField]="filters.status">
+    <option value="">Todos los estados</option>
+    @for (status of statuses(); track status) {
+      <option [value]="status">{{ status }}</option>
+    }
+  </select></label>
+  <button type="button" (click)="reset()">Restablecer filtros</button>
+</div>
+<p-table
+  [value]="filtered()"
+  [paginator]="true"
+  [rows]="15"
+  [rowsPerPageOptions]="[15, 30, 50]"
+  [tableStyle]="{ 'min-width': '45rem' }"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}–{last} de {totalRecords} términos"
+>
+  <ng-template #header
+    ><tr>
+      <th>Término / URI</th>
+      <th>Definición (original en inglés)</th>
+      <th>Categoría (fuente)</th>
+      <th>Estado (fuente)</th>
+    </tr></ng-template
+  >
+  <ng-template #body let-term
+    ><tr>
+      <td>
+        <strong>{{ term.name }}</strong
+        ><a [href]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
+      </td>
+      <td class="definition" lang="en">{{ term.definition }}</td>
+      <td>{{ categoryLabel(term.category) }}</td>
+      <td>{{ term.status }}</td>
+    </tr></ng-template
+  >
+  <ng-template #emptymessage
+    ><tr>
+      <td colspan="4">Ningún término coincide con estos filtros.</td>
+    </tr></ng-template
+  ></p-table
+>

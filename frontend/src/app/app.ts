@@ -1,9 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { injectQuery } from '@tanstack/angular-query-experimental';
-import { Api } from './api';
-import { Catalog } from './catalog';
-import { Profiles } from './profiles';
-import { ImportWorkbench } from './import-workbench';
+import { Api } from './core/api/api';
+import { Catalog } from './features/catalog/catalog';
+import { Profiles } from './features/profiles/profiles';
+import { ImportWorkbench } from './features/importer/workbench/import-workbench';
 @Component({
   selector: 'app-root',
   imports: [Catalog, Profiles, ImportWorkbench],
