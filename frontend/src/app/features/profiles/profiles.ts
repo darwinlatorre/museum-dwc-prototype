@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { form, FormField, required, applyEach, disabled } from '@angular/forms/signals';
-import { injectMutation, injectQueryClient } from '@tanstack/angular-query-experimental';
+import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -23,7 +23,7 @@ export class Profiles {
   profiles = input.required<Profile[]>();
   terms = input.required<Term[]>();
   api = inject(Api);
-  client = injectQueryClient();
+  client = inject(QueryClient);
   selected = signal<Profile | undefined>(undefined);
   mode = signal<'edit' | 'duplicate'>('edit');
   open = signal(false);

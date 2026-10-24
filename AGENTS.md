@@ -8,6 +8,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - `frontend/README.md` y `backend/README.md`: arquitectura y contratos.
 - `frontend/ARCHITECTURE.md`: organización por funcionalidades y límites de dependencia.
 - `frontend/DESIGN_SYSTEM.md`: tokens, primitivas, preset y propiedad de estilos.
+- `frontend/QUERY_USAGE.md`: cliente Query compartido, cancelación, invalidaciones y salvedades.
 - `backend/PROFILE_ARCHITECTURE.md` y `backend/CATALOG_ARCHITECTURE.md`: puertos, composición y fronteras transaccionales hexagonales.
 - `sources/README.md`: fuentes oficiales y atribuciones.
 - `VERIFICATION.md`: evidencia observada, historial y limitaciones.
@@ -30,6 +31,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Contratos entre funcionalidades con `import type`, no vistas desde `core`/`shared`. Mantener el motor independiente de transporte/vistas y la URL de módulo del worker relativa a su workbench.
 - Reutilizar `shared/design-system`: una paleta CSS, `MuseumPreset` conectado en `app.config.ts`, tokens de espacios/radios y primitivas comunes. Estilos de feature globales importados desde `src/styles.scss` para conservar overlays; no duplicar colores o reglas para cada control. No cambiar el comportamiento nativo de selects sin una necesidad explícita.
 - Reutilizar el selector DwC de `shared/ui/dwc-picker` y sus contratos de valor libre, limpieza y deshabilitación; preservar el workbench montado y las guardas de navegación/generación.
+- TanStack Query usa un cliente raíz; resolverlo con `inject(QueryClient)`, no el alias deprecado `injectQueryClient`. Mantener claves, callbacks, cancelación `AbortSignal` y políticas existentes; no agregar un cliente por feature ni convertir transporte/caché como parte de un cambio de DI. El cache contiene solo metadatos.
 - La sincronización manual y la programada comparten la misma maquinaria. Evaluar `SUCCESS`/`FAILED`/`SUPERSEDED`, no solo HTTP200; los intentos viejos nunca reemplazan activaciones ni fallos nuevos.
 - No sobrescribir un JAR en ejecución: ejecutar una copia separada del artefacto de compilación.
 - No publicar cambios ni crear PR por iniciativa propia: el alcance actual es local.
@@ -63,4 +65,4 @@ Las pruebas backend requieren Docker y crean PostgreSQL desechable mediante Test
 - Responder en español con el detalle adecuado a cada pedido. Separar trabajo pendiente, limitaciones aceptadas y funcionalidades futuras.
 - La auditoría npm agotó el tiempo autorizado y quedó pendiente con aceptación humana: no repetirla ni afirmar que aprobó.
 - La revisión nativa no produjo aprobación. La advertencia de tamaño del bundle y la captura accidental externa están documentadas; no inventar su resolución.
-- No confundir la evidencia histórica con pruebas nuevas. La evolución anterior registró118pruebas; el refinamiento Java/UX comprobó145(68backend,71frontend,6semillas). La reorganización frontend comprobó89pruebasfrontend ybuild, más Nodechecker yChromium; no sumar resultados históricos como si fueran una nueva suite integral. No implica una auditoría exhaustiva de seguridad o accesibilidad.
+- No confundir la evidencia histórica con pruebas nuevas. La evolución anterior registró118pruebas; el refinamiento Java/UX comprobó145(68backend,71frontend,6semillas). La reorganización frontend comprobó89pruebasfrontend ybuild, más Nodechecker yChromium. La aceptación hexagonal ejecutó160pruebasbackend+package y50observacionesHTTPidénticas; la revisión posterior TanStack comprobó99pruebasfrontend+build (padrecontraste10focalizadas), sin navegador nuevo; no sumar resultados históricos como si fueran una nueva suite integral. No implica una auditoría exhaustiva de seguridad o accesibilidad.

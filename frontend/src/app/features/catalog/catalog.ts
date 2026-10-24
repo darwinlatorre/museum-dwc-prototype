@@ -1,8 +1,8 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { injectMutation, injectQueryClient } from '@tanstack/angular-query-experimental';
-import { Api } from '../../core/api/api';
 import { form, FormField } from '@angular/forms/signals';
+import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 import { TableModule } from 'primeng/table';
+import { Api } from '../../core/api/api';
 import type { Term } from './models/catalog-term';
 @Component({
   selector: 'app-catalog',
@@ -12,7 +12,7 @@ import type { Term } from './models/catalog-term';
 export class Catalog {
   terms = input.required<Term[]>();
   private readonly api = inject(Api);
-  private readonly client = injectQueryClient();
+  private readonly client = inject(QueryClient);
   readonly sync = injectMutation(() => ({
     mutationFn: () => this.api.syncCatalog(),
     retry: false,

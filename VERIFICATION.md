@@ -1,6 +1,25 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: backend hexagonal preservador
+## Estado actual: revisión TanStack Query y DI soportada
+
+T5 ejecutada **después** del cierre backend, por pedido humano. En Angular21.2.25/TanStack5.104.5 la declaración instalada `inject-query-client.d.mts:8` marca `injectQueryClient` deprecado y prescribe `inject(QueryClient)`; su implementación resolvía el mismo token. Se reemplazaron únicamente las dos inyecciones productivas de catálogo/perfiles, preservando proveedor, claves, callbacks, políticas, transporte y el orden de imports concurrente.
+
+**Veredicto:** uso adecuado para metadatos del MVP. Cliente raíz único con mount/unmount; claves estructurales estables; consultas como Promise con AbortSignal hasta fetch; mutaciones separadas, invalidación de perfiles onSuccess y catálogo onSettled; sin cache de registros biológicos ni persister. No hay requisito automático de `enabled` para lecturas globales sin parámetros ni de migrar a HttpClient. Ver [QUERY_USAGE.md](frontend/QUERY_USAGE.md) para rutas/versiones y salvedades de errores/refetch.
+
+| Prueba nueva | Resultado |
+|---|---|
+| RED esperado, producción intacta |1fallo/9pases: guarda de clase compilada detecta `injectQueryClient`; las nueve pruebas funcionales ya aprobaban |
+| GREEN tras DI equivalente |10/10focalizadasPASS |
+| Suite/build del writer |99pruebas/11archivosPASS,buildPASS; warning643,82kB/500kB intacto |
+| Contraste del padre |Nodechecker+10/10focalizadas+diffcheckPASS,8s; sin cambio productivo adicional |
+
+Los diez casos cubren identidad del cliente, ciclo de vida, cuatro acciones de perfiles y cuatro resultados de sincronización con refetch real sobre API simulada. La ausencia del alias necesita una guarda estructural porque ambas funciones DI tienen comportamiento equivalente. No se inventó una diferencia funcional para conseguir RED.
+
+El primer writer terminó parcial: dos errores de hoisting con0tests y una ejecución10/10fallida por metadataApp sin compilar; no eran RED válido. Tras «Review the delivered subagent output and continue.», una corrección acotada registró imports standalone, setup asíncrono y `await TestBed.compileComponents()`, sin relajar assertions/timeouts ni cambiar producción para ocultar fallos. Después observó el RED específico y los pases anteriores. Sin API viva, navegador, instalación/audit, cambios backend o dependencias nuevos. ASSESS no evaluable por untracked, plan selfVerification cumplido, sin aprobación nativa.
+
+Comandos: `npm test -- --watch=false --runner-config ../.browser/frontend-architecture/vitest.serial.config.mjs --include=src/app/testing/query-usage.spec.ts` (RED/GREEN y contraste); suite sin include; `node scripts/check-architecture.mjs`; `npm run build`; `git diff --check`. Las salvedades existentes (refetch de perfiles no esperado por el callback, escritura ambigua ante fallo de red, abortos convertidos en error genérico) quedan documentadas, no corregidas subrepticiamente ni consideradas requisitos nuevos.
+
+## Backend hexagonal preservador
 
 **Resultado:** `profile` y `catalog` tienen núcleo Java puro (`domain`, `application`), puertos, adaptadores y composición Spring explícita. Perfil conserva una transacción por operación completa; catálogo conserva la descarga fuera de transacción y la activación contra el snapshot bloqueado. No cambian esquema, recursos, dependencias, contrato HTTP ni datos vivos. Skills instaladas utilizadas: hexagonal-architecture, Java, Spring Boot, JPA, TDD y verificación Spring.
 

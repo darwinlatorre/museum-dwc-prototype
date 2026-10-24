@@ -101,7 +101,9 @@ Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fi
 | `shared/design-system` | Paleta CSS única, tokens, primitivas, adaptación PrimeNG y preset |
 | `testing` | Pruebas de composición y costuras entre funcionalidades |
 
-La estructura y sus límites están en [ARCHITECTURE.md](ARCHITECTURE.md); los tokens y patrones visuales, en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Desde `frontend/`, ejecutar `node scripts/check-architecture.mjs` para detectar rutas antiguas, contratos duplicados e importaciones indebidas. No reemplaza pruebas ni build.
+La estructura y sus límites están en [ARCHITECTURE.md](ARCHITECTURE.md); los tokens y patrones visuales, en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+
+La revisión de [TanStack Query](QUERY_USAGE.md) detalla las claves, frescura, cancelación, invalidaciones y salvedades. Usar `inject(QueryClient)` para obtener el cliente raíz existente; `injectQueryClient()` está deprecado en la versión instalada. La API devuelve promesas mediante `fetch` y propaga `AbortSignal`, sin almacenar archivos o registros biológicos en el query cache. Desde `frontend/`, ejecutar `node scripts/check-architecture.mjs` para detectar rutas antiguas, contratos duplicados e importaciones indebidas. No reemplaza pruebas ni build.
 
 El workbench conserva la orquestación del worker, invalidación, destinos únicos y exportación; permanece montado al navegar. Los componentes de presentación no reimplementan parser, normalización, validación ni exportación.
 
