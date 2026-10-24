@@ -1,0 +1,174 @@
+<div class="section-heading">
+  <div>
+    <h2>Perfiles de validación</h2>
+    <p>
+      Las versiones publicadas son inmutables. Duplique una versión para modificar sus reglas.
+    </p>
+  </div>
+  <p-button label="Crear perfil" (onClick)="create()" />
+</div>
+<label class="search"
+  >Buscar un perfil<input
+    type="search"
+    [formField]="searchForm.text"
+    placeholder="Nombre, versión o estado"
+/></label>
+<p-table
+  [value]="filtered()"
+  [paginator]="true"
+  [rows]="10"
+  [rowsPerPageOptions]="[10, 25, 50, 100]"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="{first}–{last} de {totalRecords} perfiles"
+  [tableStyle]="{ 'min-width': '42rem' }"
+>
+  <ng-template #header
+    ><tr>
+      <th>Perfil</th>
+      <th>Versión</th>
+      <th>Estado</th>
+      <th>Reglas</th>
+      <th>Acciones</th>
+    </tr></ng-template
+  >
+  <ng-template #body let-profile
+    ><tr>
+      <td>
+        <strong>{{ profile.name }}</strong
+        ><small>{{ profileDescription(profile) }}</small>
+      </td>
+      <td>{{ profile.version }}</td>
+      <td>
+        <span class="badge" [class.published]="profile.status === 'PUBLISHED'">{{
+          label(profile.status)
+        }}</span>
+      </td>
+      <td>{{ profile.rules.length }}</td>
+      <td class="actions">
+        <button (click)="edit(profile)">
+          {{ profile.status === 'DRAFT' ? 'Editar borrador' : 'Ver reglas' }}</button
+        ><button (click)="duplicate(profile)">Duplicar</button>
+        @if (profile.status === 'DRAFT') {
+          <button [disabled]="mutation.isPending()" (click)="publish(profile)">Publicar</button>
+        }
+      </td>
+    </tr></ng-template
+  >
+  <ng-template #emptymessage
+    ><tr>
+      <td colspan="5">
+        No hay perfiles. Cree un borrador para definir los requisitos de la colección.
+      </td>
+    </tr></ng-template
+  ></p-table
+>
+@if (mutation.error() && !open()) {
+  <p role="alert" class="error">{{ mutation.error()?.message }}</p>
+}
+@if (notice()) {
+  <p role="status" class="notice">{{ notice() }}</p>
+}
+<p-dialog [visible]="open()" (visibleChange)="open.set($event)" (onHide)="restoreFocus()"
+  [header]="editorTitle()" [modal]="true" [draggable]="false" [resizable]="false"
+  [style]="{ width: '64rem', maxWidth: 'calc(100vw - 2rem)' }"
+  [closeOnEscape]="true" [dismissableMask]="false" closeAriaLabel="Cerrar editor">
+  <section class="editor">
+    @if (mutation.error()) {
+      <p role="alert" class="error">{{ mutation.error()?.message }}</p>
+    }
+    @if (locked()) {
+      <p class="notice">Versión publicada: todos los campos son de solo lectura. Duplique el perfil para editarlo.</p>
+    }
+    <h3>Datos del perfil</h3>
+    @if (mode() === 'duplicate') {
+      <p>Todas las reglas se copiarán a un nuevo borrador. Elija su nombre y versión.</p>
+    }
+    <form (submit)="save(); $event.preventDefault()">
+      <div class="form-grid">
+        <label>Nombre<input [formField]="editor.name" /></label
+        ><label>Versión<input [formField]="editor.version" /></label>
+      </div>
+      @if (mode() !== 'duplicate') {
+        <label
+          >Descripción
+          @if (locked()) {
+            <textarea [value]="profileDescription(selected()!)" disabled></textarea>
+          } @else {
+            <textarea [formField]="editor.description"></textarea>
+          }
+        </label>
+        <h4>Reglas</h4>
+        <p>
+          La regla de valor obligatorio comprueba la presencia de la columna y los valores no
+          vacíos. La regla de columna obligatoria comprueba solo el encabezado. Las condiciones
+          usan el contexto declarado al importar.
+        </p>
+        <div class="rule-list">
+          @for (rule of editor.rules; track $index; let i = $index) {
+            <fieldset>
+              <legend>Regla {{ i + 1 }}</legend>
+              <div class="form-grid rule-grid">
+                <div>
+                  <span class="field-label">Campo Darwin Core</span>
+                  <app-dwc-picker [terms]="terms()" [formField]="rule.field"
+                    [label]="'Campo Darwin Core de la regla ' + (i + 1)" />
+                </div>
+                <label
+                  >Validación<select [formField]="rule.kind">
+                    <option value="required">Valor y columna obligatorios</option>
+                    <option value="requiredColumn">Solo columna obligatoria</option>
+                    <option value="date">Fecha del calendario</option>
+                    <option value="latitude">Latitud</option>
+                    <option value="longitude">Longitud</option>
+                  </select></label
+                >
+                <label
+                  >Condición<select [formField]="rule.condition">
+                    @for (condition of conditions; track condition) {
+                      <option [value]="condition">{{ label(condition) }}</option>
+                    }
+                  </select></label
+                >
+                <label
+                  >Severidad<select [formField]="rule.severity">
+                    <option value="ERROR">Error</option>
+                    <option value="WARNING">Advertencia</option>
+                  </select></label
+                >
+                <label
+                  >Mensaje de diagnóstico
+                  @if (locked()) {
+                    <input [value]="ruleMessage(selected()!, model().rules[i])" disabled />
+                  } @else {
+                    <input [formField]="rule.message" />
+                  }</label
+                ><label
+                  >Evidencia / fuente (texto original)<input [formField]="rule.source"
+                /></label>
+              </div>
+              @if (!locked()) {
+                <button type="button" (click)="removeRule(i)">Eliminar regla</button>
+              }
+            </fieldset>
+          } @empty {
+            <p>
+              Aún no hay reglas. Agregue solo los campos que este perfil realmente requiere.
+            </p>
+          }
+        </div>
+        @if (!locked()) {
+          <button type="button" (click)="addRule()">Agregar regla</button>
+        }
+      }
+      @if (!locked()) {
+        <div class="editor-footer">
+          <p-button
+            type="submit"
+            [label]="mode() === 'duplicate' ? 'Crear duplicado' : 'Guardar borrador'"
+            [disabled]="editor().invalid() || mutation.isPending()"
+          /><span>La publicación es una acción independiente.</span>
+        </div>
+      }
+    </form>
+  </section>
+</p-dialog>

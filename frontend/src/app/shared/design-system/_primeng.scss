@@ -1,0 +1,45 @@
+/* Global: los overlays se montan fuera del host de cada funcionalidad. */
+.p-dialog-content { overflow-wrap: anywhere; }
+.p-select {
+  --p-select-border-color: var(--select-control-border);
+  --p-select-hover-border-color: var(--pine);
+  --p-select-focus-border-color: var(--pine);
+  --p-select-border-radius: var(--select-control-radius);
+  --p-select-background: var(--museum-surface);
+  --p-select-disabled-background: var(--museum-table-heading);
+  --p-select-color: var(--ink);
+  --p-select-dropdown-color: var(--muted);
+  --p-select-option-focus-background: #edf4ef;
+  --p-select-option-selected-background: #e2eee6;
+  --p-select-option-selected-color: var(--pine);
+}
+.p-select-label { align-self: center; color: var(--ink); }
+.p-select-dropdown { width: 2.4rem; color: var(--muted); }
+.p-select-overlay {
+  max-width: calc(100vw - 2rem);
+  border: 1px solid var(--select-control-border);
+  border-radius: var(--select-control-radius);
+}
+.p-select-option {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  min-height: var(--select-control-height);
+}
+.p-paginator .p-select { min-width: 5rem; }
+.dwc-picker .p-select, .dwc-picker > button {
+  min-height: var(--mapping-control-height);
+  height: var(--mapping-control-height);
+}
+.dwc-picker .p-select { align-items: center; }
+.dwc-picker .p-select-label {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  height: 100%;
+  color: var(--ink) !important;
+  opacity: 1;
+  margin: 0;
+}
+.dwc-picker .p-select-label:focus-visible { outline-offset: -3px; }
+.dwc-picker-panel .p-select-option { min-height: var(--mapping-control-height); }

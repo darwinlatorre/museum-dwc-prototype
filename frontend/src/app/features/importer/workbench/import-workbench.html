@@ -1,0 +1,279 @@
+<div class="section-heading">
+  <div>
+    <h2>Análisis de colecciones</h2>
+    <p>
+      Revise los registros biológicos según los perfiles publicados. El archivo permanece en este
+      dispositivo.
+    </p>
+  </div>
+  <span class="badge published">Análisis local</span>
+</div>
+<ol class="steps" aria-label="Progreso de importación">
+  @for (stage of stages; track stage; let i = $index) {
+    <li [class.current]="step() === i">
+      <button type="button" [disabled]="!canVisit(i)" (click)="visit(i)"
+        [attr.aria-current]="step() === i ? 'step' : null">
+        <span aria-hidden="true">{{ i + 1 }}</span>{{ stage }}
+      </button>
+    </li>
+  }
+</ol>
+@if (busy()) {
+  <div class="notice" role="status">
+    Procesando localmente… <button (click)="cancel()">Cancelar procesamiento</button>
+  </div>
+}
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (step() === 0) {
+  <section class="upload">
+    <h3>Seleccione un archivo de la colección</h3>
+    <p>
+      CSV (UTF-8 separado por comas) o XLSX. Hasta 10 MiB, 50.000 filas de datos y 500 columnas. Una
+      fila de encabezados con nombres únicos y no vacíos.
+    </p>
+    <label class="file-picker"
+      >Archivo de la colección<input
+        type="file"
+        accept=".csv,.xlsx"
+        (change)="chooseFile($event)"
+        [disabled]="busy()"
+    /></label>
+    <p>
+      Los archivos se analizan en un Web Worker dedicado del navegador. No se envía nada al servidor
+      de perfiles.
+    </p>
+    @if (sheets().length) {
+      <label
+        >Seleccione la hoja de cálculo que desea analizar<select [formField]="sheetForm.name">
+          @for (name of sheets(); track name) {
+            <option [value]="name">{{ name }}</option>
+          }
+        </select></label
+      ><p-button class="sheet-read-action" label="Leer la hoja seleccionada" [disabled]="busy()" (onClick)="loadSheet()" />
+    }
+  </section>
+}
+@if (data(); as dataset) {
+  <div class="file-summary">
+    <strong>{{ file()?.name }}</strong
+    ><span>{{ dataset.rows.length }} registros</span
+    ><span>{{ dataset.headers.length }} columnas</span
+    ><button (click)="cancel(); visit(0)">Cambiar archivo</button>
+  </div>
+  @switch (step()) {
+    @case (1) {
+      <h3>Elija los perfiles publicados</h3>
+      <p>
+        Cada perfil se ejecuta de forma independiente. Cada incidencia conserva el nombre y la
+        versión del perfil que la originó.
+      </p>
+      <div class="profile-options">
+        @for (profile of published(); track profile.id) {
+          <label
+            ><input
+              type="checkbox"
+              [checked]="selected().includes(profile.id)"
+              (change)="toggleProfile(profile.id, checked($event))"
+            /><span
+              ><strong>{{ profile.name }} {{ profile.version }}</strong
+              ><small
+                >{{ profileDescription(profile) }} · {{ profile.rules.length }} reglas</small
+              ></span
+            ></label
+          >
+        } @empty {
+          <p>No hay perfiles publicados. Primero cree y publique un perfil.</p>
+        }
+      </div>
+      <div class="wizard-footer">
+        <p-button label="Mapear columnas" [disabled]="!canVisit(2)" (onClick)="visit(2)" />
+      </div>
+    }
+    @case (2) {
+      <h3>Identifique y mapee las columnas</h3>
+      <p>
+        Se reconocen los nombres exactos. Las sugerencias no se aplican hasta que las seleccione.
+        Deje las columnas desconocidas sin cambios para incluirlas como advertencias.
+      </p>
+      <app-column-mapping [headers]="dataset.headers" [terms]="terms()" [mapping]="mapping()"
+        (mapped)="map($event.header, $event.value)" />
+      @if (!mappingValid()) {
+        <p role="alert" class="error">Cada campo de destino puede usarse una sola vez.</p>
+      }
+      <div class="wizard-footer">
+        <button (click)="visit(1)">Atrás</button
+        ><p-button
+          label="Revisar normalización"
+          [disabled]="!canVisit(3)"
+          (onClick)="visit(3)"
+        />
+      </div>
+    }
+    @case (3) {
+      <h3>Normalice solo con su aprobación</h3>
+      <p>
+        Estas opciones afectan únicamente una copia de trabajo para la validación. Los valores
+        originales y el archivo no se modifican.
+      </p>
+      <div class="checks">
+        <label
+          ><input type="checkbox" [formField]="optionForm.trim" />Eliminar espacios al inicio y al
+          final</label
+        >
+        <label
+          ><input type="checkbox" [formField]="optionForm.emptyMarkers" />Tratar NULL y N/A como
+          vacíos (sin distinguir mayúsculas)</label
+        >
+      </div>
+      <h4>Vista previa de cambios en los primeros 20 registros</h4>
+      <p-table [value]="preview()" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50, 100]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="{first}–{last} de {totalRecords} cambios">
+        <ng-template #header
+          ><tr>
+            <th>Fila de origen</th>
+            <th>Campo</th>
+            <th>Original</th>
+            <th>Valor de trabajo</th>
+          </tr></ng-template
+        >
+        <ng-template #body let-change
+          ><tr>
+            <td>{{ change.row }}</td>
+            <td>{{ change.field }}</td>
+            <td class="literal">{{ change.before }}</td>
+            <td class="literal">{{ change.after || '(vacío)' }}</td>
+          </tr></ng-template
+        >
+        <ng-template #emptymessage
+          ><tr>
+            <td colspan="4">No hay cambios en esta vista previa.</td>
+          </tr></ng-template
+        >
+      </p-table>
+      <div class="wizard-footer">
+        <button (click)="visit(2)">Atrás</button
+        ><p-button label="Confirmar opciones y continuar" (onClick)="visit(4)" />
+      </div>
+    }
+    @case (4) {
+      <h3>Declare el contexto de los registros</h3>
+      <p>
+        Active solo los contextos que correspondan a este archivo. Las reglas condicionales no
+        deducen el contexto a partir de los valores de las celdas.
+      </p>
+      <app-record-context [context]="context()" [other]="otherContext()"
+        (contextChanged)="setContext($event)" (otherChanged)="setOtherContext($event)" />
+      <p>
+        Las reglas con la condición «Permiso y depósito en colección» se aplican solo cuando ambos
+        contextos están activos. Las fechas y coordenadas siempre se verifican cuando tienen valor.
+        Este diagnóstico no constituye una certificación del SiB.
+      </p>
+      <div class="wizard-footer">
+        <button (click)="visit(3)">Atrás</button
+        ><p-button label="Validar localmente" [disabled]="busy()" (onClick)="validate()" />
+      </div>
+    }
+    @case (5) {
+      @if (issues() !== undefined) {
+        <div class="section-heading">
+          <div>
+            <h3>Diagnóstico</h3>
+            <p>
+              {{ errors() }} errores · {{ warnings() }} advertencias ·
+              {{ changes().length }} valores normalizados en la copia de trabajo
+            </p>
+          </div>
+          <div class="actions">
+            <button (click)="download('json')">Descargar JSON</button
+            ><button (click)="download('csv')">Descargar CSV</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <label
+            >Buscar incidencias<input
+              type="search"
+              [formField]="filterForm.text"
+              placeholder="Campo, fila, mensaje o perfil"
+          /></label>
+          <label
+            >Severidad<select [formField]="filterForm.severity">
+              <option value="">Todas las severidades</option>
+              <option value="ERROR">Error</option>
+              <option value="WARNING">Advertencia</option>
+            </select></label
+          >
+          <label
+            >Perfil<select [formField]="filterForm.profile">
+              <option value="">Todos los perfiles</option>
+              @for (profile of issueProfiles(); track profile) {
+                <option [value]="profile">{{ profile }}</option>
+              }
+            </select></label
+          >
+        </div>
+        <p-table
+          [value]="filtered()"
+          [paginator]="true"
+          [rows]="20"
+          [rowsPerPageOptions]="[20, 50, 100]"
+          [tableStyle]="{ 'min-width': '48rem' }"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="{first}–{last} de {totalRecords} incidencias"
+        >
+          <ng-template #header
+            ><tr>
+              <th>Severidad</th>
+              <th>Campo</th>
+              <th>Fila de origen</th>
+              <th>Descripción</th>
+              <th>Perfil / versión</th>
+            </tr></ng-template
+          >
+          <ng-template #body let-issue
+            ><tr [class.issue-error]="issue.severity === 'ERROR'" [class.issue-warning]="issue.severity === 'WARNING'">
+              <td>
+                <span class="badge" [class.danger]="issue.severity === 'ERROR'">
+                  <span aria-hidden="true">{{ issue.severity === 'ERROR' ? '!' : '△' }}</span>
+                  {{ label(issue.severity) }}
+                </span>
+              </td>
+              <td>{{ issue.field }}</td>
+              <td>{{ issue.row ?? 'Encabezado' }}</td>
+              <td><strong class="issue-message">{{ issue.description }}</strong></td>
+              <td>{{ issue.profile }} {{ issue.version }}</td>
+            </tr></ng-template
+          >
+          <ng-template #emptymessage
+            ><tr>
+              <td colspan="5">
+                {{
+                  issues()?.length
+                    ? 'Ninguna incidencia coincide con estos filtros.'
+                    : 'No se encontraron incidencias para los perfiles y el contexto seleccionados.'
+                }}
+              </td>
+            </tr></ng-template
+          >
+        </p-table>
+        <p>
+          Las descargas incluyen todas las incidencias del diagnóstico, sin depender de los filtros
+          activos. Los números de fila corresponden al archivo original.
+        </p>
+      } @else {
+        <p role="status">
+          Las entradas cambiaron; el diagnóstico anterior ya no es válido. Ejecute la validación de
+          nuevo.
+        </p>
+      }
+      <div class="wizard-footer">
+        <button (click)="visit(1)">Cambiar perfiles</button
+        ><button (click)="visit(2)">Cambiar mapeo</button
+        ><button (click)="visit(3)">Cambiar normalización</button
+        ><p-button label="Revisar contexto / ejecutar de nuevo" (onClick)="visit(4)" />
+      </div>
+    }
+  }
+}

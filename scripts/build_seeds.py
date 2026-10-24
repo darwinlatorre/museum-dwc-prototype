@@ -10,16 +10,21 @@ import zipfile
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / 'backend/src/main/resources/data'
 DATA.mkdir(parents=True, exist_ok=True)
+def write_if_changed(path, content):
+    # Do not rewrite immutable seeds or source evidence when their bytes already match.
+    if not path.exists() or path.read_text() != content:
+        path.write_text(content)
+
 terms = {}
 for name in ['terms', 'dc', 'dcterms']:
     with (ROOT / f'sources/tdwg/{name}.csv').open() as file:
         for row in csv.DictReader(file):
             uri = row['term_isDefinedBy'] + row['term_localName']
             terms[uri] = dict(name=row['term_localName'], uri=uri,
-                definition=row['rdfs_comment'] or row['dcterms_description'] or row['label'],
-                category=row['tdwgutility_organizedInClass'] or row['rdf_type'],
+                definition=row['rdfs_comment'],
+                category=row['tdwgutility_organizedInClass'],
                 status='deprecated' if row['term_deprecated'] else 'current')
-(DATA / 'catalog.json').write_text(json.dumps(list(terms.values()), ensure_ascii=False, indent=2))
+write_if_changed(DATA / 'catalog.json', json.dumps(list(terms.values()), ensure_ascii=False, indent=2))
 
 # Preserve the actual instruction matrix, not an inferred list from candidate fields.
 ns = {'s': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
@@ -33,7 +38,7 @@ with zipfile.ZipFile(ROOT / 'sources/sib/records-4.1.xlsx') as book:
             if value is not None:
                 cells[cell.get('r')] = strings[int(value.text)] if cell.get('t') == 's' else value.text
         rows.append(cells)
-(ROOT / 'sources/sib/instructions.json').write_text(json.dumps(rows, ensure_ascii=False, indent=2))
+write_if_changed(ROOT / 'sources/sib/instructions.json', json.dumps(rows, ensure_ascii=False, indent=2))
 
 SOURCE = 'https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)'
 def rule(field, condition='always', kind='required', severity='ERROR', message=None):
@@ -62,7 +67,44 @@ for key, name, version, rules, description in [
      'Museum-specific mandatory fields, independently versioned; these are not universal Darwin Core requirements.')]:
     profiles.append(dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'unicauca/'+key)), name=name, version=version,
         status='PUBLISHED', revision=0, description=description, rules=rules))
-(DATA / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2))
+
+
+def combine_profiles(originals):
+    # First occurrence determines order; only the complete predicate is deduplicated.
+    combined = {}
+    for profile in originals:
+        for original in profile['rules']:
+            predicate = tuple(original[k] for k in ('field', 'kind', 'severity', 'condition'))
+            citation = f"{profile['name']} {profile['version']}: {original['source']}"
+            if predicate in combined:
+                combined[predicate]['source'] += ' | ' + citation
+                continue
+            field = original['field']
+            if field == 'disposition' and original['kind'] == 'requiredColumn':
+                message = ('La matriz SiB solicita la columna disposition en este contexto; '
+                    'su definición permite un valor vacío salvo para especímenes recolectados '
+                    'con permiso y depositados en una colección.')
+            elif field == 'disposition':
+                message = ('Documente disposition (En colección) para especímenes recolectados '
+                    'con permiso y depositados en una colección.')
+            elif field == 'individualCount':
+                message = ('La matriz de instrucciones v4.1 marca individualCount**, pero el '
+                    'historial SiB lo considera recomendado; revise la documentación de cantidades.')
+            else:
+                message = f'Se requiere {field} para este contexto.'
+            combined[predicate] = dict(original, message=message, source=citation)
+    return dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'unicauca/museum-sib')),
+        name='Museo + SiB', version='1.0', status='PUBLISHED', revision=0,
+        description=('Perfil de composición local de Museo 1.0 y SiB Registros Biológicos 4.1. '
+            'Conserva los requisitos del Museo y los contextos y advertencias SiB; no son '
+            'requisitos universales Darwin Core y no certifica publicación oficial SiB. '
+            'No valida la extensión de permisos GGBN. No invente country si se desconoce; '
+            'revise el diagnóstico con el publicador.'), rules=list(combined.values()))
+
+
+# Compose only after the original immutable objects have been constructed.
+profiles.append(combine_profiles([profiles[1], profiles[0]]))
+write_if_changed(DATA / 'profiles.json', json.dumps(profiles, ensure_ascii=False, indent=2))
 manifest = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'sources').rglob('*') if p.is_file() and p.suffix in ['.csv','.xlsx']}
-(DATA / 'provenance.json').write_text(json.dumps(manifest, indent=2))
+write_if_changed(DATA / 'provenance.json', json.dumps(manifest, indent=2))
 print(f'Generated {len(terms)} terms and {len(profiles)} profiles.')

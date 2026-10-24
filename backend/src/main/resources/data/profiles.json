@@ -482,5 +482,463 @@
         "source": "Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
       }
     ]
+  },
+  {
+    "id": "7af9b4b3-e599-53a9-aee7-a55127d74f7f",
+    "name": "Museo + SiB",
+    "version": "1.0",
+    "status": "PUBLISHED",
+    "revision": 0,
+    "description": "Perfil de composición local de Museo 1.0 y SiB Registros Biológicos 4.1. Conserva los requisitos del Museo y los contextos y advertencias SiB; no son requisitos universales Darwin Core y no certifica publicación oficial SiB. No valida la extensión de permisos GGBN. No invente country si se desconoce; revise el diagnóstico con el publicador.",
+    "rules": [
+      {
+        "field": "catalogNumber",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere catalogNumber para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "recordedBy",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere recordedBy para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "eventDate",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere eventDate para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "year",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere year para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "month",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere month para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "day",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere day para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "country",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere country para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0 | SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "stateProvince",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere stateProvince para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "county",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere county para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "locality",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere locality para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "minimumElevationInMeters",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere minimumElevationInMeters para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "decimalLatitude",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere decimalLatitude para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "decimalLongitude",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere decimalLongitude para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "identifiedBy",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere identifiedBy para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "scientificName",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere scientificName para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0 | SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "order",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere order para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "superfamily",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere superfamily para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "family",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere family para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "subfamily",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere subfamily para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "tribe",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere tribe para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "subtribe",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere subtribe para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "genus",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere genus para este contexto.",
+        "source": "Museo 1.0: Museo de Historia Natural, Universidad del Cauca — requested profile 1.0"
+      },
+      {
+        "field": "occurrenceID",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere occurrenceID para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "basisOfRecord",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere basisOfRecord para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "institutionCode",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere institutionCode para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "institutionID",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere institutionID para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "type",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere type para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "taxonRank",
+        "condition": "always",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere taxonRank para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "collectionCode",
+        "condition": "collection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere collectionCode para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "collectionID",
+        "condition": "collection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere collectionID para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "catalogNumber",
+        "condition": "collection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere catalogNumber para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "organismQuantity",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere organismQuantity para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "organismQuantityType",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere organismQuantityType para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "recordedBy",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere recordedBy para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "preparations",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere preparations para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventDate",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere eventDate para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "stateProvince",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere stateProvince para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "county",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere county para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "locality",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere locality para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "minimumElevationInMeters",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere minimumElevationInMeters para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLatitude",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere decimalLatitude para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLongitude",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere decimalLongitude para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "geodeticDatum",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere geodeticDatum para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "occurrenceStatus",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere occurrenceStatus para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventID",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere eventID para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventDate",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere eventDate para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "locality",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere locality para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLatitude",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere decimalLatitude para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "decimalLongitude",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere decimalLongitude para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "scientificNameID",
+        "condition": "marine",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere scientificNameID para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventID",
+        "condition": "sampling",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere eventID para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "eventDate",
+        "condition": "sampling",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Se requiere eventDate para este contexto.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "disposition",
+        "condition": "permit",
+        "kind": "requiredColumn",
+        "severity": "WARNING",
+        "message": "La matriz SiB solicita la columna disposition en este contexto; su definición permite un valor vacío salvo para especímenes recolectados con permiso y depositados en una colección.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "disposition",
+        "condition": "collection",
+        "kind": "requiredColumn",
+        "severity": "WARNING",
+        "message": "La matriz SiB solicita la columna disposition en este contexto; su definición permite un valor vacío salvo para especímenes recolectados con permiso y depositados en una colección.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "disposition",
+        "condition": "permitAndCollection",
+        "kind": "required",
+        "severity": "ERROR",
+        "message": "Documente disposition (En colección) para especímenes recolectados con permiso y depositados en una colección.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      },
+      {
+        "field": "individualCount",
+        "condition": "permit",
+        "kind": "required",
+        "severity": "WARNING",
+        "message": "La matriz de instrucciones v4.1 marca individualCount**, pero el historial SiB lo considera recomendado; revise la documentación de cantidades.",
+        "source": "SiB Registros Biológicos 4.1: https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)"
+      }
+    ]
   }
 ]

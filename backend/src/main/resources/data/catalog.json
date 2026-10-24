@@ -73,21 +73,21 @@
     "name": "accordingTo",
     "uri": "http://rs.tdwg.org/dwc/terms/accordingTo",
     "definition": "Abstract term to attribute information to a source.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "deprecated"
   },
   {
     "name": "accuracy",
     "uri": "http://rs.tdwg.org/dwc/terms/accuracy",
     "definition": "Abstract term to capture error information about a measurement or fact.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "deprecated"
   },
   {
     "name": "associatedMedia",
     "uri": "http://rs.tdwg.org/dwc/terms/associatedMedia",
     "definition": "A list (concatenated and separated) of associated ac:Media resources.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -108,7 +108,7 @@
     "name": "associatedReferences",
     "uri": "http://rs.tdwg.org/dwc/terms/associatedReferences",
     "definition": "A list (concatenated and separated) of associated dcterms:BibliographicResources.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -143,7 +143,7 @@
     "name": "basisOfRecord",
     "uri": "http://rs.tdwg.org/dwc/terms/basisOfRecord",
     "definition": "The specific nature of the data record.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -199,14 +199,14 @@
     "name": "collectionCode",
     "uri": "http://rs.tdwg.org/dwc/terms/collectionCode",
     "definition": "A name, acronym, coden, or initialism identifying a collection.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
     "name": "collectionID",
     "uri": "http://rs.tdwg.org/dwc/terms/collectionID",
     "definition": "An identifier for a collection.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -262,28 +262,28 @@
     "name": "dataGeneralizations",
     "uri": "http://rs.tdwg.org/dwc/terms/dataGeneralizations",
     "definition": "Actions taken to make the shared data less specific or complete than in its original form. Suggests that alternative data of higher quality may be available on request.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
     "name": "Dataset",
     "uri": "http://rs.tdwg.org/dwc/terms/Dataset",
     "definition": "The category of information pertaining to a logical set of records.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "deprecated"
   },
   {
     "name": "datasetID",
     "uri": "http://rs.tdwg.org/dwc/terms/datasetID",
     "definition": "An identifier for the set of data. May be a global unique identifier or an identifier specific to a collection or institution.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
     "name": "datasetName",
     "uri": "http://rs.tdwg.org/dwc/terms/datasetName",
     "definition": "A name of a source dataset.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -332,14 +332,14 @@
     "name": "DwCType",
     "uri": "http://rs.tdwg.org/dwc/terms/DwCType",
     "definition": "The set of classes specified by the Darwin Core Type Vocabulary, used to categorize the nature or genre of the resource.",
-    "category": "http://purl.org/dc/dcam/VocabularyEncodingScheme",
+    "category": "",
     "status": "deprecated"
   },
   {
     "name": "dynamicProperties",
     "uri": "http://rs.tdwg.org/dwc/terms/dynamicProperties",
     "definition": "A list of additional measurements, facts, characteristics, or assertions about the record. Meant to provide a mechanism for structured content.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -409,14 +409,14 @@
     "name": "Event",
     "uri": "http://rs.tdwg.org/dwc/terms/Event",
     "definition": "An action, process, or set of circumstances occurring at a dcterms:Location during a period of time.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "EventAttribute",
     "uri": "http://rs.tdwg.org/dwc/terms/EventAttribute",
     "definition": "Container class for information about attributes related to a given sampling event.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "deprecated"
   },
   {
@@ -633,14 +633,14 @@
     "name": "FossilSpecimen",
     "uri": "http://rs.tdwg.org/dwc/terms/FossilSpecimen",
     "definition": "A preserved specimen that is a fossil.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "Generalizations",
     "uri": "http://rs.tdwg.org/dwc/terms/Generalizations",
     "definition": "Actions taken to make the data as shared less specific or complete than in its original form. Suggests that alternative data of highly quality may be available on request.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "deprecated"
   },
   {
@@ -668,7 +668,7 @@
     "name": "GeologicalContext",
     "uri": "http://rs.tdwg.org/dwc/terms/GeologicalContext",
     "definition": "A set of geological designations, such as stratigraphy, that qualify a dcterms:Location or source of a dwc:MaterialEntity.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -801,14 +801,14 @@
     "name": "HumanObservation",
     "uri": "http://rs.tdwg.org/dwc/terms/HumanObservation",
     "definition": "An output of a human observation process.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "Identification",
     "uri": "http://rs.tdwg.org/dwc/terms/Identification",
     "definition": "A classification of a resource according to a classification scheme.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -885,7 +885,7 @@
     "name": "informationWithheld",
     "uri": "http://rs.tdwg.org/dwc/terms/informationWithheld",
     "definition": "Additional information that exists about a resource, but that is not shared publicly. Suggests that alternative data of higher quality may be available on request.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -906,14 +906,14 @@
     "name": "institutionCode",
     "uri": "http://rs.tdwg.org/dwc/terms/institutionCode",
     "definition": "A name (or acronym) in use by an institution having custody of a resource.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
     "name": "institutionID",
     "uri": "http://rs.tdwg.org/dwc/terms/institutionID",
     "definition": "An identifier for an organization.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -997,7 +997,7 @@
     "name": "LivingSpecimen",
     "uri": "http://rs.tdwg.org/dwc/terms/LivingSpecimen",
     "definition": "A specimen that is alive.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1046,21 +1046,21 @@
     "name": "MachineObservation",
     "uri": "http://rs.tdwg.org/dwc/terms/MachineObservation",
     "definition": "An output of a machine observation process.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "MaterialCitation",
     "uri": "http://rs.tdwg.org/dwc/terms/MaterialCitation",
     "definition": "A reference to or citation of one, a part of, or multiple specimens in scholarly publications.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "MaterialEntity",
     "uri": "http://rs.tdwg.org/dwc/terms/MaterialEntity",
     "definition": "An entity that can be identified, exists for some period of time, and consists in whole or in part of physical matter while it exists.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1081,7 +1081,7 @@
     "name": "MaterialSample",
     "uri": "http://rs.tdwg.org/dwc/terms/MaterialSample",
     "definition": "A material entity that represents an entity of interest in whole or in part.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1151,7 +1151,7 @@
     "name": "MeasurementOrFact",
     "uri": "http://rs.tdwg.org/dwc/terms/MeasurementOrFact",
     "definition": "A measurement of or fact about an rdfs:Resource (http://www.w3.org/2000/01/rdf-schema#Resource).",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1284,7 +1284,7 @@
     "name": "Occurrence",
     "uri": "http://rs.tdwg.org/dwc/terms/Occurrence",
     "definition": "A dwc:Event that establishes the state of a dwc:Organism at a particular place and time.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1396,7 +1396,7 @@
     "name": "Organism",
     "uri": "http://rs.tdwg.org/dwc/terms/Organism",
     "definition": "A particular organism or defined group of organisms considered to be taxonomically homogeneous.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1466,7 +1466,7 @@
     "name": "ownerInstitutionCode",
     "uri": "http://rs.tdwg.org/dwc/terms/ownerInstitutionCode",
     "definition": "A name (or acronym) in use by an institution having ownership of a resource.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -1529,7 +1529,7 @@
     "name": "PreservedSpecimen",
     "uri": "http://rs.tdwg.org/dwc/terms/PreservedSpecimen",
     "definition": "A specimen that has been preserved.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1641,7 +1641,7 @@
     "name": "ResourceRelationship",
     "uri": "http://rs.tdwg.org/dwc/terms/ResourceRelationship",
     "definition": "A relationship of one rdfs:Resource (http://www.w3.org/2000/01/rdf-schema#Resource) to another.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -1655,14 +1655,14 @@
     "name": "Sample",
     "uri": "http://rs.tdwg.org/dwc/terms/Sample",
     "definition": "Container class for information about the results of a sampling event (specimen, observation, etc.)",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "deprecated"
   },
   {
     "name": "SampleAttribute",
     "uri": "http://rs.tdwg.org/dwc/terms/SampleAttribute",
     "definition": "Container class for information about attributes related to a given sample.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "deprecated"
   },
   {
@@ -1753,7 +1753,7 @@
     "name": "SamplingEvent",
     "uri": "http://rs.tdwg.org/dwc/terms/SamplingEvent",
     "definition": "Container class for information about the conditions and methods of acquisition of samples.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "deprecated"
   },
   {
@@ -1781,7 +1781,7 @@
     "name": "SamplingLocation",
     "uri": "http://rs.tdwg.org/dwc/terms/SamplingLocation",
     "definition": "Container class for information about the location where a sampling event occurred.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "deprecated"
   },
   {
@@ -1900,7 +1900,7 @@
     "name": "Taxon",
     "uri": "http://rs.tdwg.org/dwc/terms/Taxon",
     "definition": "A group of organisms (sensu http://purl.obolibrary.org/obo/OBI_0100026) considered by taxonomists to form a homogeneous unit.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2110,7 +2110,7 @@
     "name": "feedbackURL",
     "uri": "http://rs.tdwg.org/dwc/terms/feedbackURL",
     "definition": "A uniform resource locator (URL) that points to a webpage on which a form may be submitted to gather feedback about the record.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -2180,7 +2180,7 @@
     "name": "agentRoleOrder",
     "uri": "http://rs.tdwg.org/dwc/terms/agentRoleOrder",
     "definition": "A numerical position of an AgentRole in a set of AgentRoles.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -2404,7 +2404,7 @@
     "name": "MolecularProtocol",
     "uri": "http://rs.tdwg.org/dwc/terms/MolecularProtocol",
     "definition": "A protocol used to perform a dwc:NucleotideAnalysis and potentially derive a dwc:NucleotideSequence from a dwc:MaterialEntity.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2425,7 +2425,7 @@
     "name": "NucleotideAnalysis",
     "uri": "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis",
     "definition": "A link between a dwc:NucleotideSequence or a dwc:Identification and a dwc:Event and a dwc:MaterialEntity from which it was derived, using a specified dwc:Protocol.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2446,7 +2446,7 @@
     "name": "NucleotideSequence",
     "uri": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
     "definition": "A digital representation of a nucleotide sequence.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2467,7 +2467,7 @@
     "name": "OrganismInteraction",
     "uri": "http://rs.tdwg.org/dwc/terms/OrganismInteraction",
     "definition": "An interaction between two dwc:Organisms during a dwc:Event.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2495,7 +2495,7 @@
     "name": "Protocol",
     "uri": "http://rs.tdwg.org/dwc/terms/Protocol",
     "definition": "A method used during an action.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2537,14 +2537,14 @@
     "name": "Provenance",
     "uri": "http://rs.tdwg.org/dwc/terms/Provenance",
     "definition": "Information about an entity’s origins.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "UsagePolicy",
     "uri": "http://rs.tdwg.org/dwc/terms/UsagePolicy",
     "definition": "Information about rights, usage, and attribution statements applicable to an entity.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2789,14 +2789,14 @@
     "name": "GeologicalMaterial",
     "uri": "http://rs.tdwg.org/dwc/terms/GeologicalMaterial",
     "definition": "A dwc:MaterialEntity that is geological in nature.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
     "name": "organismPart",
     "uri": "http://rs.tdwg.org/dwc/terms/organismPart",
     "definition": "An anatomical part of a dwc:Organism.",
-    "category": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "category": "",
     "status": "current"
   },
   {
@@ -2845,7 +2845,7 @@
     "name": "Location",
     "uri": "http://purl.org/dc/terms/Location",
     "definition": "A spatial region or named place.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {
@@ -2887,7 +2887,7 @@
     "name": "BibliographicResource",
     "uri": "http://purl.org/dc/terms/BibliographicResource",
     "definition": "A book, article, or other documentary resource.",
-    "category": "http://www.w3.org/2000/01/rdf-schema#Class",
+    "category": "",
     "status": "current"
   },
   {

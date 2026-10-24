@@ -1,0 +1,13 @@
+/* Orden global explícito: contratos compartidos antes de sus especializaciones.
+ * No cargar estos módulos como styleUrl encapsulado: incluyen overlays PrimeNG.
+ */
+@use './app/shared/design-system/tokens';
+@use './app/shared/design-system/base';
+@use './app/shared/design-system/forms';
+@use './app/shared/design-system/layout';
+@use './app/shared/design-system/feedback';
+@use './app/shared/design-system/tables';
+@use './app/shared/design-system/primeng';
+@use './app/features/catalog/catalog';
+@use './app/features/profiles/profiles';
+@use './app/features/importer/importer';

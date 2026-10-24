@@ -1,0 +1,55 @@
+:root {
+  font-family: var(--museum-font-family);
+  color: var(--ink);
+  background: var(--museum-page);
+  font-size: 14px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea { outline-offset: 3px; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--pine); }
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: none;
+}
+h1, h2, h3, h4 { color: var(--museum-heading); }
+h2 {
+  font-size: 1.75rem;
+  letter-spacing: -0.04em;
+  margin: 0 0 0.45rem;
+}
+h3 { font-size: 1.35rem; margin: 1.3rem 0 0.7rem; }
+h4 { font-size: 1.05rem; }
+p {
+  line-height: 1.6;
+  max-width: 80ch;
+  color: var(--muted);
+  margin: 0.4rem 0 1.2rem;
+}
+a { color: var(--museum-link); overflow-wrap: anywhere; }
+small {
+  display: block;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 0.3rem;
+  line-height: 1.5;
+}
+.literal { white-space: pre-wrap; }
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -100px;
+  z-index: 999;
+  background: var(--museum-surface);
+  padding: var(--museum-space-4);
+}
+.skip-link:focus { top: 1rem; }
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

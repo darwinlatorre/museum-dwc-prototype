@@ -1,0 +1,20 @@
+.p-datatable {
+  border: 1px solid var(--line);
+  border-radius: var(--museum-radius-lg);
+  overflow: hidden;
+}
+.p-datatable a {
+  display: block;
+  font-size: 0.8rem;
+  max-width: 280px;
+  margin-top: 0.3rem;
+}
+.p-datatable th {
+  font-size: 0.85rem !important;
+  color: var(--muted) !important;
+  background: var(--museum-table-heading) !important;
+}
+.p-datatable td {
+  vertical-align: top !important;
+  padding: 0.85rem var(--museum-space-4) !important;
+}
