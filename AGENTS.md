@@ -8,6 +8,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - `frontend/README.md` y `backend/README.md`: arquitectura y contratos.
 - `frontend/ARCHITECTURE.md`: organización por funcionalidades y límites de dependencia.
 - `frontend/DESIGN_SYSTEM.md`: tokens, primitivas, preset y propiedad de estilos.
+- `backend/PROFILE_ARCHITECTURE.md` y `backend/CATALOG_ARCHITECTURE.md`: puertos, composición y fronteras transaccionales hexagonales.
 - `sources/README.md`: fuentes oficiales y atribuciones.
 - `VERIFICATION.md`: evidencia observada, historial y limitaciones.
 - `odd/tasks/`: especificaciones, decisiones y tareas. La evolución `museum-evolution.md` tiene T1–T5 completadas; el refinamiento Java/UX está en `museum-refinement.md`. No reabrir trabajo anterior sin una nueva necesidad.
@@ -21,7 +22,9 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Conservar bloqueos, control de revisión e inmutabilidad en PostgreSQL. Acceso productivo mediante entidades y repositorios JPA; migraciones aditivas.
 - No leer ni modificar `.env`, ni modificar los archivos iniciales ajenos `.env.example` y `docker-compose.yml`. Utilizar `compose.mvp.yml` para la base aislada, sin cargar archivos de entorno.
 - Mantener servicios en localhost. Autenticación e importación biológica al servidor son trabajo futuro, no funcionalidades existentes.
-- Separar DTO de entrada/salida en `profile/dto/req` y `profile/dto/res`; mantener el modelo y servicio independientes del transporte. Usar getters JavaBean en entidades y excepciones propias en `shared/exceptions`.
+- Backend hexagonal por funcionalidad (`profile`, `catalog`): `domain` y `application` Java puros, sin Spring/Jakarta/JPA/Jackson/CommonsCSV, sin DTO HTTP ni adaptadores. Puertos propiedad de aplicación, implementados por adaptadores; composición explícita en `configuration`. No crear interfaces sin una frontera real.
+- Separar DTO de entrada/salida en `profile/adapter/in/http/dto/req` y `res`; mappers HTTP y de persistencia separados. Enumerados JSON estrictos y Bean Validation en adaptadores, invariantes también en dominio. Usar getters JavaBean en entidades y errores propios, traducidos exclusivamente en HTTP.
+- La transacción de perfil envuelve el caso de uso completo (lock→revisión/estado→transformación→save/flush), incluido bootstrap completo; no liberar el bloqueo entre llamadas de repositorio. Catálogo: inicio/activación/fallo son atómicos, descarga/análisis fuera de transacción, política ejecutada contra snapshot bloqueado. No agregar dependencias productivas entre perfil y catálogo.
 - Mantener las pruebas de perfiles en su paquete `profile`, con JPA/EntityManager y PostgreSQL desechable; no sustituirlas por mocks que eliminen cobertura de trigger o concurrencia.
 - Frontend por funcionalidad: `features/catalog`, `features/profiles`, `features/importer`. Modelos con su propietario; `core/api` solo metadatos y `core/i18n` presentación. No agregar componentes regados en la raíz ni un cajón `shared/models`.
 - Contratos entre funcionalidades con `import type`, no vistas desde `core`/`shared`. Mantener el motor independiente de transporte/vistas y la URL de módulo del worker relativa a su workbench.
@@ -38,7 +41,7 @@ Desde la raíz:
 ```bash
 python3 scripts/test_seeds.py
 (cd frontend && node scripts/check-architecture.mjs && npm test -- --watch=false && npm run build)
-(cd backend && bash ./mvnw test && bash ./mvnw package -DskipTests)
+(cd backend && python3 scripts/test_architecture.py && python3 scripts/check_architecture.py && bash ./mvnw test && bash ./mvnw package -DskipTests)
 git diff --check
 ```
 

@@ -1,6 +1,41 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: arquitectura frontend y sistema de diseño integrados
+## Estado actual: backend hexagonal preservador
+
+**Resultado:** `profile` y `catalog` tienen núcleo Java puro (`domain`, `application`), puertos, adaptadores y composición Spring explícita. Perfil conserva una transacción por operación completa; catálogo conserva la descarga fuera de transacción y la activación contra el snapshot bloqueado. No cambian esquema, recursos, dependencias, contrato HTTP ni datos vivos. Skills instaladas utilizadas: hexagonal-architecture, Java, Spring Boot, JPA, TDD y verificación Spring.
+
+| Comprobación nueva | Resultado observado |
+|---|---|
+| Baseline antes de migrar | Job1:68/68tests,0fallos/errores/omisiones;50observaciones públicas guardadas |
+| Núcleos | Ambos compilados mediante `javac` sin frameworks por writers/verificadores |
+| Arquitectura | REDexit1 sobre paquetes antiguos→GREEN tras extracción;5regresiones del checkerPASS |
+| Perfil independiente |92testsPASS y50/50observaciones idénticas; sonda adicional93PASS comprueba proxy real y rollback SQL completo |
+| Catálogo independiente |65testsPASS, incluidas8/8carreras mixtas, transporte, estado durable y reinicio con PostgreSQL desechable |
+| Integración padre | **Job3:160/160tests**,0fallos/errores/omisiones,8clases realmente ejecutadas; **packagePASS** |
+| Diferencial padre | **50/50observaciones idénticas**: estado, cuerpo como cadena exacta y encabezados; no se normalizaron diferencias para ocultarlas |
+| Recursos/contratos | `git diff` vacío para `backend/pom.xml`, `backend/src/main/resources` y `sources/tdwg`; sin nuevas migraciones ni dependencias |
+
+Las tres sondas independientes incorporadas son `lifecycleOperationsUseOneTransactionalProxy`, `bootstrapDatabaseConflictRollsBackEarlierSeeds` y `CatalogLockedCurrentPolicyTests`. La primera comprueba un solo bean proxificado, transacciones REQUIRED y read-only únicamente en listado; las otras fijan rollback total ante conflicto SQL y conservación frente a un candidato descargado antes que el snapshot vigente. Se agregan a las integraciones PostgreSQL, no las sustituyen por mocks. Perfil94+catálogo66=160; no sumar ejecuciones independientes ni históricos para inflar ese total.
+
+### Comandos y artefactos
+
+Desde raíz: `python3 -B backend/scripts/test_architecture.py`, `python3 backend/scripts/check_architecture.py`, `git diff --check`. Desde backend: `bash ./mvnw test && bash ./mvnw package -DskipTests` (job3). El segundo comando omite pruebas porque el primero acaba de ejecutarlas; no describe una suite omitida. El baseline y el candidato generan las observaciones `PROFILE_CONTRACT` mediante MockMvc con reloj fijo/UUID normalizados. Artefactos ignorados: `.browser/backend-hexagonal/{baseline-contract,final-contract}.jsonl`.
+
+Unidades locales: perfil `a9d783c` (734+/185-), catálogo `16baee4` (765+/191-). Son extracciones verticales con sus pruebas y docs, no commits por tipo de archivo. Superan la heurística400 por cohesión; no se minificó ni omitió código para reducir el conteo. Primera unidad comprobada independientemente contra el catálogo anterior; no necesita una mitad futura para compilar.
+
+### Fallos, consentimiento y límites
+
+- Job2 no aprobó:157tests,0fallos de aserción,61errores de contexto. Quedaban `.class` antiguos junto a los reubicados, produciendo `ConflictingBeanDefinitionException` entre ambos `CatalogConfiguration`. Se archivaron `target/classes` y `target/test-classes` en `.browser/backend-hexagonal/stale-compiled-20261024-021348`, sin borrados ni tocar JAR/runtime; job3 reconstruyó y aprobó. No fue un timeout reintentado ni se debilitó una prueba.
+- Un postcheck inicialmente sumó todos los XML Surefire y obtuvo186 por26informes históricos ajenos a esta ejecución. Falló su aserción; se corrigió contrastando las ocho clases del log actual con sus XML. El total nuevo real es160, no186. No se reejecutó Maven para corregir el contador.
+- El escritor de catálogo informó parcial por diez ubicaciones físicas antiguas, aunque ya declaraban paquetes nuevos. El padre las reubicó sin sobrescribir destinos; checkerGREEN y verificación posterior cubren el resultado final.
+- Preparación destructiva del scratch de perfil fue bloqueada antes de ejecutarse. Se usó archivo baseline separado y tar con exclusiones, sin borrados. La autorización humana posterior permite a verificadores leer/copiar **solo** `/home/dark/.m2/wrapper` y `/home/dark/.m2/repository` a su scratch, sin red, credenciales, settings ni escritura original. El catálogo había quedado pendiente de ese consentimiento: su continuación ejecutó Maven por primera vez, no reintentó un test fallido.
+- El verificador de catálogo informó posible escritura externa de preferencias JShell antes de fijar `java.user.home`; no se inspeccionó ni limpió una ruta externa ni se inventa resolución. La ejecución Maven posterior confinó HOME, temporales, caché y preferencias al scratch. Los scratches comunicados por trabajadores/verificadores se conservan; no hay autorización de limpieza externa.
+- GET opcional al runtime8080 agotó10s **antes** de cambios; `ss` confirmó ausencia de listener. No se reinició runtime ni se compararon nuevamente los nueve perfiles vivos. La nueva evidencia funcional proviene de PostgreSQL aislado y comprobación de recursos/esquema inalterados; no se tocó la base viva ni la original.
+- ASSESS escalado por riesgos1/4, también por cada rango de commit, sigue no evaluable por untracked: verificación independiente requerida y cumplida, **sin aprobación nativa**. No se instalaron SpotBugs/PMD/Checkstyle/JaCoCo/OWASP ni se afirma cobertura o auditoría de seguridad. Auditoría npm pendiente aceptada permanece intacta. Sin push/PR.
+
+Ver [backend/README.md](backend/README.md), [perfiles](backend/PROFILE_ARCHITECTURE.md) y [catálogo](backend/CATALOG_ARCHITECTURE.md). La petición posterior de revisar `injectQueryClient` y TanStack Query se registra como T5; no forma parte de estos commits ni de esta aceptación backend.
+
+## Historial: arquitectura frontend y sistema de diseño integrados
 
 **Resultado funcional comprobado:** frontend por funcionalidades `catalog`, `profiles`, `importer`, modelos con propietario único, transporte/i18n en `core`, selector en `shared/ui` y sistema de diseño real en `shared/design-system`. Componentes grandes con HTML externo; no quedan rutas antiguas ni barrels de compatibilidad. `src/styles.scss` importa primitivas y especializaciones en orden explícito. `MuseumPreset` y CSS consumen una sola paleta; shell/primitivas usan tokens semánticos, espacios y radios. No se cambió API, parser, validación, dependencias ni datos.
 

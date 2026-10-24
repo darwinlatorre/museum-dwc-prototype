@@ -10,3 +10,4 @@ target/
 .playwright-cli/
 .agent-browser/
 .browser/
+/backend/scripts/__pycache__/

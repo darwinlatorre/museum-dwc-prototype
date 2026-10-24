@@ -88,13 +88,23 @@ Las respuestas de problema conservan sus claves técnicas y no exponen SQL ni de
 
 Límites: nombre 200 caracteres; versión 100; descripción 10 000; hasta 2 000 reglas; campo/mensaje/fuente de cada regla 200/2 000/4 000 caracteres.
 
-## Persistencia y paquetes
+## Arquitectura hexagonal y persistencia
 
-La aplicación de arranque permanece en `co.edu.unicauca.backend`. Los paquetes por función son `profile` (modelo, controlador, validación, ciclo de vida, carga inicial, entidad y repositorio), `catalog` (catálogo local), `shared.api` (respuestas de problema) y `shared.exceptions` (excepciones propias). Las excepciones de Spring conservan sus tipos originales. No se introduce un framework de capas adicional.
+El arranque permanece en `co.edu.unicauca.backend`. Dentro de `profile` y `catalog`, las dependencias apuntan hacia el núcleo; no hay dependencia productiva entre ambas funcionalidades:
 
-Los contratos de entrada viven en `profile.dto.req` (`CreateProfileRequest`, `UpdateProfileRequest`, `DuplicateProfileRequest`, `RuleRequest`) y los de salida en `profile.dto.res` (`ProfileResponse`, `RuleResponse`). El controlador convierte las solicitudes validadas al contenido del modelo y las respuestas del servicio a DTO mediante `ProfileMapper`. El servicio no depende de los DTO de transporte: usa `Profile` y `Profile.Content`, también empleados para validar las semillas. Los enumerados compartidos conservan sus valores y lectura JSON estricta.
+| Paquete por funcionalidad | Responsabilidad |
+|---|---|
+| `domain` | Modelos e invariantes Java puros, sin Spring, Jakarta, JPA ni Jackson |
+| `application` | Casos de uso y puertos de entrada/salida; no reciben entidades administradas ni DTO HTTP |
+| `adapter/in` | HTTP, carga inicial y programador según la funcionalidad; traducen protocolos a operaciones de aplicación |
+| `adapter/out` | Persistencia JPA y fuente TDWG; convierten entidades, JSON y CSV fuera del núcleo |
+| `configuration` | Composición explícita Spring de casos de uso, puertos y adaptadores |
 
-`ProfileRepository` extiende `JpaRepository<ProfileEntity, String>`. `ProfileMapper` centraliza además la conversión entidad/modelo y la serialización de reglas JSONB; la carga inicial y las escrituras normales utilizan esas mismas conversiones. `ProfileEntity` expone getters JavaBean (`getId`, `getName`, etc.); los controladores nunca exponen entidades administradas. Las transacciones residen en `ProfileService`, incluidas las lecturas de solo consulta. `open-in-view` permanece deshabilitado.
+`shared.api` traduce errores propios y de Spring a los problemas públicos existentes; `shared.exceptions` conserva la excepción de conflicto pura. No se agregan interfaces por cada método, otro framework, dependencias ni migraciones. Ver [perfiles](PROFILE_ARCHITECTURE.md) y [catálogo](CATALOG_ARCHITECTURE.md) para la composición concreta.
+
+Los DTO siguen separados en `profile.adapter.in.http.dto.req` y `profile.adapter.in.http.dto.res`. La validación HTTP y la lectura JSON estricta de enumerados pertenecen a los adaptadores. El dominio conserva las mismas invariantes también cuando se llama sin HTTP, por ejemplo durante la carga inicial. El mapper HTTP es independiente del mapper de persistencia/JSONB; los controladores nunca exponen entidades administradas.
+
+El adaptador JPA implementa el puerto de persistencia de perfiles. Una frontera transaccional Spring envuelve **toda la operación**: bloquear, comprobar estado/revisión, transformar, guardar y vaciar. No se limita a abrir una transacción por llamada de repositorio: eso liberaría el bloqueo demasiado pronto. La inicialización completa conserva su única transacción y el listado es read-only. El núcleo no depende de `@Transactional`; la configuración conecta la implementación transaccional del puerto de entrada. Las entidades mantienen getters JavaBean y `open-in-view` permanece deshabilitado.
 
 La entidad conserva una fila por versión y las reglas como JSONB atómico, sin relaciones ni consultas adicionales por regla. Hibernate mapea el JSON como texto serializado por el mismo mapper JSON de la API; leer no vuelve a escribir ni normaliza registros históricos. Flyway V1, sus restricciones y su trigger permanecen intactos; V2 agrega exclusivamente la instantánea del catálogo y Hibernate solo valida el esquema.
 
@@ -120,7 +130,7 @@ El disparador manual espera el resultado y devuelve `outcome`: `SUCCESS` confirm
 
 ## Versiones publicadas y concurrencia
 
-El controlador delega las operaciones en un único servicio transaccional. Los bloqueos de fila PostgreSQL serializan la edición y publicación de una versión. La edición compara la revisión enviada por el cliente y evita sobrescrituras desactualizadas. Publicar toma el último borrador bloqueado y no acepta una revisión en el cuerpo: ese contrato exige cuerpo vacío. Dos publicaciones simultáneas tienen un único resultado ganador. La restricción única de la base resuelve las creaciones concurrentes de un mismo nombre y versión.
+El controlador delega en el puerto de entrada y su adaptador transaccional envuelve el caso de uso completo. Los bloqueos de fila PostgreSQL serializan la edición y publicación de una versión. La edición compara la revisión enviada por el cliente y evita sobrescrituras desactualizadas. Publicar toma el último borrador bloqueado y no acepta una revisión en el cuerpo: ese contrato exige cuerpo vacío. Dos publicaciones simultáneas tienen un único resultado ganador. La restricción única de la base resuelve las creaciones concurrentes de un mismo nombre y versión.
 
 Las reglas JSONB pertenecen a la misma fila; no existen reglas hijas que puedan cambiar de forma independiente. Un trigger rechaza todo `UPDATE` o `DELETE` de una fila previamente publicada, incluidos estado, revisión, metadatos y reglas. Para cambiarla se debe duplicar en otra versión.
 
@@ -133,9 +143,15 @@ La traducción no reescribe perfiles históricos ni cambia la migración V1 ya a
 Se requiere Java 21 y acceso a Docker. Desde `backend/`:
 
 ```sh
+python3 scripts/test_architecture.py
+python3 scripts/check_architecture.py
 bash ./mvnw test
 bash ./mvnw package -DskipTests
 ```
+
+La aceptación hexagonal ejecutó **160pruebas backend**, sin fallos/errores/omisiones, y generó el paquete. El checker arquitectónico y sus cinco regresiones usan solo Python estándar. Las pruebas puras de aplicación emplean puertos falsos; se conservan todas las integraciones JPA/HTTP y se agregan rollback SQL de bootstrap, comprobación del proxy transaccional y conservación contra el snapshot vigente. El diferencial público mantuvo50/50observaciones exactas de estado, cuerpo y headers. Estos resultados nuevos no son una auditoría de seguridad ni una aprobación nativa; detalles e incidentes en [VERIFICATION.md](../VERIFICATION.md).
+
+Si se recompila un árbol previamente construido antes de mover paquetes, los `.class` de rutas eliminadas pueden sobrevivir y producir beans duplicados. En esta sesión se archivaron **solo** `target/classes` y `target/test-classes` en `.browser/backend-hexagonal/` antes de reconstruir; no se borró `target/` completo ni se tocaron las copias JAR de ejecución. Un checkout limpio no contiene esos compilados antiguos.
 
 Las pruebas crean un contenedor **PostgreSQL 17 Alpine** desechable en un puerto aleatorio y sustituyen las propiedades de conexión. No usan la base de desarrollo ni omiten pruebas silenciosamente cuando falta Docker. Cubren el ciclo completo mediante MockMvc, datos iniciales, catálogo, entradas inválidas, rechazos sin modificaciones, edición/creación/publicación simultáneas e inmutabilidad ante SQL directo.
 
