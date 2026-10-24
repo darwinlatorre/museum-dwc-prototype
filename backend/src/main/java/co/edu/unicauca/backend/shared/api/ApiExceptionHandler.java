@@ -1,5 +1,7 @@
 package co.edu.unicauca.backend.shared.api;
 
+import co.edu.unicauca.backend.profile.domain.ProfileNotFoundException;
+import co.edu.unicauca.backend.profile.domain.ProfileValidationException;
 import co.edu.unicauca.backend.shared.exceptions.ProfileConflictException;
 
 import jakarta.validation.ConstraintViolationException;
@@ -32,7 +34,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             "El nombre y la versión del perfil deben ser únicos; las versiones publicadas son inmutables.");
     }
 
-    @ExceptionHandler(ConstraintViolationException.class)
+    @ExceptionHandler(ProfileNotFoundException.class)
+    public ProblemDetail missingProfile(ProfileNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ExceptionHandler({ConstraintViolationException.class, ProfileValidationException.class})
     public ProblemDetail invalid() {
         return problem(HttpStatus.BAD_REQUEST, "El contenido del perfil no es válido.");
     }

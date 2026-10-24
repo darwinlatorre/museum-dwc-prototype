@@ -1,9 +1,10 @@
-package co.edu.unicauca.backend.profile;
+package co.edu.unicauca.backend.profile.adapter.in.http;
 
-import co.edu.unicauca.backend.profile.dto.req.CreateProfileRequest;
-import co.edu.unicauca.backend.profile.dto.req.DuplicateProfileRequest;
-import co.edu.unicauca.backend.profile.dto.req.UpdateProfileRequest;
-import co.edu.unicauca.backend.profile.dto.res.ProfileResponse;
+import co.edu.unicauca.backend.profile.application.port.in.ProfileLifecycle;
+import co.edu.unicauca.backend.profile.adapter.in.http.dto.req.CreateProfileRequest;
+import co.edu.unicauca.backend.profile.adapter.in.http.dto.req.DuplicateProfileRequest;
+import co.edu.unicauca.backend.profile.adapter.in.http.dto.req.UpdateProfileRequest;
+import co.edu.unicauca.backend.profile.adapter.in.http.dto.res.ProfileResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -15,10 +16,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/profiles")
 public class ProfileController {
-    private final ProfileService service;
-    private final ProfileMapper mapper;
+    private final ProfileLifecycle service;
+    private final ProfileHttpMapper mapper;
 
-    public ProfileController(ProfileService service, ProfileMapper mapper) {
+    public ProfileController(ProfileLifecycle service, ProfileHttpMapper mapper) {
         this.service = service;
         this.mapper = mapper;
     }

@@ -1,5 +1,6 @@
-package co.edu.unicauca.backend.profile;
+package co.edu.unicauca.backend.profile.adapter.out.persistence;
 
+import co.edu.unicauca.backend.profile.domain.Profile;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

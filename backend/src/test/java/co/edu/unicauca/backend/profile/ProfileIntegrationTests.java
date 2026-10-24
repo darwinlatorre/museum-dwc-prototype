@@ -1,5 +1,10 @@
 package co.edu.unicauca.backend.profile;
 
+import co.edu.unicauca.backend.profile.adapter.in.bootstrap.ProfileBootstrap;
+import co.edu.unicauca.backend.profile.application.port.in.ProfileLifecycle;
+import co.edu.unicauca.backend.profile.domain.Profile;
+import co.edu.unicauca.backend.profile.domain.ProfileValidationException;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -117,6 +122,55 @@ class ProfileIntegrationTests {
         }
     }
     @Autowired ProfileBootstrap bootstrap;
+    @Autowired ProfileLifecycle lifecycle;
+    @Autowired org.springframework.context.ApplicationContext applicationContext;
+
+    @Test void lifecycleOperationsUseOneTransactionalProxy() {
+        assertThat(applicationContext.getBeansOfType(ProfileLifecycle.class)).hasSize(1);
+        assertThat(org.springframework.aop.support.AopUtils.isAopProxy(lifecycle)).isTrue();
+        Class<?> target = org.springframework.aop.support.AopUtils.getTargetClass(lifecycle);
+        assertThat(target).isEqualTo(
+            co.edu.unicauca.backend.profile.configuration.TransactionalProfileLifecycle.class);
+        var advised = (org.springframework.aop.framework.Advised) lifecycle;
+        var interceptor = java.util.Arrays.stream(advised.getAdvisors())
+            .map(org.springframework.aop.Advisor::getAdvice)
+            .filter(org.springframework.transaction.interceptor.TransactionInterceptor.class::isInstance)
+            .map(org.springframework.transaction.interceptor.TransactionInterceptor.class::cast)
+            .findFirst().orElseThrow();
+        for (var method : ProfileLifecycle.class.getMethods()) {
+            var transaction = interceptor.getTransactionAttributeSource()
+                .getTransactionAttribute(method, target);
+            assertThat(transaction).as(method.getName()).isNotNull();
+            assertThat(transaction.isReadOnly()).as(method.getName())
+                .isEqualTo(method.getName().equals("list"));
+            assertThat(transaction.getPropagationBehavior()).isEqualTo(
+                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRED);
+        }
+    }
+
+    @Test void bootstrapDatabaseConflictRollsBackEarlierSeeds() throws Exception {
+        String before = rowHash();
+        var first = new Profile(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "1",
+            Profile.Status.PUBLISHED, 0, "  texto Ω\n  ", java.util.List.of());
+        var conflict = new Profile(UUID.randomUUID().toString(), first.name(), first.version(),
+            Profile.Status.PUBLISHED, 0, "segunda", java.util.List.of());
+        assertThatThrownBy(() -> lifecycle.initialize(java.util.List.of(first, conflict)))
+            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(rowHash()).isEqualTo(before);
+    }
+
+    @Test void invalidLaterSeedRollsBackTheEntireInitialization() throws Exception {
+        String before = profiles();
+        String beforeHash = rowHash();
+        Profile first = new Profile(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "1",
+            Profile.Status.PUBLISHED, 0, "Semilla válida", java.util.List.of());
+        Profile invalid = new Profile(UUID.randomUUID().toString(), " ", "1",
+            Profile.Status.PUBLISHED, 0, "Semilla inválida", java.util.List.of());
+        assertThatThrownBy(() -> lifecycle.initialize(java.util.List.of(first, invalid)))
+            .isInstanceOf(ProfileValidationException.class).hasMessage("El contenido del perfil no es válido.");
+        assertThat(profiles()).isEqualTo(before);
+        assertThat(rowHash()).isEqualTo(beforeHash);
+    }
 
     @Test void lifecyclePreservesPublishedVersionAndSupportsIndependentDuplicate() throws Exception {
         JsonNode draft = create();

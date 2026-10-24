@@ -1,5 +1,6 @@
-package co.edu.unicauca.backend.profile;
+package co.edu.unicauca.backend.profile.adapter.out.persistence;
 
+import co.edu.unicauca.backend.profile.domain.Profile;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

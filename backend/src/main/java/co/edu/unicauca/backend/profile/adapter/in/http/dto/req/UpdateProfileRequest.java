@@ -1,4 +1,4 @@
-package co.edu.unicauca.backend.profile.dto.req;
+package co.edu.unicauca.backend.profile.adapter.in.http.dto.req;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
