@@ -10,38 +10,36 @@ Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Pe
 
 ## Ejecución local
 
-Requisitos: Node.js 24 o posterior, Java 21 y Docker con Compose. Se incluye Maven Wrapper; su primera ejecución requiere acceso a Internet.
+Requisitos del host: Bash, Node.js **24**, npm, Java **21** y Docker con Compose que admita `up --wait --wait-timeout`. Se incluye Maven Wrapper. La instalación de dependencias, el wrapper y las imágenes requieren acceso a Internet; no se agregan plugins ni se cambian versiones.
 
-1. Iniciar la base de datos aislada del MVP, sin reutilizar ni eliminar la base existente:
-
-   ```bash
-   COMPOSE_DISABLE_ENV_FILE=true docker compose -f compose.mvp.yml up -d --wait
-   ```
-
-2. En otra terminal, iniciar Spring Boot:
+1. Gestionar manualmente un único `.env` en la raíz. La plantilla `.env.example` es responsabilidad del humano: la excepción en `.gitignore` permite versionarla después de revisarla y sanitizarla; esto **no implica que ya esté publicada**. Completar `DB_NAME`, `DB_USER` y `DB_PASSWORD` con valores no vacíos. Las otras variables son `DB_HOST=localhost`, `DB_PORT=5432` y `SERVER_PORT=8080`. No guardar credenciales reales en Git ni compartir la salida de `docker compose config` sin `--quiet`.
+2. Ejecutar desde la raíz (o invocar su ruta absoluta desde cualquier directorio):
 
    ```bash
-   cd backend
-   ./mvnw spring-boot:run
+   ./start.sh
    ```
 
-3. En otra terminal, iniciar Angular:
+3. Abrir http://localhost:4200. Nginx sirve Angular y dirige `/api/` al backend conservando el prefijo. Flyway crea el esquema; la primera ejecución carga el catálogo y los perfiles publicados `SiB Registros Biológicos 4.1`, `Museo 1.0` y `Museo + SiB 1.0`.
 
-   ```bash
-   cd frontend
-   npm ci
-   npm start
-   ```
+`./start.sh --help` muestra el uso sin ejecutar comandos; otros argumentos se rechazan con código 2. El script comprueba herramientas y presencia del `.env`, valida el modelo con `docker compose --env-file ... -f ... config --quiet`, ejecuta `npm ci --no-audit --no-fund` y `npm run build` en `frontend`, luego `bash ./mvnw package -DskipTests` en `backend` y finalmente `docker compose up --build -d --wait --wait-timeout 180`. Usa rutas explícitas y Compose como intérprete dotenv: no ejecuta `source`, `eval` ni un parser casero. Las variables ya exportadas en la terminal tienen la precedencia normal de Compose; evitar valores antiguos exportados.
 
-4. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080. Flyway crea el esquema; la primera ejecución carga el catálogo y los perfiles publicados `SiB Registros Biológicos 4.1`, `Museo 1.0` y `Museo + SiB 1.0`.
+Ante cualquier error se detiene con estado no cero, no continúa ni anuncia éxito antes de la salud de los tres servicios. La espera de salud está limitada a 180 segundos; compilaciones y descargas pueden tardar más. No revierte compilados ni elimina contenedores parcialmente iniciados: revisar el fallo antes de repetir. El empaquetado omite pruebas; no reemplaza las comprobaciones de abajo. No imprime el contenido del `.env` ni activa trazas de shell.
 
-PostgreSQL escucha en `127.0.0.1:55432`, con base y usuario `museum` y contraseña **solo de desarrollo** `museum-local-only`. Se puede cambiar la conexión mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No guardar secretos reales en Git. Este procedimiento no utiliza el `docker-compose.yml` original ni archivos de entorno locales. Si el sistema no permite ejecutar el wrapper directamente, usar `bash mvnw` desde `backend`.
+### Red, configuración y almacenamiento
 
-Para detener PostgreSQL sin eliminar su volumen:
+`docker-compose.yml` es el único manifiesto principal; el antiguo `compose.mvp.yml` se retira. Publica exclusivamente `127.0.0.1`: PostgreSQL `${DB_PORT:-5432}` → 5432, API `${SERVER_PORT:-8080}` → 8080 y frontend 4200 → 80. Si 5432 está ocupado, elegir otro `DB_PORT` libre en el `.env`, **sin detener otro PostgreSQL**. El backend en contenedor siempre usa `museum-db:5432`, escucha internamente en `0.0.0.0:8080` y no consume `DB_HOST=localhost`; este último sirve para un arranque opcional en el host. La API sigue sin autenticación y no debe exponerse a otras interfaces.
+
+Se conserva el proyecto `universidad`, servicio `museum-db` y volumen `museum_mvp_data`, cuyo nombre durable es **`universidad_museum_mvp_data`**. Nunca se reutiliza `universidad_postgres_data` ni el servicio original `postgres`. Antes de arrancar, confirmar que ese volumen MVP es el deseado: si existe, usar sus credenciales vigentes. Cambiar `DB_NAME`, `DB_USER` o `DB_PASSWORD` en dotenv **no renombra ni rota** una base ya inicializada; no borrar el volumen para resolver discrepancias. El arranque puede aplicar las migraciones existentes al volumen MVP, por lo que debe elegirse conscientemente.
+
+Solo Compose consume el `.env` raíz y entrega la configuración al backend. Spring no carga dotenv por sí mismo. El histórico `backend/.env` deja de utilizarse, permanece ignorado y sin modificaciones; el humano puede retirarlo manualmente cuando ya no lo necesite. Para desarrollo host, exportar explícitamente las variables de conexión en la terminal, sin duplicar archivos ni ejecutar dotenv como código, y usar `bash ./mvnw spring-boot:run` desde `backend`; `DB_URL` sigue disponible como override JDBC avanzado para ese modo, no para el stack Compose.
+
+Para detener el stack sin eliminar datos, desde la raíz:
 
 ```bash
-COMPOSE_DISABLE_ENV_FILE=true docker compose -f compose.mvp.yml stop
+docker compose --project-name universidad --env-file .env -f docker-compose.yml stop
 ```
+
+No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Las imágenes runtime copian el JAR y `dist/frontend/browser` ya compilados; los contextos Docker permiten solo esos artefactos y sus configuraciones, nunca dotenv, Git o `node_modules`.
 
 ## Análisis de un archivo
 
@@ -95,6 +93,7 @@ Reconstruir los recursos no modifica las versiones publicadas en PostgreSQL. Un 
 
 ```bash
 python3 scripts/test_seeds.py
+python3 -B scripts/test_start.py
 cd frontend
 npm test -- --watch=false
 npm run build

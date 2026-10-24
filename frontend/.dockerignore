@@ -1,0 +1,13 @@
+**
+!dist/
+!dist/frontend/
+!dist/frontend/3rdpartylicenses.txt
+!dist/frontend/browser/
+!dist/frontend/browser/**
+!nginx.conf
+!Dockerfile
+!.dockerignore
+**/.env
+**/.env.*
+**/.git
+**/node_modules
