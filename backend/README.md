@@ -2,6 +2,8 @@
 
 Spring Boot **4.1.1**, Java **21**, Spring Data JPA, PostgreSQL y Flyway. Los archivos biológicos permanecen en el navegador; el backend administra perfiles declarativos y entrega el catálogo.
 
+La generación Java usa Lombok (versión administrada por Spring Boot), MapStruct **1.6.3** y `lombok-mapstruct-binding` **0.2.0**, configurados para fuentes y pruebas en Maven. Lombok y ambos procesadores quedan fuera del JAR ejecutable. La configuración se comprueba con `python3 -B scripts/test_codegen.py` desde `backend/`. Ver la [integración oficial de Lombok con MapStruct](https://mapstruct.org/documentation/stable/reference/html/#lombok).
+
 ## Ejecución local
 
 El flujo principal es `./start.sh` desde la raíz: compila Angular y el JAR con Java 21/Maven Wrapper y despliega los tres servicios de `docker-compose.yml`. Ver [configuración, requisitos y almacenamiento](../README.md#ejecución-local). El Dockerfile usa JRE 21 Ubuntu Jammy, ejecuta como usuario no root y copia el artefacto a `/app/backend.jar`; no compila fuentes ni monta el JAR del host.
