@@ -1,25 +1,28 @@
-package co.edu.unicauca.backend.catalog;
+package co.edu.unicauca.backend.catalog.adapter.out.persistence;
+
+import co.edu.unicauca.backend.catalog.domain.CatalogHash;
+import co.edu.unicauca.backend.catalog.domain.CatalogCandidate;
+import co.edu.unicauca.backend.catalog.domain.CatalogPolicy;
+import co.edu.unicauca.backend.catalog.domain.CatalogStatus;
+import co.edu.unicauca.backend.catalog.domain.CatalogStatus.Active;
+import co.edu.unicauca.backend.catalog.domain.Term;
 
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
-public class CatalogStore {
+public class CatalogStore implements co.edu.unicauca.backend.catalog.application.port.out.CatalogStore {
     private final CatalogRepository repository;
     private final ObjectMapper json;
     private final Clock clock;
 
-    CatalogStore(CatalogRepository repository, ObjectMapper json, Clock clock) {
+    public CatalogStore(CatalogRepository repository, ObjectMapper json, Clock clock) {
         this.repository = repository;
         this.json = json;
         this.clock = clock;
@@ -30,10 +33,10 @@ public class CatalogStore {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         if (snapshot.payload != null) return;
         String payload = resource("catalog.json");
-        List<CatalogController.Term> seed = json.readValue(payload, new TypeReference<>() {});
+        List<Term> seed = json.readValue(payload, new TypeReference<>() {});
         if (seed.isEmpty()) throw new IOException("El catálogo inicial TDWG está vacío.");
         snapshot.payload = payload;
-        snapshot.sourceHash = CatalogParser.hash(payload);
+        snapshot.sourceHash = CatalogHash.hash(payload);
         snapshot.sourceRevision = "bundled";
         snapshot.rawSources = "{}";
         snapshot.seedProvenance = resource("provenance.json");
@@ -45,11 +48,11 @@ public class CatalogStore {
     public String payload() { return current().payload; }
 
     @Transactional(readOnly = true)
-    public Status status() {
+    public CatalogStatus status() {
         CatalogSnapshot snapshot = current();
         Map<String, String> hashes = new java.util.TreeMap<>();
-        json.readTree(snapshot.rawSources).properties().forEach(entry -> hashes.put(entry.getKey(), CatalogParser.hash(entry.getValue().asString())));
-        return new Status(new Active(snapshot.sourceRevision, snapshot.sourceHash, snapshot.snapshotVersion,
+        json.readTree(snapshot.rawSources).properties().forEach(entry -> hashes.put(entry.getKey(), CatalogHash.hash(entry.getValue().asString())));
+        return new CatalogStatus(new Active(snapshot.sourceRevision, snapshot.sourceHash, snapshot.snapshotVersion,
             snapshot.activatedAt, snapshot.termCount, snapshot.added, snapshot.modified, snapshot.deprecated, hashes),
             snapshot.generation, snapshot.lastAttempt, snapshot.lastFailure);
     }
@@ -62,36 +65,24 @@ public class CatalogStore {
     }
 
     @Transactional
-    public void activate(long generation, CatalogParser.Candidate candidate) {
+    public void activate(long generation, CatalogCandidate candidate) {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         if (snapshot.generation != generation) return;
-        if (candidate.hash().equals(snapshot.sourceHash) && candidate.revision().equals(snapshot.sourceRevision)) {
+        if (CatalogPolicy.unchanged(candidate, snapshot.sourceHash, snapshot.sourceRevision)) {
             snapshot.lastFailure = null;
             return;
         }
-        Map<String, CatalogController.Term> previous = new HashMap<>();
-        List<CatalogController.Term> stored = json.readValue(snapshot.payload, new TypeReference<>() {});
-        stored.forEach(term -> previous.put(term.uri(), term));
-        var candidateUris = candidate.terms().stream().map(CatalogController.Term::uri).collect(java.util.stream.Collectors.toSet());
-        if (!candidateUris.containsAll(previous.keySet())) {
-            throw new IllegalArgumentException("La fuente TDWG omite términos existentes; se conserva la última versión válida.");
-        }
-        int added = 0, modified = 0, deprecated = 0;
-        for (var term : candidate.terms()) {
-            var old = previous.get(term.uri());
-            if (old == null) added++;
-            else if (!old.equals(term)) modified++;
-            if (term.status().equals("deprecated") && (old == null || !old.status().equals("deprecated"))) deprecated++;
-        }
+        List<Term> stored = json.readValue(snapshot.payload, new TypeReference<>() {});
+        var diff = CatalogPolicy.compare(stored, candidate);
         snapshot.payload = candidate.payload();
         snapshot.sourceHash = candidate.hash();
         snapshot.sourceRevision = candidate.revision();
         snapshot.rawSources = candidate.rawSources();
         snapshot.activatedAt = clock.instant();
         snapshot.termCount = candidate.terms().size();
-        snapshot.added = added;
-        snapshot.modified = modified;
-        snapshot.deprecated = deprecated;
+        snapshot.added = diff.added();
+        snapshot.modified = diff.modified();
+        snapshot.deprecated = diff.deprecated();
         snapshot.snapshotVersion++;
         snapshot.lastFailure = null;
     }
@@ -99,7 +90,7 @@ public class CatalogStore {
     @Transactional
     public void fail(long generation) {
         CatalogSnapshot snapshot = repository.lockSnapshot();
-        if (snapshot.generation == generation) snapshot.lastFailure = "No se pudo actualizar el catálogo TDWG; se conserva la última versión válida.";
+        if (snapshot.generation == generation) snapshot.lastFailure = CatalogPolicy.SYNC_FAILURE;
     }
 
     private CatalogSnapshot current() { return repository.findById(1).orElseThrow(); }
@@ -108,8 +99,4 @@ public class CatalogStore {
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
-
-    public record Active(String revision, String hash, long snapshotVersion, Instant activatedAt, int termCount,
-                         int added, int modified, int deprecated, Map<String, String> sourceHashes) {}
-    public record Status(Active active, long attempts, Instant lastAttempt, String lastFailure) {}
 }

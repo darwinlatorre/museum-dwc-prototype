@@ -1,5 +1,9 @@
 package co.edu.unicauca.backend.catalog;
 
+import co.edu.unicauca.backend.catalog.adapter.out.persistence.CatalogStore;
+import co.edu.unicauca.backend.catalog.adapter.out.tdwg.CatalogParser;
+import co.edu.unicauca.backend.catalog.adapter.out.tdwg.CatalogSource;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.jupiter.api.BeforeEach;

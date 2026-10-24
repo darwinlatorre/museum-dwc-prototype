@@ -1,4 +1,4 @@
-package co.edu.unicauca.backend.catalog;
+package co.edu.unicauca.backend.catalog.adapter.out.tdwg;
 
 import java.io.IOException;
 import java.util.List;

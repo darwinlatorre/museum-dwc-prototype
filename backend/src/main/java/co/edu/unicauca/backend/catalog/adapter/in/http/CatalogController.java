@@ -1,6 +1,8 @@
-package co.edu.unicauca.backend.catalog;
+package co.edu.unicauca.backend.catalog.adapter.in.http;
 
-import co.edu.unicauca.backend.catalog.dto.res.CatalogSyncResponse;
+import co.edu.unicauca.backend.catalog.adapter.in.http.dto.res.CatalogSyncResponse;
+import co.edu.unicauca.backend.catalog.application.port.in.CatalogOperations;
+import co.edu.unicauca.backend.catalog.domain.CatalogStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import org.springframework.http.HttpStatus;
@@ -11,20 +13,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CatalogController {
-    private final CatalogStore store;
+    private final CatalogOperations operations;
 
-    private final CatalogRefresh refresh;
-
-    public CatalogController(CatalogStore store, CatalogRefresh refresh) {
-        this.store = store;
-        this.refresh = refresh;
+    public CatalogController(CatalogOperations operations) {
+        this.operations = operations;
     }
 
     @GetMapping(value = "/api/catalog", produces = "application/json")
-    public String catalog() { return store.payload(); }
+    public String catalog() { return operations.payload(); }
 
     @GetMapping("/api/catalog/status")
-    public CatalogStore.Status status() { return store.status(); }
+    public CatalogStatus status() { return operations.status(); }
 
     @PostMapping("/api/catalog/sync")
     public CatalogSyncResponse synchronize(HttpServletRequest request) throws IOException {
@@ -32,9 +31,7 @@ public class CatalogController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "La solicitud de sincronización debe tener el cuerpo vacío.");
         }
-        var result = refresh.synchronize();
+        var result = operations.synchronize();
         return new CatalogSyncResponse(result.outcome().name(), result.status());
     }
-
-    public record Term(String name, String uri, String definition, String category, String status) {}
 }

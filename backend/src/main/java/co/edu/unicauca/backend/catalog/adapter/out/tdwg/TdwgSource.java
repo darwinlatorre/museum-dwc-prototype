@@ -1,6 +1,5 @@
-package co.edu.unicauca.backend.catalog;
+package co.edu.unicauca.backend.catalog.adapter.out.tdwg;
 
-import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -11,14 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 
-@Component
-class TdwgSource implements CatalogSource {
+public class TdwgSource implements CatalogSource {
     static final int MAX_BYTES = 4 * 1024 * 1024;
     private static final String COMMIT = "https://api.github.com/repos/tdwg/rs.tdwg.org/git/ref/heads/master";
     private static final String RAW = "https://raw.githubusercontent.com/tdwg/rs.tdwg.org/";
     private final ObjectMapper json;
 
-    TdwgSource(ObjectMapper json) { this.json = json; }
+    public TdwgSource(ObjectMapper json) { this.json = json; }
 
     @Override public SourceSet fetch() throws IOException {
         String revision = json.readTree(download(URI.create(COMMIT), 128 * 1024)).path("object").path("sha").asString();
@@ -32,7 +30,7 @@ class TdwgSource implements CatalogSource {
         return read((HttpURLConnection) uri.toURL().openConnection(), limit);
     }
 
-    static String read(HttpURLConnection connection, int limit) throws IOException {
+    public static String read(HttpURLConnection connection, int limit) throws IOException {
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(10000);
         connection.setInstanceFollowRedirects(false);
