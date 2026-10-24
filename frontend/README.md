@@ -4,14 +4,18 @@ Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** ofrecen un
 
 ## Ejecución
 
-Desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
+Flujo principal: ejecutar `./start.sh` desde la raíz, con Node.js 24 y los demás requisitos del [README principal](../README.md#ejecución-local). Valida el único `.env` raíz, instala con `npm ci --no-audit --no-fund`, compila Angular y Spring y despliega `docker-compose.yml` esperando salud. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
+
+Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
 
 ```bash
 npm test -- --watch=false
 npm run build
 ```
 
-Un alojamiento futuro debe servir `dist/frontend/browser` y dirigir `/api` al backend desde el mismo origen. Este MVP debe permanecer en un entorno local confiable: no implementa ni simula autenticación. La integración OIDC/Keycloak se incorporará posteriormente al límite de metadatos.
+El build de aplicación Angular genera `dist/frontend/browser`. El Dockerfile runtime `nginx:1.28-alpine` copia esa carpeta y el archivo hermano `dist/frontend/3rdpartylicenses.txt` sin recompilar fuentes. Las licencias se conservan en `/usr/share/nginx/html/3rdpartylicenses.txt`, también incluidas en la lista de permitidos del contexto. `nginx.conf` conserva `/api/` al enviar solicitudes a `backend:8080` y usa `index.html` como fallback de navegación SPA; el puerto publicado es solo `127.0.0.1:4200`. Su healthcheck usa wget y el inicio depende de la salud del backend. El contexto Docker excluye dotenv, fuentes y `node_modules` mediante una lista de permitidos.
+
+Este MVP debe permanecer en un entorno local confiable: no implementa ni simula autenticación. La integración OIDC/Keycloak se incorporará posteriormente al límite de metadatos.
 
 ## Analizar una colección
 

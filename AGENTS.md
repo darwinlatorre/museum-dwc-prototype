@@ -21,7 +21,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Mantener claves/enumerados de API, identificadores y URI oficiales; interfaz y documentación en español. No traducir citas oficiales ni contenido del usuario automáticamente.
 - Usar únicamente TDWG como autoridad del vocabulario. SiB aporta requisitos de perfiles, no términos inventados. Conservar categorías ausentes y la última instantánea válida ante fallos.
 - Conservar bloqueos, control de revisión e inmutabilidad en PostgreSQL. Acceso productivo mediante entidades y repositorios JPA; migraciones aditivas.
-- No leer ni modificar `.env`, ni modificar los archivos iniciales ajenos `.env.example` y `docker-compose.yml`. Utilizar `compose.mvp.yml` para la base aislada, sin cargar archivos de entorno.
+- No leer, modificar, borrar ni versionar los `.env` reales. `.env.example` queda gestionado manualmente por el humano: no acceder por otro canal ni stagearlo para evadir la protección del harness. La petición actual autoriza convertir `docker-compose.yml` en Compose principal y agregar `start.sh`; `compose.mvp.yml` se retira del uso. Conservar proyecto/servicio/volumen aislados del MVP, nunca reutilizar `postgres_data` ni arrancar/parar servicios existentes durante las pruebas. Validar con variables ficticias y recursos aislados.
 - Mantener servicios en localhost. Autenticación e importación biológica al servidor son trabajo futuro, no funcionalidades existentes.
 - Backend hexagonal por funcionalidad (`profile`, `catalog`): `domain` y `application` Java puros, sin Spring/Jakarta/JPA/Jackson/CommonsCSV, sin DTO HTTP ni adaptadores. Puertos propiedad de aplicación, implementados por adaptadores; composición explícita en `configuration`. No crear interfaces sin una frontera real.
 - Separar DTO de entrada/salida en `profile/adapter/in/http/dto/req` y `res`; mappers HTTP y de persistencia separados. Enumerados JSON estrictos y Bean Validation en adaptadores, invariantes también en dominio. Usar getters JavaBean en entidades y errores propios, traducidos exclusivamente en HTTP.
@@ -33,8 +33,9 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Reutilizar el selector DwC de `shared/ui/dwc-picker` y sus contratos de valor libre, limpieza y deshabilitación; preservar el workbench montado y las guardas de navegación/generación.
 - TanStack Query usa un cliente raíz; resolverlo con `inject(QueryClient)`, no el alias deprecado `injectQueryClient`. Mantener claves, callbacks, cancelación `AbortSignal` y políticas existentes; no agregar un cliente por feature ni convertir transporte/caché como parte de un cambio de DI. El cache contiene solo metadatos.
 - La sincronización manual y la programada comparten la misma maquinaria. Evaluar `SUCCESS`/`FAILED`/`SUPERSEDED`, no solo HTTP200; los intentos viejos nunca reemplazan activaciones ni fallos nuevos.
-- No sobrescribir un JAR en ejecución: ejecutar una copia separada del artefacto de compilación.
-- No publicar cambios ni crear PR por iniciativa propia: el alcance actual es local.
+- No sobrescribir un JAR en ejecución: ejecutar una copia separada del artefacto de compilación. El contenedor copia el JAR compilado en su imagen y no monta el artefacto del host.
+- `start.sh` valida Compose con el `.env` raíz sin imprimirlo, compila frontend/backend y espera salud de los tres servicios. No ejecutarlo contra datos vivos para verificarlo: usar proyecto, volumen y puertos propios con valores ficticios. Las pruebas de arranque y los Dockerfiles nunca deben incluir dotenv en los contextos; conservar también `3rdpartylicenses.txt` del build Angular.
+- Publicar cambios y crear PR únicamente por pedido explícito, en el repositorio autorizado. El PR de arranque actual está autorizado; no aprobar ni fusionar: el humano se encarga de aceptarlo.
 
 ## Comprobaciones
 
@@ -42,6 +43,8 @@ Desde la raíz:
 
 ```bash
 python3 scripts/test_seeds.py
+python3 -B scripts/test_start.py
+bash -n start.sh backend/docker-healthcheck.sh
 (cd frontend && node scripts/check-architecture.mjs && npm test -- --watch=false && npm run build)
 (cd backend && python3 scripts/test_architecture.py && python3 scripts/check_architecture.py && bash ./mvnw test && bash ./mvnw package -DskipTests)
 git diff --check

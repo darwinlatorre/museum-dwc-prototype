@@ -1,4 +1,6 @@
 .env
+.env.*
+!/.env.example
 *:Zone.Identifier
 node_modules/
 .angular/

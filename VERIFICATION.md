@@ -1,6 +1,39 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: revisión TanStack Query y DI soportada
+## Estado actual: entorno raíz y arranque completo con Compose
+
+**Implementado y probado:** `start.sh` valida el entorno raíz con Compose, compila Angular y el JAR y ejecuta `up --build -d --wait --wait-timeout 180`. `docker-compose.yml` es el único manifiesto principal; sirve frontend nginx, backend Java21 no root y PostgreSQL17. El datasource usa5432 por defecto, con override `DB_PORT`; todos los puertos publicados son loopback. Se conserva `universidad_museum_mvp_data`, nunca el volumen original `universidad_postgres_data`.
+
+La plantilla `.env.example` fue asumida manualmente por el humano tras el bloqueo del harness. No se leyó, modificó ni stageó; la excepción de `.gitignore` permite versionarla manualmente, **no demuestra su publicación**. Tampoco se accedió a los `.env` reales. El antiguo `backend/.env` deja de consumirse, sin borrarlo; Compose utiliza únicamente el entorno raíz. Sin cambios de dependencias, contratos de API, migraciones ni registros biológicos.
+
+| Comprobación | Evidencia observada |
+|---|---|
+| Test-first del arranque | Writer:15fallos iniciales→8pruebas Python PASS; casos de ayuda/argumentos, orden, rutas con espacios, fallo por etapa, datos intactos, entorno literal y modelo Compose con credenciales/puertos |
+| Backend |163/163tests,0fallos/errores/omisiones ypackagePASS; incluye3EnvironmentDefaultsTests nuevos. Padre contrastó nueve XML correspondientes a fuentes actuales, sin sumar informes obsoletos |
+| Contraste del padre |8PythonPASS4s,`bash -n start.sh backend/docker-healthcheck.sh` ydiffcheckPASS |
+| Independiente previo |8Python+3SpringDefaults+modelo aisladoPASS, sin repetirlos en la continuación de runtime |
+| Arranque real aislado |`start.sh` copiado sin modificar, ejecutado desde otrocwd:exit0,514paquetes instalados,Angular/Maven/Dockerbuild/upPASS;3/3healthy,backendUID999 |
+| Proxy y recursos |Pornginx127.0.0.1:44622:HTML/SPA/JavaScript y`/api/catalog/status`/`/api/catalog`HTTP200;414términos,bundled,attempts0 |
+| Datos y teardown |Modelo con proyecto/volumen/red propios, puertos efímeros loopback,ningúnvolumenoriginal;JARsin dotenv/passwordficticia;teardownowncontainers/networkexit0sin-v,volumenfixtureconservado |
+| Licencias |Regresión estructural nuevaRED1→GREEN1; corrección deCOPY+allowlist. Build focalizadofrontend ylectura deimagenexit0:licencias39053bytes,SHA-256`ad9605479aca6631f34dc41e2c197174dde8945e82225c1e160d88efd5bafc29`;index2806bytes intacto |
+
+La prueba real usó el directorio **expresamente autorizado** `/home/dark/projects/museum-compose-proof`. Un shim Docker exclusivo de la prueba sustituyó el proyecto fijo y agregó un overlay de aislamiento: solo proyecto, nombre de volumen, puertos efímeros y scheduler deshabilitado para no consultar TDWG durante la sonda. El modelo resuelto se validó **antes** del arranque. No se ejecutó el script sobre el checkout ni sobre el entorno real del usuario. El padre leyó `logs/result.json`: todos los comandos exit0 y salud/HTTP/resultados anteriores confirmados.
+
+Comandos del producto: `./start.sh`, `./start.sh --help`. Pruebas: `python3 -B scripts/test_start.py` (o `PackagingTests` para la regresión focalizada),`bash -n start.sh backend/docker-healthcheck.sh`, Maven `test` seguido de `package -DskipTests`. La omisión de tests del segundo comando no sustituye los163ejecutados. No hubo RED Spring separado: el contrato de la unidad autorizó una ejecución integral Maven después de GREEN Python. La corrección de licencias solo reconstruyó la imagen frontend y extrajo el archivo mediante contenedor efímero sin red/read-only; **no repitió** npm/Maven ni el despliegue completo.
+
+### Incidentes y límites conservados
+
+- Primer intento real: capturador exit1 porENOSPC en/tmp tmpfs3.9GiB100%;stdout/stderr0bytes yexit/etapa del script irrecuperables. No se atribuye a npm,Maven oDocker ni se declaraPASS.
+- El humano eligió «Pausar; yo libero espacio en /tmp». Tras «Ya quedo liberado, el espacio»,había1.4GiB;la continuación se detuvo enpreflight sinbuild/copias nuevas,al no poder cuantificar el tamaño final de620entradas del lock. No fue otro despliegue fallido.
+- Después el humano autorizó específicamente `/home/dark/projects/museum-compose-proof` para una única prueba con temporales/cachés en disco. Ese intento real aprobó. No se borró /tmp ni se limpiaron scratches o volúmenes existentes.
+- Se conservan el directorio autorizado y el scratch previo `/tmp/museum-independent-Kuyqvu`; la fixture durable `museum_diskproof_20261024_data` sigue presente. Los contenedores y red propios fueron retirados sin-v. La imagen de prueba de licencias tampoco se eliminó.
+- El primer Dockerfile frontend omitía `3rdpartylicenses.txt`, generado fuera de`browser`. El padre detectó el problema, observóRED y añadióCOPY/excepción; la verificación focalizada de imagen confirmó bytes/SHA idénticos al build. La evidencia del resto del stack permanece vigente.
+- Shellcheck no está instalado y no se instaló; se usó sintaxis Bash y pruebas funcionales. Bundle643,82kB/aviso500kB permanece. npm informó cuatro scripts de instalación bloqueados, sin impedir build/runtime. Sin nueva auditoría; la pendiente previamente aceptada no se convierte en aprobación.
+- ASSESS escalado por riesgo5 (entorno) ypreservación1: no evaluable por untracked, verificación independiente realizada, **sin aprobación nativa**. Estas comprobaciones no son CI remoto ni auditoría exhaustiva, tampoco prueba de navegador/UI nueva.
+
+Evidencia ignorada: `/home/dark/projects/museum-compose-proof/logs/{result,license-proof}.json`,stdout/stderr,modelo,HTTP,health yteardown. Las instrucciones vigentes están en[README.md](README.md),[backend/README.md](backend/README.md) y[frontend/README.md](frontend/README.md).
+
+## Historial: revisión TanStack Query y DI soportada
 
 T5 ejecutada **después** del cierre backend, por pedido humano. En Angular21.2.25/TanStack5.104.5 la declaración instalada `inject-query-client.d.mts:8` marca `injectQueryClient` deprecado y prescribe `inject(QueryClient)`; su implementación resolvía el mismo token. Se reemplazaron únicamente las dos inyecciones productivas de catálogo/perfiles, preservando proveedor, claves, callbacks, políticas, transporte y el orden de imports concurrente.
 

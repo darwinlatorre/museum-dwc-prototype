@@ -4,7 +4,9 @@ Spring Boot **4.1.1**, Java **21**, Spring Data JPA, PostgreSQL y Flyway. Los ar
 
 ## Ejecución local
 
-Iniciar la base aislada mediante `compose.mvp.yml`, según el README principal. Desde `backend/`:
+El flujo principal es `./start.sh` desde la raíz: compila Angular y el JAR con Java 21/Maven Wrapper y despliega los tres servicios de `docker-compose.yml`. Ver [configuración, requisitos y almacenamiento](../README.md#ejecución-local). El Dockerfile usa JRE 21 Ubuntu Jammy, ejecuta como usuario no root y copia el artefacto a `/app/backend.jar`; no compila fuentes ni monta el JAR del host.
+
+Para desarrollo opcional en el host, exportar explícitamente las variables de conexión de la base MVP en la terminal (sin `source`/`eval` de dotenv), y desde `backend/`:
 
 ```sh
 bash ./mvnw spring-boot:run
@@ -12,7 +14,9 @@ bash ./mvnw spring-boot:run
 
 Si se inicia manualmente con `java -jar`, usar una copia de ejecución distinta de `target/backend-0.0.1-SNAPSHOT.jar`. No reconstruir ni sobrescribir un JAR mientras otro proceso lo utiliza: su cargador de clases puede fallar al atender solicitudes. La aceptación del refinamiento usa una copia en `target/runtime-refinement/museo-refinement-bc7b139.jar`; detener el proceso antes de reemplazar esa copia. Las compilaciones normales pueden regenerar el JAR principal sin sobrescribir el que está en uso.
 
-La API escucha en **127.0.0.1:8080**. La conexión predeterminada es `jdbc:postgresql://127.0.0.1:55432/museum`, usuario `museum` y contraseña exclusiva de desarrollo `museum-local-only`. Se puede configurar mediante `DB_URL`, `DB_USER` y `DB_PASSWORD`. No se cargan archivos dotenv. No apuntar pruebas ni migraciones de desarrollo a una base institucional existente.
+En el host, la API escucha en **127.0.0.1:8080**, con `SERVER_PORT` configurable. La URL predeterminada se construye como `jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}`. `DB_NAME`, `DB_USER` y `DB_PASSWORD` deben proporcionarse: no hay contraseña de desarrollo predeterminada. `DB_URL` conserva el override JDBC avanzado y las pruebas pueden sobrescribir `spring.datasource.*` mediante `DynamicPropertySource`.
+
+Spring no carga dotenv. Solo Compose consume el `.env` raíz e inyecta `museum-db:5432` y `SERVER_ADDRESS=0.0.0.0`/`SERVER_PORT=8080` dentro del contenedor; el puerto publicado sigue limitado a localhost. El histórico `backend/.env` queda ignorado, intacto y sin uso; su retirada manual corresponde al humano. La salud consulta `GET /api/catalog/status` mediante Bash `/dev/tcp`, con conexión/lectura acotadas y sin Actuator ni curl. No apuntar pruebas ni migraciones a una base institucional existente; conservar el volumen MVP y sus credenciales actuales, sin rotación automática.
 
 Flyway crea el esquema antes de cargar `src/main/resources/data/profiles.json`. Cada identificador inicial se inserta una sola vez; reiniciar nunca sobrescribe versiones guardadas. La carga completa es transaccional. El catálogo usa una instantánea persistida independiente de los perfiles. Solo cuando está vacía se carga el recurso confiable `data/catalog.json` y su procedencia; los reinicios sirven la última instantánea sin depender de la red ni reemplazarla por la semilla.
 
