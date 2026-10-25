@@ -1,11 +1,11 @@
 package co.edu.unicauca.backend.profile;
 
 import co.edu.unicauca.backend.profile.application.port.out.ProfileStore;
-import co.edu.unicauca.backend.profile.application.usecase.ProfileService;
-import co.edu.unicauca.backend.profile.domain.Profile;
-import co.edu.unicauca.backend.profile.domain.ProfileNotFoundException;
-import co.edu.unicauca.backend.profile.domain.ProfileValidationException;
-import co.edu.unicauca.backend.shared.exceptions.ProfileConflictException;
+import co.edu.unicauca.backend.profile.application.service.ProfileService;
+import co.edu.unicauca.backend.profile.domain.model.Profile;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileNotFoundException;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileValidationException;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileConflictException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;

@@ -1,6 +1,6 @@
 package co.edu.unicauca.backend.profile.application.port.out;
 
-import co.edu.unicauca.backend.profile.domain.Profile;
+import co.edu.unicauca.backend.profile.domain.model.Profile;
 import java.util.List;
 import java.util.Optional;
 
