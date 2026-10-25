@@ -1,5 +1,13 @@
 package co.edu.unicauca.backend.catalog.domain;
 
+import co.edu.unicauca.backend.catalog.domain.model.CatalogCandidate;
+
+import co.edu.unicauca.backend.catalog.domain.model.Term;
+
+import co.edu.unicauca.backend.catalog.domain.policy.CatalogPolicy;
+
+import co.edu.unicauca.backend.catalog.domain.identity.CatalogHash;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
