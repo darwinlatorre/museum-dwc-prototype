@@ -1,5 +1,11 @@
 package co.edu.unicauca.backend.catalog.domain;
 
+import co.edu.unicauca.backend.catalog.domain.model.CatalogCandidate;
+
+import co.edu.unicauca.backend.catalog.domain.model.Term;
+
+import co.edu.unicauca.backend.catalog.domain.policy.CatalogPolicy;
+
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

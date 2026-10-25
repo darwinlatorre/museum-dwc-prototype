@@ -1,0 +1,43 @@
+package co.edu.unicauca.backend.catalog.infrastructure.adapter.in.scheduling;
+
+import co.edu.unicauca.backend.catalog.application.port.in.CatalogOperations;
+import co.edu.unicauca.backend.catalog.domain.policy.CatalogPolicy;
+import co.edu.unicauca.backend.catalog.domain.model.CatalogStatus;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+
+/** Ambos disparadores comparten el mismo caso de uso; aquí sólo quedan temporización y diagnóstico. */
+@Slf4j
+@RequiredArgsConstructor
+public class CatalogRefresh implements Runnable, CatalogOperations {
+    private final CatalogOperations operations;
+
+    @Override
+    @Scheduled(fixedDelayString = "${catalog.sync.delay:86400000}", initialDelayString = "${catalog.sync.initial-delay:60000}")
+    public void run() { attempt(); }
+
+    @Override public String payload() { return operations.payload(); }
+    @Override public CatalogStatus status() { return operations.status(); }
+
+    @Override public Attempt attempt() {
+        Attempt attempt = operations.attempt();
+        log(attempt);
+        return attempt;
+    }
+
+    @Override public Result synchronize() {
+        Result result = operations.synchronize();
+        log(result.attempt());
+        return result;
+    }
+
+    private void log(Attempt attempt) {
+        if (!attempt.success()) {
+            log.warn(CatalogPolicy.SYNC_FAILURE);
+            if (attempt.generation() != null && !attempt.failureRecorded()) {
+                log.warn("No se pudo registrar el fallo de sincronización TDWG.");
+            }
+        }
+    }
+}

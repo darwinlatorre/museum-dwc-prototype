@@ -1,5 +1,13 @@
 package co.edu.unicauca.backend.catalog.domain;
 
+import co.edu.unicauca.backend.catalog.domain.model.CatalogCandidate;
+
+import co.edu.unicauca.backend.catalog.domain.model.Term;
+
+import co.edu.unicauca.backend.catalog.domain.policy.CatalogPolicy;
+
+import co.edu.unicauca.backend.catalog.domain.identity.CatalogHash;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +75,27 @@ class CatalogPolicyTests {
         assertEquals(Map.of("source", "hash"), candidate.hashes());
         assertEquals("  payload\n", candidate.payload());
         assertEquals(" raw\n", candidate.rawSources());
+    }
+
+    @Test
+    void candidateBuilderRetainsDefensiveCopiesAndExactText() {
+        var terms = new ArrayList<>(List.of(CURRENT));
+        var hashes = new HashMap<>(Map.of("source", "hash"));
+        var candidate = CatalogCandidate.builder().revision("revision").terms(terms).hashes(hashes)
+            .payload("  payload\n").hash("hash").rawSources(" raw\n").build();
+        terms.clear();
+        hashes.clear();
+        assertEquals(List.of(CURRENT), candidate.terms());
+        assertEquals(Map.of("source", "hash"), candidate.hashes());
+        assertEquals("  payload\n", candidate.payload());
+        assertEquals(" raw\n", candidate.rawSources());
+    }
+
+    @Test
+    void termBuilderPreservesTheCanonicalRecordValues() {
+        var term = Term.builder().name(CURRENT.name()).uri(CURRENT.uri())
+            .definition(CURRENT.definition()).category(CURRENT.category()).status(CURRENT.status()).build();
+        assertEquals(CURRENT, term);
     }
 
     @Test

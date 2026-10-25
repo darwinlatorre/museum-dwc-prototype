@@ -1,11 +1,14 @@
 package co.edu.unicauca.backend.profile;
 
+import java.util.Collections;
+import java.util.Objects;
+
 import co.edu.unicauca.backend.profile.application.port.out.ProfileStore;
-import co.edu.unicauca.backend.profile.application.usecase.ProfileService;
-import co.edu.unicauca.backend.profile.domain.Profile;
-import co.edu.unicauca.backend.profile.domain.ProfileNotFoundException;
-import co.edu.unicauca.backend.profile.domain.ProfileValidationException;
-import co.edu.unicauca.backend.shared.exceptions.ProfileConflictException;
+import co.edu.unicauca.backend.profile.application.service.ProfileService;
+import co.edu.unicauca.backend.profile.domain.model.Profile;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileNotFoundException;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileValidationException;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileConflictException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -125,7 +128,7 @@ class ProfileUseCaseTests {
         cases.add(new Profile.Content("Museo", "1", "a".repeat(10001), List.of()));
         cases.add(new Profile.Content("Museo", "1", "", null));
         cases.add(new Profile.Content("Museo", "1", "", Arrays.asList((Profile.Rule) null)));
-        cases.add(new Profile.Content("Museo", "1", "", java.util.Collections.nCopies(2001, rule())));
+        cases.add(new Profile.Content("Museo", "1", "", Collections.nCopies(2001, rule())));
         for (String field : Arrays.asList(null, "", " ", "a".repeat(201))) {
             cases.add(withRule(new Profile.Rule(field, rule().kind(), rule().severity(), rule().condition(), "m", "s")));
         }
@@ -163,7 +166,7 @@ class ProfileUseCaseTests {
         Profile.Rule boundary = new Profile.Rule("f".repeat(200), Profile.Kind.date, Profile.Severity.ERROR,
             Profile.Condition.always, "m".repeat(2000), "s".repeat(4000));
         var input = new Profile.Content("n".repeat(200), "v".repeat(100), "d".repeat(10000),
-            java.util.Collections.nCopies(2000, boundary));
+            Collections.nCopies(2000, boundary));
         Profile result = service.create(input);
         assertThat(result.name()).isEqualTo(input.name());
         assertThat(result.version()).isEqualTo(input.version());
@@ -175,7 +178,7 @@ class ProfileUseCaseTests {
     }
 
     static Stream<Profile.Content> invalidSeedContents() {
-        return invalidContents().filter(java.util.Objects::nonNull);
+        return invalidContents().filter(Objects::nonNull);
     }
 
     @ParameterizedTest
