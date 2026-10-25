@@ -9,47 +9,47 @@ import co.edu.unicauca.backend.profile.domain.model.Profile;
 import co.edu.unicauca.backend.profile.domain.exception.ProfileNotFoundException;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
 
+@RequiredArgsConstructor
 public class JpaProfileStore implements ProfileStore {
     private final ProfileRepository repository;
     private final ProfilePersistenceMapper mapper;
 
-    public JpaProfileStore(ProfileRepository repository, ProfilePersistenceMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
+    private final ObjectMapper json;
 
     @Override
     public List<Profile> list() {
-        return repository.findAllByOrderByNameAscVersionAscIdAsc().stream().map(mapper::toDomain).toList();
+        return repository.findAllByOrderByNameAscVersionAscIdAsc().stream().map(entity -> mapper.toDomain(entity, json)).toList();
     }
 
     @Override
     public Optional<Profile> find(String id) {
-        return repository.findById(id).map(mapper::toDomain);
+        return repository.findById(id).map(entity -> mapper.toDomain(entity, json));
     }
 
     @Override
     public Optional<Profile> lock(String id) {
-        return repository.lockDraft(id).map(mapper::toDomain);
+        return repository.lockDraft(id).map(entity -> mapper.toDomain(entity, json));
     }
 
     @Override
     public void insert(Profile profile) {
-        repository.saveAndFlush(mapper.toEntity(profile));
+        repository.saveAndFlush(mapper.toEntity(profile, json));
     }
 
     @Override
     public void replace(Profile profile) {
         // findById returns the managed instance already locked in this same transaction.
         ProfileEntity entity = repository.findById(profile.id()).orElseThrow(ProfileNotFoundException::new);
-        mapper.replace(entity, profile);
+        mapper.replace(entity, profile, json);
         repository.flush();
     }
 
     @Override
     public void insertSeed(Profile profile) {
-        repository.insertSeed(profile.id(), profile.name(), profile.version(), mapper.status(profile), profile.revision(),
-            profile.description(), mapper.rules(profile));
+        repository.insertSeed(profile.id(), profile.name(), profile.version(), mapper.status(profile.status()), profile.revision(),
+            profile.description(), mapper.rules(profile, json));
     }
 }

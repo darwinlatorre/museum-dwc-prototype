@@ -9,11 +9,27 @@ import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.dto.res.Rul
 import co.edu.unicauca.backend.profile.infrastructure.adapter.json.ProfileJson;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ProfileHttpMapperTests {
-    private final ProfileHttpMapper mapper = new ProfileHttpMapper();
+    private final ProfileHttpMapper mapper = Mappers.getMapper(ProfileHttpMapper.class);
+
+    @Test
+    void generatedMapperSupportsBuilderRequestsWithoutChangingTransportValues() {
+        assertThat(ProfileHttpMapper.class).isInterface();
+        assertThat(mapper.getClass().getSimpleName()).isEqualTo("ProfileHttpMapperImpl");
+        var rule = RuleRequest.builder().field(" campo Ω ").kind(ProfileJson.Kind.required)
+            .severity(ProfileJson.Severity.ERROR).condition(ProfileJson.Condition.always)
+            .message(" mensaje\n ").source(" fuente ").build();
+        var request = CreateProfileRequest.builder().name(" nombre ").version(" versión ")
+            .description(" descripción\n ").rules(List.of(rule)).build();
+
+        assertThat(mapper.toContent(request)).isEqualTo(new Profile.Content(" nombre ", " versión ",
+            " descripción\n ", List.of(new Profile.Rule(" campo Ω ", Profile.Kind.required,
+                Profile.Severity.ERROR, Profile.Condition.always, " mensaje\n ", " fuente "))));
+    }
 
     @Test
     void bothRequestsMapWithoutTrimmingAnyInputAndKeepRevisionOutsideContent() {

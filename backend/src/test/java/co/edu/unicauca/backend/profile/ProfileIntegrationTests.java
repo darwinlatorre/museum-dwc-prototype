@@ -1,5 +1,25 @@
 package co.edu.unicauca.backend.profile;
 
+import co.edu.unicauca.backend.profile.infrastructure.transaction.TransactionalProfileLifecycle;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.stream.Stream;
+import org.springframework.aop.Advisor;
+import org.springframework.aop.framework.Advised;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataIntegrityViolationException;
+import static org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRED;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+
 import co.edu.unicauca.backend.profile.infrastructure.adapter.in.bootstrap.ProfileBootstrap;
 import co.edu.unicauca.backend.profile.application.port.in.ProfileLifecycle;
 import co.edu.unicauca.backend.profile.domain.model.Profile;
@@ -90,10 +110,10 @@ class ProfileIntegrationTests {
             .andExpect(jsonPath("$[0].definition").isString()).andExpect(jsonPath("$[0].category").isString())
             .andExpect(jsonPath("$[0].status").isString());
         assertThat(profiles()).contains("SiB Registros Biológicos", "Museo", "Museo + SiB", "PUBLISHED");
-        try (var input = new org.springframework.core.io.ClassPathResource("data/profiles.json").getInputStream()) {
+        try (var input = new ClassPathResource("data/profiles.json").getInputStream()) {
             JsonNode seeds = json.readTree(input);
             assertThat(seeds.size()).isEqualTo(3);
-            var ids = new java.util.HashSet<String>();
+            var ids = new HashSet<String>();
             for (JsonNode seed : seeds) {
                 String id = seed.get("id").asText();
                 assertThat(ids.add(id)).isTrue();
@@ -123,19 +143,19 @@ class ProfileIntegrationTests {
     }
     @Autowired ProfileBootstrap bootstrap;
     @Autowired ProfileLifecycle lifecycle;
-    @Autowired org.springframework.context.ApplicationContext applicationContext;
+    @Autowired ApplicationContext applicationContext;
 
     @Test void lifecycleOperationsUseOneTransactionalProxy() {
         assertThat(applicationContext.getBeansOfType(ProfileLifecycle.class)).hasSize(1);
-        assertThat(org.springframework.aop.support.AopUtils.isAopProxy(lifecycle)).isTrue();
-        Class<?> target = org.springframework.aop.support.AopUtils.getTargetClass(lifecycle);
+        assertThat(AopUtils.isAopProxy(lifecycle)).isTrue();
+        Class<?> target = AopUtils.getTargetClass(lifecycle);
         assertThat(target).isEqualTo(
-            co.edu.unicauca.backend.profile.infrastructure.transaction.TransactionalProfileLifecycle.class);
-        var advised = (org.springframework.aop.framework.Advised) lifecycle;
-        var interceptor = java.util.Arrays.stream(advised.getAdvisors())
-            .map(org.springframework.aop.Advisor::getAdvice)
-            .filter(org.springframework.transaction.interceptor.TransactionInterceptor.class::isInstance)
-            .map(org.springframework.transaction.interceptor.TransactionInterceptor.class::cast)
+            TransactionalProfileLifecycle.class);
+        var advised = (Advised) lifecycle;
+        var interceptor = Arrays.stream(advised.getAdvisors())
+            .map(Advisor::getAdvice)
+            .filter(TransactionInterceptor.class::isInstance)
+            .map(TransactionInterceptor.class::cast)
             .findFirst().orElseThrow();
         for (var method : ProfileLifecycle.class.getMethods()) {
             var transaction = interceptor.getTransactionAttributeSource()
@@ -144,18 +164,18 @@ class ProfileIntegrationTests {
             assertThat(transaction.isReadOnly()).as(method.getName())
                 .isEqualTo(method.getName().equals("list"));
             assertThat(transaction.getPropagationBehavior()).isEqualTo(
-                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRED);
+                PROPAGATION_REQUIRED);
         }
     }
 
     @Test void bootstrapDatabaseConflictRollsBackEarlierSeeds() throws Exception {
         String before = rowHash();
         var first = new Profile(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "1",
-            Profile.Status.PUBLISHED, 0, "  texto Ω\n  ", java.util.List.of());
+            Profile.Status.PUBLISHED, 0, "  texto Ω\n  ", List.of());
         var conflict = new Profile(UUID.randomUUID().toString(), first.name(), first.version(),
-            Profile.Status.PUBLISHED, 0, "segunda", java.util.List.of());
-        assertThatThrownBy(() -> lifecycle.initialize(java.util.List.of(first, conflict)))
-            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+            Profile.Status.PUBLISHED, 0, "segunda", List.of());
+        assertThatThrownBy(() -> lifecycle.initialize(List.of(first, conflict)))
+            .isInstanceOf(DataIntegrityViolationException.class);
         assertThat(rowHash()).isEqualTo(before);
     }
 
@@ -163,10 +183,10 @@ class ProfileIntegrationTests {
         String before = profiles();
         String beforeHash = rowHash();
         Profile first = new Profile(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "1",
-            Profile.Status.PUBLISHED, 0, "Semilla válida", java.util.List.of());
+            Profile.Status.PUBLISHED, 0, "Semilla válida", List.of());
         Profile invalid = new Profile(UUID.randomUUID().toString(), " ", "1",
-            Profile.Status.PUBLISHED, 0, "Semilla inválida", java.util.List.of());
-        assertThatThrownBy(() -> lifecycle.initialize(java.util.List.of(first, invalid)))
+            Profile.Status.PUBLISHED, 0, "Semilla inválida", List.of());
+        assertThatThrownBy(() -> lifecycle.initialize(List.of(first, invalid)))
             .isInstanceOf(ProfileValidationException.class).hasMessage("El contenido del perfil no es válido.");
         assertThat(profiles()).isEqualTo(before);
         assertThat(rowHash()).isEqualTo(beforeHash);
@@ -221,16 +241,16 @@ class ProfileIntegrationTests {
         Callable<Integer> update = () -> mvc.perform(put("/api/profiles/" + draft.get("id").asText())
             .contentType("application/json").content(edit)).andReturn().getResponse().getStatus();
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var results = executor.invokeAll(java.util.List.of(update, update));
-            assertThat(java.util.List.of(results.get(0).get(), results.get(1).get()))
+            var results = executor.invokeAll(List.of(update, update));
+            assertThat(List.of(results.get(0).get(), results.get(1).get()))
                 .containsExactlyInAnyOrder(200, 409);
         }
         String same = body(UUID.randomUUID().toString(), "1");
         Callable<Integer> insert = () -> mvc.perform(post("/api/profiles").contentType("application/json")
             .content(same)).andReturn().getResponse().getStatus();
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var results = executor.invokeAll(java.util.List.of(insert, insert));
-            assertThat(java.util.List.of(results.get(0).get(), results.get(1).get()))
+            var results = executor.invokeAll(List.of(insert, insert));
+            assertThat(List.of(results.get(0).get(), results.get(1).get()))
                 .containsExactlyInAnyOrder(201, 409);
         }
     }
@@ -264,20 +284,20 @@ class ProfileIntegrationTests {
     @Test void simultaneousPublishHasOneWinnerAndCannotLoseEdits() throws Exception {
         JsonNode draft = create();
         String id = draft.get("id").asText();
-        var ready = new java.util.concurrent.CountDownLatch(2);
+        var ready = new CountDownLatch(2);
         Callable<Integer> publish = () -> {
             ready.countDown();
-            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(ready.await(10, SECONDS)).isTrue();
             return mvc.perform(post("/api/profiles/" + id + "/publish"))
                 .andReturn().getResponse().getStatus();
         };
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var results = executor.invokeAll(java.util.List.of(publish, publish));
-            assertThat(java.util.List.of(results.get(0).get(), results.get(1).get()))
+            var results = executor.invokeAll(List.of(publish, publish));
+            assertThat(List.of(results.get(0).get(), results.get(1).get()))
                 .containsExactlyInAnyOrder(200, 409);
         }
         JsonNode stored = json.readTree(profiles());
-        var matches = new java.util.ArrayList<JsonNode>();
+        var matches = new ArrayList<JsonNode>();
         stored.forEach(profile -> { if (profile.get("id").asText().equals(id)) matches.add(profile); });
         assertThat(matches).hasSize(1);
         assertThat(matches.getFirst().get("revision").asLong()).isEqualTo(1);
@@ -322,11 +342,11 @@ class ProfileIntegrationTests {
             .andExpect(status().isBadRequest());
         assertThat(profiles()).isEqualTo(before);
     }
-    static java.util.stream.Stream<byte[]> publicationBodies() {
-        return java.util.stream.Stream.concat(
-            java.util.stream.Stream.of("{\"revision\":99,\"rules\":[]}", "{}", "null", "\"ignored\"", "[]", "{", " ")
-                .map(value -> value.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-            java.util.stream.Stream.of(new byte[]{(byte) 0xff, (byte) 0xfe}));
+    static Stream<byte[]> publicationBodies() {
+        return Stream.concat(
+            Stream.of("{\"revision\":99,\"rules\":[]}", "{}", "null", "\"ignored\"", "[]", "{", " ")
+                .map(value -> value.getBytes(UTF_8)),
+            Stream.of(new byte[]{(byte) 0xff, (byte) 0xfe}));
     }
     @ParameterizedTest
     @MethodSource("publicationBodies")
@@ -424,21 +444,21 @@ class ProfileIntegrationTests {
         String edit = body(draft.get("name").asText(), "1.1")
             .replace("Independent rules", "Contenido editado")
             .replace("\"rules\":", "\"revision\":0,\"rules\":");
-        var ready = new java.util.concurrent.CountDownLatch(2);
+        var ready = new CountDownLatch(2);
         Callable<Integer> update = () -> {
             ready.countDown();
-            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(ready.await(10, SECONDS)).isTrue();
             return mvc.perform(put("/api/profiles/" + id).contentType("application/json").content(edit))
                 .andReturn().getResponse().getStatus();
         };
         Callable<Integer> publish = () -> {
             ready.countDown();
-            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(ready.await(10, SECONDS)).isTrue();
             return mvc.perform(post("/api/profiles/" + id + "/publish"))
                 .andReturn().getResponse().getStatus();
         };
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var results = executor.invokeAll(java.util.List.of(update, publish));
+            var results = executor.invokeAll(List.of(update, publish));
             int editStatus = results.getFirst().get();
             assertThat(editStatus).isIn(200, 409);
             assertThat(results.get(1).get()).isEqualTo(200);
@@ -466,20 +486,20 @@ class ProfileIntegrationTests {
 
     String rowHash() throws Exception {
         String rows = nativeText("select coalesce(jsonb_agg(to_jsonb(p) order by id)::text,'[]') from profiles p");
-        return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
-            .digest(rows.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+            .digest(rows.getBytes(UTF_8)));
     }
     @Test void verifierConcurrentBootstrapPreservesStoredRows() throws Exception {
         String before = rowHash();
-        var ready = new java.util.concurrent.CountDownLatch(2);
+        var ready = new CountDownLatch(2);
         Callable<Void> load = () -> {
             ready.countDown();
-            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            assertThat(ready.await(10, SECONDS)).isTrue();
             bootstrap.initialize();
             return null;
         };
         try (var executor = Executors.newFixedThreadPool(2)) {
-            for (var result : executor.invokeAll(java.util.List.of(load, load))) result.get();
+            for (var result : executor.invokeAll(List.of(load, load))) result.get();
         }
         assertThat(rowHash()).isEqualTo(before);
     }
@@ -489,7 +509,7 @@ class ProfileIntegrationTests {
             .andExpect(status().isCreated()).andReturn().getResponse();
         String id = json.readTree(created.getContentAsString()).get("id").asText();
         String before = rowHash();
-        var requests = java.util.List.of(
+        var requests = List.of(
             post("/api/profiles").contentType("application/json").content(input),
             put("/api/profiles/" + id).contentType("application/json").content(input.replace("\"rules\":", "\"revision\":99,\"rules\":")),
             post("/api/profiles/" + id + "/publish").content(" "),

@@ -1,6 +1,8 @@
 package co.edu.unicauca.backend.profile.infrastructure.config;
 
 import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.mapper.ProfileHttpMapper;
+import co.edu.unicauca.backend.profile.infrastructure.adapter.json.mapper.ProfileJsonMapper;
+import org.mapstruct.factory.Mappers;
 import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.service.ProfileWebService;
 import co.edu.unicauca.backend.profile.infrastructure.adapter.out.database.JpaProfileStore;
 import co.edu.unicauca.backend.profile.infrastructure.adapter.out.database.mapper.ProfilePersistenceMapper;
@@ -11,18 +13,25 @@ import co.edu.unicauca.backend.profile.application.port.out.ProfileStore;
 import co.edu.unicauca.backend.profile.application.service.ProfileService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class ProfileBeanConfig {
     @Bean
-    ProfilePersistenceMapper profilePersistenceMapper(ObjectMapper json) {
-        return new ProfilePersistenceMapper(json);
+    ProfilePersistenceMapper profilePersistenceMapper() {
+        return Mappers.getMapper(ProfilePersistenceMapper.class);
+    }
+
+    @Bean
+    @Primary // El mapper de persistencia hereda conversiones JSON, pero bootstrap usa este contrato.
+    ProfileJsonMapper profileJsonMapper() {
+        return Mappers.getMapper(ProfileJsonMapper.class);
     }
 
     @Bean
     ProfileHttpMapper profileHttpMapper() {
-        return new ProfileHttpMapper();
+        return Mappers.getMapper(ProfileHttpMapper.class);
     }
 
     @Bean
@@ -31,8 +40,8 @@ public class ProfileBeanConfig {
     }
 
     @Bean
-    ProfileStore profileStore(ProfileRepository repository, ProfilePersistenceMapper mapper) {
-        return new JpaProfileStore(repository, mapper);
+    ProfileStore profileStore(ProfileRepository repository, ProfilePersistenceMapper mapper, ObjectMapper json) {
+        return new JpaProfileStore(repository, mapper, json);
     }
 
     @Bean

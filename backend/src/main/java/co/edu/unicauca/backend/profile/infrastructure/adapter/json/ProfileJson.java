@@ -4,6 +4,7 @@ import co.edu.unicauca.backend.profile.domain.model.Profile;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import tools.jackson.databind.JsonNode;
 import java.util.List;
+import lombok.Builder;
 
 /** Contratos JSON: la coerción de Jackson nunca entra al núcleo. */
 public final class ProfileJson {
@@ -32,21 +33,10 @@ public final class ProfileJson {
         return Enum.valueOf(type, value.stringValue());
     }
 
-    public record Rule(String field, Kind kind, Severity severity, Condition condition, String message, String source) {
-        public Profile.Rule toDomain() {
-            return new Profile.Rule(field, kind == null ? null : Profile.Kind.valueOf(kind.name()),
-                severity == null ? null : Profile.Severity.valueOf(severity.name()),
-                condition == null ? null : Profile.Condition.valueOf(condition.name()), message, source);
-        }
-    }
+    @Builder
+    public record Rule(String field, Kind kind, Severity severity, Condition condition, String message, String source) {}
 
+    @Builder
     public record Seed(String id, String name, String version, Profile.Status status, long revision,
-                       String description, List<Rule> rules) {
-        public Profile toDomain() {
-            return Profile.builder().id(id).name(name).version(version).status(status).revision(revision)
-                .description(description)
-                .rules(rules == null ? null : rules.stream().map(rule -> rule == null ? null : rule.toDomain()).toList())
-                .build();
-        }
-    }
+                       String description, List<Rule> rules) {}
 }

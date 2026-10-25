@@ -2,6 +2,8 @@ package co.edu.unicauca.backend.profile.infrastructure.adapter.in.bootstrap;
 
 import co.edu.unicauca.backend.profile.application.port.in.ProfileLifecycle;
 import co.edu.unicauca.backend.profile.infrastructure.adapter.json.ProfileJson;
+import co.edu.unicauca.backend.profile.infrastructure.adapter.json.mapper.ProfileJsonMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -12,14 +14,12 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class ProfileBootstrap implements ApplicationRunner {
     private final ProfileLifecycle service;
     private final ObjectMapper json;
 
-    public ProfileBootstrap(ProfileLifecycle service, ObjectMapper json) {
-        this.service = service;
-        this.json = json;
-    }
+    private final ProfileJsonMapper mapper;
     @Override
     public void run(ApplicationArguments arguments) throws IOException {
         initialize();
@@ -28,7 +28,7 @@ public class ProfileBootstrap implements ApplicationRunner {
         // Boot's Flyway initializer completes before the application runners execute.
         try (var input = new ClassPathResource("data/profiles.json").getInputStream()) {
             List<ProfileJson.Seed> seeds = json.readValue(input, new TypeReference<List<ProfileJson.Seed>>() {});
-            service.initialize(seeds.stream().map(ProfileJson.Seed::toDomain).toList());
+            service.initialize(seeds.stream().map(mapper::toDomain).toList());
         }
     }
 }
