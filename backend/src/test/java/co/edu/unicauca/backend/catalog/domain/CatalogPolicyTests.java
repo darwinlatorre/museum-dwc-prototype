@@ -78,6 +78,27 @@ class CatalogPolicyTests {
     }
 
     @Test
+    void candidateBuilderRetainsDefensiveCopiesAndExactText() {
+        var terms = new ArrayList<>(List.of(CURRENT));
+        var hashes = new HashMap<>(Map.of("source", "hash"));
+        var candidate = CatalogCandidate.builder().revision("revision").terms(terms).hashes(hashes)
+            .payload("  payload\n").hash("hash").rawSources(" raw\n").build();
+        terms.clear();
+        hashes.clear();
+        assertEquals(List.of(CURRENT), candidate.terms());
+        assertEquals(Map.of("source", "hash"), candidate.hashes());
+        assertEquals("  payload\n", candidate.payload());
+        assertEquals(" raw\n", candidate.rawSources());
+    }
+
+    @Test
+    void termBuilderPreservesTheCanonicalRecordValues() {
+        var term = Term.builder().name(CURRENT.name()).uri(CURRENT.uri())
+            .definition(CURRENT.definition()).category(CURRENT.category()).status(CURRENT.status()).build();
+        assertEquals(CURRENT, term);
+    }
+
+    @Test
     void contentHashUsesExactUtf8WithoutNormalization() {
         assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", CatalogHash.hash(""));
         assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", CatalogHash.hash("abc"));

@@ -5,16 +5,13 @@ import co.edu.unicauca.backend.catalog.application.port.out.CatalogCandidateSour
 import co.edu.unicauca.backend.catalog.application.port.out.CatalogStore;
 import co.edu.unicauca.backend.catalog.domain.model.CatalogStatus;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 
 /** No mantiene una transacción entre el inicio del intento y la activación. */
+@RequiredArgsConstructor
 public final class CatalogUseCase implements CatalogOperations {
     private final CatalogCandidateSource source;
     private final CatalogStore store;
-
-    public CatalogUseCase(CatalogCandidateSource source, CatalogStore store) {
-        this.source = source;
-        this.store = store;
-    }
 
     @Override public String payload() { return store.payload(); }
     @Override public CatalogStatus status() { return store.status(); }

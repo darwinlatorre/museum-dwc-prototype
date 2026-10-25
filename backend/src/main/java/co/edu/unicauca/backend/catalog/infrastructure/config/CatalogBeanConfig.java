@@ -7,7 +7,9 @@ import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.mappe
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.bootstrap.CatalogBootstrap;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.scheduling.CatalogRefresh;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.repository.CatalogRepository;
-import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.CatalogStore;
+import co.edu.unicauca.backend.catalog.application.port.out.CatalogStore;
+import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.JpaCatalogStore;
+import org.mapstruct.factory.Mappers;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.CatalogParser;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.CatalogSource;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.TdwgCatalogSource;
@@ -30,15 +32,16 @@ public class CatalogBeanConfig {
     @Bean CatalogCandidateSource catalogCandidateSource(CatalogSource source, CatalogParser parser) {
         return new TdwgCatalogSource(source, parser);
     }
-    @Bean CatalogHttpMapper catalogHttpMapper() { return new CatalogHttpMapper(); }
+    @Bean CatalogHttpMapper catalogHttpMapper() { return Mappers.getMapper(CatalogHttpMapper.class); }
     @Bean CatalogWebService catalogWebService(CatalogOperations operations, CatalogHttpMapper mapper) {
         return new CatalogWebService(operations, mapper);
     }
-    @Bean CatalogPersistenceMapper catalogPersistenceMapper(ObjectMapper json) {
-        return new CatalogPersistenceMapper(json);
+    @Bean CatalogPersistenceMapper catalogPersistenceMapper() {
+        return Mappers.getMapper(CatalogPersistenceMapper.class);
     }
-    @Bean CatalogStore catalogStore(CatalogRepository repository, CatalogPersistenceMapper mapper, Clock clock) {
-        return new CatalogStore(repository, mapper, clock);
+    @Bean JpaCatalogStore catalogStore(CatalogRepository repository, CatalogPersistenceMapper mapper,
+                                     Clock clock, ObjectMapper json) {
+        return new JpaCatalogStore(repository, mapper, clock, json);
     }
     @Bean CatalogRefresh catalogRefresh(CatalogCandidateSource source, CatalogStore store) {
         return new CatalogRefresh(new CatalogUseCase(source, store));

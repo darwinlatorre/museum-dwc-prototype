@@ -1,6 +1,6 @@
 # Arquitectura del catálogo TDWG
 
-El catálogo conserva su contrato HTTP y su instantánea única en PostgreSQL. El núcleo no depende de Spring, JPA, Jackson, Commons CSV ni HTTP.
+El catálogo conserva su contrato HTTP y su instantánea única en PostgreSQL. El núcleo no depende en runtime de Spring, JPA, Jackson, Commons CSV, MapStruct ni HTTP. Lombok genera builders y constructores durante la compilación Maven; el checker solo permite `@Builder` y `@RequiredArgsConstructor` en ese núcleo.
 
 ## Límites por paquete
 
@@ -38,11 +38,15 @@ Las transacciones están en el adaptador de persistencia, no en el caso de uso. 
 
 ## Mappers, construcción y transporte
 
-`CatalogHttpMapper` convierte estado/resultados a `CatalogStatusResponse`, `CatalogActiveResponse` y `CatalogSyncResponse`. Ningún DTO de salida expone registros de dominio. `CatalogWebService` coordina estas conversiones y comprueba el cuerpo vacío; el servicio de aplicación sigue siendo Java puro y no recibe objetos servlet ni DTO HTTP.
+`CatalogHttpMapper`, interfaz MapStruct, convierte estado/resultados a `CatalogStatusResponse`, `CatalogActiveResponse` y `CatalogSyncResponse`. Ningún DTO de salida expone registros de dominio. `CatalogWebService` coordina estas conversiones y comprueba el cuerpo vacío; el servicio de aplicación sigue siendo Java puro y no recibe objetos servlet ni DTO HTTP.
 
-`infrastructure/adapter/out/database/mapper/CatalogPersistenceMapper` convierte JSON y entidades a modelos, y aplica los campos del candidato a la misma entidad administrada, sin sustituir su identidad. No abre transacciones, no decide generaciones ni ejecuta la política: el adaptador `infrastructure/adapter/out/database/CatalogStore` sigue evaluando `CatalogPolicy` con la instantánea bloqueada y pasa la versión resultante al mapper. No es el puerto homónimo `application/port/out/CatalogStore`. `infrastructure/config/CatalogBeanConfig.java` conecta fuente, parser, mapper, almacenamiento y disparadores sin introducir DTO HTTP en `application/service/CatalogUseCase`.
+`CatalogPersistenceMapper`, interfaz MapStruct, genera conversiones estructurales y actualizaciones `@MappingTarget` sobre la misma entidad administrada. Recibe Jackson explícitamente mediante `@Context`; el análisis JSON y los hashes siguen siendo codecs explícitos. Ignora identidad, generación, último intento/fallo y procedencia de semilla según cada operación; la inicialización tampoco reinicia versión ni contadores de diferencias.
 
-Un mapper transforma representaciones; un builder construye un objeto con campos nombrados. El builder de perfiles está documentado en [arquitectura de perfiles](PROFILE_ARCHITECTURE.md); no se agregan builders redundantes para cada record del catálogo.
+El mapper no abre transacciones, no decide generaciones ni ejecuta la política: `infrastructure/adapter/out/database/JpaCatalogStore` sigue evaluando `CatalogPolicy` con la instantánea bloqueada y pasa la versión resultante al mapper. El nombre del adaptador evita la colisión con el puerto importado `CatalogStore`. `CatalogBeanConfig.java` obtiene los mappers con `Mappers.getMapper` y conecta fuente, parser, codec, almacenamiento y disparadores explícitamente; no hay componentes Spring generados ni DTO HTTP en el caso de uso.
+
+Un mapper transforma representaciones; un builder construye un objeto con campos nombrados. `Term`, `CatalogCandidate`, `CatalogStatus`/`Active` y DTO de salida usan `@Builder`. El constructor de `CatalogCandidate` conserva sus copias defensivas. `@RequiredArgsConstructor` elimina constructores triviales y `@Slf4j` conserva los avisos del programador. La entidad JPA mantiene getters y setters equivalentes mediante Lombok, constructor protegido y ningún setter de identidad; no usa `@Data` ni igualdad/hash/toString generados.
+
+Ambos mappers comparten `BackendMapperConfig`, con `unmappedTargetPolicy=ERROR`: un campo destino omitido falla al compilar. Los archivos generados quedan en `target/generated-sources/annotations`, no se editan ni versionan.
 
 No se inventan DTO `req` para operaciones sin cuerpo. El JSON publicado de `/api/catalog` se sirve sin envolver ni reserializar y los errores conservan `ProblemDetail`, conforme a la decisión de compatibilidad.
 
@@ -52,6 +56,8 @@ No se inventan DTO `req` para operaciones sin cuerpo. El JSON publicado de `/api
 
 Las pruebas existentes `CatalogSyncTests` y `TdwgSourceTests` conservan sus aserciones de transporte, bytes, reinicio durable y carreras reales sobre PostgreSQL desechable; sólo cambian los imports de los tipos extraídos. Los falsos del núcleo **no sustituyen** esas integraciones.
 
-La refactorización actual aprobó **171 pruebas backend en 13 clases actuales**, sin fallos, errores ni omisiones, y el paquete. Las ocho focalizadas incluyen `CatalogHttpMapperTests` y los casos de perfiles; son un subconjunto de la suite, no ocho pruebas adicionales. El checker real y sus diez regresiones Python aprobaron. El verificador independiente no encontró bloqueadores: compiló los núcleos con `javac` y ejecutó 65 casos puros más las comprobaciones Python. El diferencial público contra `af5edab` mantuvo **50/50 observaciones idénticas** de estado, cuerpo exacto y encabezados; no equivale por sí solo a repetir todas las carreras. Sin aprobación nativa todavía.
+La migración a Lombok/MapStruct se compiló desde una copia aislada de fuentes sin reutilizar `target/`: suite de 185 pruebas en 15 clases, paquete y diferencial HTTP de 50 observaciones aprobaron. Los 82 hashes de fuentes/configuración/scripts coinciden con el checkout actual. El estado de la verificación independiente y los incidentes quedan registrados en [VERIFICATION.md](../VERIFICATION.md). Las pruebas nuevas de persistencia verifican que inicialización y reemplazo conservan los metadatos ignorados, y las de builders preservan textos y copias defensivas.
+
+Como evidencia anterior a esta migración, la refactorización de responsabilidades aprobó **171 pruebas backend en 13 clases de entonces**, sin fallos, errores ni omisiones, y el paquete. Las ocho focalizadas incluyen `CatalogHttpMapperTests` y los casos de perfiles; son un subconjunto de la suite, no ocho pruebas adicionales. El checker real y sus diez regresiones Python aprobaron. El verificador independiente no encontró bloqueadores: compiló los núcleos con `javac` y ejecutó 65 casos puros más las comprobaciones Python. El diferencial público contra `af5edab` mantuvo **50/50 observaciones idénticas** de estado, cuerpo exacto y encabezados; no equivale por sí solo a repetir todas las carreras. Sin aprobación nativa todavía.
 
 Como evidencia histórica de la aceptación hexagonal, el verificador independiente ejecutó65pruebas del catálogo sin fallos ni omisiones, incluidas las ocho carreras mixtas sobre PostgreSQL y el reinicio durable. El padre incorporó la regresión `CatalogLockedCurrentPolicyTests` y ejecutó66pruebas de catálogo dentro de160totales, más paquete y contrato diferencial. Ver [VERIFICATION.md](../VERIFICATION.md) para evidencia, consentimiento de caché y límites; no se presenta la evidencia histórica como una nueva suite ni como aprobación nativa.

@@ -6,18 +6,15 @@ import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.dto.res.Cat
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.mapper.CatalogHttpMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Fachada del transporte: no contiene política de sincronización ni transacciones. */
+@RequiredArgsConstructor
 public class CatalogWebService {
     private final CatalogOperations operations;
     private final CatalogHttpMapper mapper;
-
-    public CatalogWebService(CatalogOperations operations, CatalogHttpMapper mapper) {
-        this.operations = operations;
-        this.mapper = mapper;
-    }
 
     public String catalog() { return operations.payload(); }
 
