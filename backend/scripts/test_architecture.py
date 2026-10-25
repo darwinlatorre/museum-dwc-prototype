@@ -32,6 +32,15 @@ class ArchitectureTests(unittest.TestCase):
         self.write("profile/application/service/Example.java", f"import {PACKAGE}.profile.domain.model.Profile;\n")
         self.assertEqual([], violations(self.root))
 
+    def test_source_only_lombok_generators_are_allowed_in_core(self):
+        self.write("profile/domain/model/Example.java", "import lombok.Builder;\n")
+        self.write("catalog/application/service/Example.java", "import lombok.RequiredArgsConstructor;\n")
+        self.assertEqual([], violations(self.root))
+
+    def test_other_lombok_dependencies_are_not_blanket_allowed(self):
+        self.write("profile/domain/model/Example.java", "import lombok.SneakyThrows;\n")
+        self.assertEqual(["profile/domain/model/Example.java: outward dependency lombok.SneakyThrows"], violations(self.root))
+
     def test_framework_leak_in_core_is_rejected(self):
         self.write("profile/domain/model/Example.java", "import jakarta.persistence.Entity;\n")
         self.assertEqual(["profile/domain/model/Example.java: outward dependency jakarta.persistence.Entity"], violations(self.root))
