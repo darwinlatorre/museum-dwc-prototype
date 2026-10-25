@@ -1,9 +1,9 @@
 package co.edu.unicauca.backend.profile;
 
-import co.edu.unicauca.backend.profile.adapter.in.bootstrap.ProfileBootstrap;
+import co.edu.unicauca.backend.profile.infrastructure.adapter.in.bootstrap.ProfileBootstrap;
 import co.edu.unicauca.backend.profile.application.port.in.ProfileLifecycle;
-import co.edu.unicauca.backend.profile.domain.Profile;
-import co.edu.unicauca.backend.profile.domain.ProfileValidationException;
+import co.edu.unicauca.backend.profile.domain.model.Profile;
+import co.edu.unicauca.backend.profile.domain.exception.ProfileValidationException;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
@@ -130,7 +130,7 @@ class ProfileIntegrationTests {
         assertThat(org.springframework.aop.support.AopUtils.isAopProxy(lifecycle)).isTrue();
         Class<?> target = org.springframework.aop.support.AopUtils.getTargetClass(lifecycle);
         assertThat(target).isEqualTo(
-            co.edu.unicauca.backend.profile.configuration.TransactionalProfileLifecycle.class);
+            co.edu.unicauca.backend.profile.infrastructure.transaction.TransactionalProfileLifecycle.class);
         var advised = (org.springframework.aop.framework.Advised) lifecycle;
         var interceptor = java.util.Arrays.stream(advised.getAdvisors())
             .map(org.springframework.aop.Advisor::getAdvice)

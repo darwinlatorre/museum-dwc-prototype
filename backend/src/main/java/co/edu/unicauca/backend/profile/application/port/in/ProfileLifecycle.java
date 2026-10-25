@@ -1,6 +1,6 @@
 package co.edu.unicauca.backend.profile.application.port.in;
 
-import co.edu.unicauca.backend.profile.domain.Profile;
+import co.edu.unicauca.backend.profile.domain.model.Profile;
 import java.util.List;
 
 public interface ProfileLifecycle {
