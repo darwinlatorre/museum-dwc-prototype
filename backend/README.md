@@ -109,11 +109,15 @@ El arranque permanece en `co.edu.unicauca.backend`. Dentro de `profile` y `catal
 | `infrastructure/adapter/out/tdwg` | Transporte TDWG, análisis CSV y serialización fuera del núcleo |
 | `infrastructure/config` | `ProfileBeanConfig` y `CatalogBeanConfig`: composición explícita Spring |
 
-`shared.infrastructure.adapter.in.web.exception` traduce errores propios y de Spring a los problemas públicos existentes; la excepción de conflicto pertenece a `profile.domain.exception`. No se agregan interfaces por cada método, otro framework, dependencias ni migraciones. Ver [perfiles](PROFILE_ARCHITECTURE.md) y [catálogo](CATALOG_ARCHITECTURE.md) para la composición concreta.
+`shared.infrastructure.adapter.in.web.exception` traduce errores propios y de Spring a los problemas públicos existentes; la excepción de conflicto pertenece a `profile.domain.exception`. No se agregan interfaces por cada método ni migraciones. Lombok y MapStruct generan código durante la compilación; no trasladan validación ni reglas de negocio a infraestructura. Ver [perfiles](PROFILE_ARCHITECTURE.md) y [catálogo](CATALOG_ARCHITECTURE.md) para la composición concreta.
 
 Los DTO se separan en `infrastructure.adapter.in.web.dto.req` y `infrastructure.adapter.in.web.dto.res` dentro de su funcionalidad. La validación HTTP y la lectura JSON estricta de enumerados pertenecen a los adaptadores. El dominio conserva las mismas invariantes también cuando se llama sin HTTP, por ejemplo durante la carga inicial. El mapper HTTP es independiente del mapper de persistencia/JSONB; los controladores nunca exponen entidades administradas ni coordinan conversiones. Las fachadas web de infraestructura realizan esa coordinación sin contaminar los servicios de aplicación con DTO HTTP.
 
-**Mapper y builder no son intercambiables:** el mapper convierte entre representaciones (req/modelo/res o entidad/modelo); el builder construye objetos usando campos nombrados. El builder del perfil reduce errores de argumentos posicionales, pero no decide publicación, revisiones ni sustituye la validación de los casos de uso.
+**Mapper y builder no son intercambiables:** MapStruct genera conversiones entre representaciones (req/modelo/res o entidad/modelo); Lombok `@Builder` construye objetos usando campos nombrados. `Profile.builder()/toBuilder()` y los builders de otros modelos/DTO no deciden publicación, revisiones ni sustituyen la validación de los casos de uso.
+
+Los cinco mappers comparten `BackendMapperConfig` con destinos sin mapear como error de compilación. Los `BeanConfig` los obtienen mediante `Mappers.getMapper`, sin componentes Spring implícitos. Los codecs Jackson se pasan explícitamente a persistencia con `@Context`; `@MappingTarget` conserva la instancia administrada e ignora su identidad. Los constructores triviales y accesores apropiados usan Lombok; las entidades no usan `@Data`, igualdad ni `toString` automáticos. El adaptador `JpaCatalogStore` evita colisionar con su puerto `CatalogStore`, por lo que todos los tipos se escriben con imports y nombres cortos.
+
+Dominio y aplicación siguen sin dependencias runtime de infraestructura. `@Builder` y `@RequiredArgsConstructor` son las únicas anotaciones Lombok source-only permitidas allí. Compilar con Maven para ejecutar los procesadores; un `javac` sin Lombok/procesadores en su classpath ya no es una comprobación válida de esas fuentes. Los artefactos generados de `target/` no se editan ni versionan.
 
 La convención req/res se aplica a los cuerpos de negocio existentes: no agrega envoltorios al JSON publicado del catálogo, no reemplaza `ProblemDetail`, no convierte parámetros de ruta en cuerpos ni agrega req ficticios a GET/publicación/sincronización sin cuerpo.
 
@@ -156,15 +160,18 @@ La traducción no reescribe perfiles históricos ni cambia la migración V1 ya a
 Se requiere Java 21 y acceso a Docker. Desde `backend/`:
 
 ```sh
+python3 -B scripts/test_codegen.py
 python3 scripts/test_architecture.py
 python3 scripts/check_architecture.py
 bash ./mvnw test
 bash ./mvnw package -DskipTests
 ```
 
-La refactorización de responsabilidades ejecutó **171 pruebas backend en 13 clases de pruebas actuales**, sin fallos, errores ni omisiones, y generó el paquete. Las ocho pruebas focalizadas de builder/mappers son un subconjunto de esas 171, no se suman. Las diez regresiones Python y el checker del árbol real aprobaron. El diferencial contra la base `af5edab` conservó **50/50 observaciones HTTP idénticas**, incluidos estado, cuerpo exacto y encabezados; el padre recuperó las observaciones actuales de los XML Surefire sin repetir la suite. El verificador independiente no encontró bloqueadores y comprobó los núcleos con `javac`, 65 casos puros y los checks Python. No hay aprobación nativa ni cierre de entrega todavía; detalles e incidentes en [VERIFICATION.md](../VERIFICATION.md).
+La migración Lombok/MapStruct aprobó 185 pruebas en 15 clases, paquete y 50/50 observaciones HTTP idénticas al baseline de `8dab659`, desde una copia aislada de fuentes cuyos 82 hashes coinciden con el checkout. Los incidentes de compilación y el estado de la verificación independiente están en [VERIFICATION.md](../VERIFICATION.md). No se atribuyen pruebas aprobadas a los dos workers que terminaron con error.
 
-El checker arquitectónico usa solo Python estándar y protege dependencias hacia adentro, empaquetado explícito, ubicación de mappers/configuración y separación de DTO. Las pruebas puras de aplicación emplean puertos falsos; no sustituyen las integraciones JPA/HTTP, el rollback completo de bootstrap, el proxy transaccional ni la política contra el snapshot vigente. La aceptación hexagonal anterior ejecutó 160 pruebas y otro diferencial de 50 observaciones: es evidencia histórica, no parte del total actual. Ninguna de estas comprobaciones constituye una auditoría de seguridad o navegador.
+Como evidencia anterior, la refactorización de responsabilidades ejecutó **171 pruebas backend en 13 clases de entonces**, sin fallos, errores ni omisiones, y generó el paquete. Las ocho pruebas focalizadas de builder/mappers son un subconjunto de esas 171, no se suman. Las diez regresiones Python y el checker del árbol real aprobaron. El diferencial contra la base `af5edab` conservó **50/50 observaciones HTTP idénticas**, incluidos estado, cuerpo exacto y encabezados; el padre recuperó las observaciones actuales de los XML Surefire sin repetir la suite. El verificador independiente no encontró bloqueadores y comprobó los núcleos con `javac`, 65 casos puros y los checks Python. No hay aprobación nativa ni cierre de entrega todavía; detalles e incidentes en [VERIFICATION.md](../VERIFICATION.md).
+
+El checker arquitectónico usa solo Python estándar y protege dependencias hacia adentro, empaquetado explícito, ubicación de mappers/configuración y separación de DTO. Las pruebas puras de aplicación emplean puertos falsos; no sustituyen las integraciones JPA/HTTP, el rollback completo de bootstrap, el proxy transaccional ni la política contra el snapshot vigente. La aceptación hexagonal anterior ejecutó 160 pruebas y otro diferencial de 50 observaciones: es evidencia histórica, no parte del total de esta migración. Ninguna de estas comprobaciones constituye una auditoría de seguridad o navegador.
 
 Si se recompila un árbol previamente construido antes de mover paquetes, los `.class` de rutas eliminadas pueden sobrevivir y producir beans duplicados. En esta sesión se archivaron **solo** `target/classes` y `target/test-classes` en `.browser/backend-hexagonal/` antes de reconstruir; no se borró `target/` completo ni se tocaron las copias JAR de ejecución. Un checkout limpio no contiene esos compilados antiguos.
 

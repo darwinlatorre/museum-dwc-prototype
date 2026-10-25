@@ -24,6 +24,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - No leer, modificar, borrar ni versionar los `.env` reales. `.env.example` queda gestionado manualmente por el humano: no acceder por otro canal ni stagearlo para evadir la protección del harness. La petición actual autoriza convertir `docker-compose.yml` en Compose principal y agregar `start.sh`; `compose.mvp.yml` se retira del uso. Conservar proyecto/servicio/volumen aislados del MVP, nunca reutilizar `postgres_data` ni arrancar/parar servicios existentes durante las pruebas. Validar con variables ficticias y recursos aislados.
 - Mantener servicios en localhost. Autenticación e importación biológica al servidor son trabajo futuro, no funcionalidades existentes.
 - Backend hexagonal por funcionalidad (`profile`, `catalog`): `domain` y `application` Java puros, sin Spring/Jakarta/JPA/Jackson/CommonsCSV, sin DTO HTTP ni adaptadores. Puertos propiedad de aplicación, implementados por adaptadores; composición explícita en `infrastructure/config/*BeanConfig.java`. No crear interfaces sin una frontera real.
+- Generar builders/constructores/accesores apropiados con Lombok; en el núcleo solo `@Builder` y `@RequiredArgsConstructor` como anotaciones source-only, nunca dependencias runtime. No usar `@Data`, igualdad, hash o toString automáticos en entidades JPA. Mappers estructurales con MapStruct y `BackendMapperConfig`, composición explícita en BeanConfig, codecs JSON mediante `@Context` y actualizaciones administradas con `@MappingTarget` que ignoran identidad. Usar imports y nombres cortos, renombrando adaptadores cuando colisionan con puertos.
 - Separar DTO de entrada/salida en `<feature>/infrastructure/adapter/in/web/dto/req` y `res`; mappers HTTP y de persistencia separados. Enumerados JSON estrictos y Bean Validation en adaptadores, invariantes también en dominio. Usar getters JavaBean en entidades y errores propios, traducidos exclusivamente en HTTP.
 - La transacción de perfil envuelve el caso de uso completo (lock→revisión/estado→transformación→save/flush), incluido bootstrap completo; no liberar el bloqueo entre llamadas de repositorio. Catálogo: inicio/activación/fallo son atómicos, descarga/análisis fuera de transacción, política ejecutada contra snapshot bloqueado. No agregar dependencias productivas entre perfil y catálogo.
 - Mantener las pruebas de perfiles en su paquete `profile`, con JPA/EntityManager y PostgreSQL desechable; no sustituirlas por mocks que eliminen cobertura de trigger o concurrencia.
@@ -46,7 +47,7 @@ python3 scripts/test_seeds.py
 python3 -B scripts/test_start.py
 bash -n start.sh backend/docker-healthcheck.sh
 (cd frontend && node scripts/check-architecture.mjs && npm test -- --watch=false && npm run build)
-(cd backend && python3 scripts/test_architecture.py && python3 scripts/check_architecture.py && bash ./mvnw test && bash ./mvnw package -DskipTests)
+(cd backend && python3 -B scripts/test_codegen.py && python3 scripts/test_architecture.py && python3 scripts/check_architecture.py && bash ./mvnw test && bash ./mvnw package -DskipTests)
 git diff --check
 ```
 
