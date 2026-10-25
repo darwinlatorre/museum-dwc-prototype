@@ -1,5 +1,6 @@
 package co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database;
 
+import co.edu.unicauca.backend.catalog.application.port.out.CatalogStore;
 import co.edu.unicauca.backend.catalog.domain.model.CatalogCandidate;
 import co.edu.unicauca.backend.catalog.domain.model.CatalogStatus;
 import co.edu.unicauca.backend.catalog.domain.policy.CatalogPolicy;
@@ -11,33 +12,32 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
 
-public class CatalogStore implements co.edu.unicauca.backend.catalog.application.port.out.CatalogStore {
+@RequiredArgsConstructor
+public class JpaCatalogStore implements CatalogStore {
     private final CatalogRepository repository;
     private final CatalogPersistenceMapper mapper;
     private final Clock clock;
 
-    public CatalogStore(CatalogRepository repository, CatalogPersistenceMapper mapper, Clock clock) {
-        this.repository = repository;
-        this.mapper = mapper;
-        this.clock = clock;
-    }
+    private final ObjectMapper json;
 
     @Transactional
     public void initialize() throws IOException {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         if (snapshot.getPayload() != null) return;
         String payload = resource("catalog.json");
-        var seed = mapper.terms(payload);
+        var seed = mapper.terms(payload, json);
         if (seed.isEmpty()) throw new IOException("El catálogo inicial TDWG está vacío.");
-        mapper.initialize(snapshot, payload, resource("provenance.json"), seed.size(), clock.instant());
+        mapper.initialize(snapshot, payload, resource("provenance.json"), seed.size(), clock.instant(), json);
     }
 
     @Transactional(readOnly = true)
     public String payload() { return current().getPayload(); }
 
     @Transactional(readOnly = true)
-    public CatalogStatus status() { return mapper.toDomain(current()); }
+    public CatalogStatus status() { return mapper.toDomain(current(), json); }
 
     @Transactional
     public long beginAttempt() {
@@ -57,8 +57,8 @@ public class CatalogStore implements co.edu.unicauca.backend.catalog.application
             return;
         }
         // La política evalúa la instantánea vigente sin liberar el bloqueo.
-        var diff = CatalogPolicy.compare(mapper.terms(snapshot.getPayload()), candidate);
-        mapper.replace(snapshot, candidate, diff, snapshot.getSnapshotVersion() + 1, clock.instant());
+        var diff = CatalogPolicy.compare(mapper.terms(snapshot.getPayload(), json), candidate);
+        mapper.replace(snapshot, candidate, diff, snapshot.getSnapshotVersion() + 1, clock.instant(), json);
         snapshot.setLastFailure(null);
     }
 

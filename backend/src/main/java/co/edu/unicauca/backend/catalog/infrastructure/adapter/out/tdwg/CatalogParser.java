@@ -8,6 +8,8 @@ import org.apache.commons.csv.CSVFormat;
 import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
+import lombok.RequiredArgsConstructor;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -16,12 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@RequiredArgsConstructor
 public class CatalogParser {
     private static final Set<String> HEADERS = Set.of("term_localName", "term_isDefinedBy", "rdfs_comment",
         "tdwgutility_organizedInClass", "term_deprecated");
     private final ObjectMapper json;
-
-    public CatalogParser(ObjectMapper json) { this.json = json; }
 
     public CatalogCandidate parse(CatalogSource.SourceSet source) throws IOException {
         if (source == null || !source.revision().matches("[0-9a-f]{40}")
@@ -55,14 +56,15 @@ public class CatalogParser {
                         flag.equals("true") ? "deprecated" : "current"));
                     count++;
                 }
-            } catch (IllegalArgumentException | java.io.UncheckedIOException exception) {
+            } catch (IllegalArgumentException | UncheckedIOException exception) {
                 throw new IOException("No se pudo interpretar el CSV TDWG completo.", exception);
             }
             if (count == 0) throw new IOException("Una fuente TDWG no contiene términos.");
         }
         String payload = json.writeValueAsString(terms);
-        return new CatalogCandidate(source.revision(), List.copyOf(terms), payload, hash(json.writeValueAsString(hashes)),
-            json.writeValueAsString(source.documents()), Map.copyOf(hashes));
+        return CatalogCandidate.builder().revision(source.revision()).terms(terms).payload(payload)
+            .hash(hash(json.writeValueAsString(hashes))).rawSources(json.writeValueAsString(source.documents()))
+            .hashes(hashes).build();
     }
 
     public static String hash(String value) { return CatalogHash.hash(value); }

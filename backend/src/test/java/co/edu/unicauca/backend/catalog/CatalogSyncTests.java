@@ -1,6 +1,13 @@
 package co.edu.unicauca.backend.catalog;
 
-import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.CatalogStore;
+import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.JpaCatalogStore;
+import co.edu.unicauca.backend.BackendApplication;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.CatalogParser;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.CatalogSource;
 
@@ -27,6 +34,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -42,11 +50,12 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = "catalog.sync.enabled=false")
 @AutoConfigureMockMvc
-@org.junit.jupiter.api.TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
+@TestMethodOrder(OrderAnnotation.class)
 class CatalogSyncTests {
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
     @DynamicPropertySource
@@ -125,7 +134,7 @@ class CatalogSyncTests {
         source.failure = null;
         source.next = feeds(terms(), "a".repeat(40));
     }
-    @Test @org.junit.jupiter.api.Order(0)
+    @Test @Order(0)
     void emptyDatabaseStartsWithTrustedBundleWithoutNetwork() throws Exception {
         assertThat(metadata().get("active").get("revision").asText()).isEqualTo("bundled");
         assertThat(metadata().get("attempts").asInt()).isZero();
@@ -227,14 +236,14 @@ class CatalogSyncTests {
         String before = getCatalog();
         JsonNode statusBefore = metadata();
         JsonNode active = statusBefore.get("active");
-        try (var restarted = new org.springframework.boot.builder.SpringApplicationBuilder(
-                co.edu.unicauca.backend.BackendApplication.class, Fakes.class)
+        try (var restarted = new SpringApplicationBuilder(
+                BackendApplication.class, Fakes.class)
                 .run("--spring.datasource.url=" + POSTGRES.getJdbcUrl(),
                     "--spring.datasource.username=" + POSTGRES.getUsername(),
                     "--spring.datasource.password=" + POSTGRES.getPassword(),
                     "--catalog.sync.enabled=false", "--server.port=0")) {
-            var restartedMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                .webAppContextSetup((org.springframework.web.context.WebApplicationContext) restarted).build();
+            var restartedMvc = MockMvcBuilders
+                .webAppContextSetup((WebApplicationContext) restarted).build();
             assertThat(restartedMvc.perform(get("/api/catalog")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString()).isEqualTo(before);
             var after = json.readTree(restartedMvc.perform(get("/api/catalog/status"))
@@ -254,15 +263,15 @@ class CatalogSyncTests {
             catch (InterruptedException exception) { throw new IOException(exception); }
             return candidate;
         };
-        try (var scheduled = new org.springframework.boot.builder.SpringApplicationBuilder(
-                co.edu.unicauca.backend.BackendApplication.class, Fakes.class)
+        try (var scheduled = new SpringApplicationBuilder(
+                BackendApplication.class, Fakes.class)
                 .run("--spring.datasource.url=" + POSTGRES.getJdbcUrl(),
                     "--spring.datasource.username=" + POSTGRES.getUsername(),
                     "--spring.datasource.password=" + POSTGRES.getPassword(),
                     "--catalog.sync.enabled=true", "--catalog.sync.initial-delay=0", "--server.port=0")) {
             assertThat(entered.await(10, TimeUnit.SECONDS)).isTrue();
-            var scheduledMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                .webAppContextSetup((org.springframework.web.context.WebApplicationContext) scheduled).build();
+            var scheduledMvc = MockMvcBuilders
+                .webAppContextSetup((WebApplicationContext) scheduled).build();
             assertThat(scheduledMvc.perform(get("/api/catalog")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString()).isEqualTo(before);
             release.countDown();
@@ -272,7 +281,7 @@ class CatalogSyncTests {
             assertThat(metadata().get("active").get("revision").asText()).isEqualTo(candidate.revision());
         } finally { release.countDown(); sourceGate = null; }
     }
-    @Test @org.junit.jupiter.api.Order(2)
+    @Test @Order(2)
     void manualSyncReportsConfirmedSuccessWithoutChangingProfiles() throws Exception {
         String profiles = profileBytes();
         JsonNode before = json.readTree(getCatalog());
@@ -288,7 +297,7 @@ class CatalogSyncTests {
         assertThat(profileBytes()).isEqualTo(profiles);
     }
 
-    @Test @org.junit.jupiter.api.Order(3)
+    @Test @Order(3)
     void manualFailureReportsFailurePreservesLastValidAndCanRecover() throws Exception {
         String profiles = profileBytes();
         String payload = getCatalog();
@@ -310,14 +319,13 @@ class CatalogSyncTests {
         assertThat(profileBytes()).isEqualTo(profiles);
     }
 
-    @ParameterizedTest @org.junit.jupiter.api.Order(4)
+    @ParameterizedTest @Order(4)
     @ValueSource(strings = {" ", "null", "{}", "garbage"})
     void manualSyncRejectsEveryNonemptyBodyWithoutChangingCounters(String body) throws Exception {
         JsonNode before = metadata();
         String payload = getCatalog();
         String profiles = profileBytes();
-        var result = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .post("/api/catalog/sync").content(body)).andExpect(status().isBadRequest())
+        var result = mvc.perform(post("/api/catalog/sync").content(body)).andExpect(status().isBadRequest())
             .andReturn().getResponse();
         assertThat(json.readTree(result.getContentAsString()).get("detail").asString())
             .isEqualTo("La solicitud de sincronización debe tener el cuerpo vacío.");
@@ -326,7 +334,7 @@ class CatalogSyncTests {
         assertThat(profileBytes()).isEqualTo(profiles);
     }
 
-    @Test @org.junit.jupiter.api.Order(5)
+    @Test @Order(5)
     void manualAttemptCannotClaimSuccessAfterNewerScheduledActivation() throws Exception {
         String profiles = profileBytes();
         CountDownLatch started = new CountDownLatch(1);
@@ -354,8 +362,7 @@ class CatalogSyncTests {
     }
 
     JsonNode manual() throws Exception {
-        return json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .post("/api/catalog/sync")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        return json.readTree(mvc.perform(post("/api/catalog/sync")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
     }
     String profileBytes() throws Exception {
         return mvc.perform(get("/api/profiles")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -368,11 +375,10 @@ class CatalogSyncTests {
     @Test
     void manualRejectsBinaryBodiesWithoutChangingPublicSnapshot() throws Exception {
         for (byte[] body : List.of(new byte[]{0}, new byte[]{(byte) 255}, new byte[]{10, 13, 9},
-                "\uFEFF".getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+                "\uFEFF".getBytes(StandardCharsets.UTF_8))) {
             for (String type : List.of("application/json", "application/octet-stream", "text/plain")) {
                 String before = publicSnapshotHash();
-                var response = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                    .post("/api/catalog/sync").contentType(type).content(body))
+                var response = mvc.perform(post("/api/catalog/sync").contentType(type).content(body))
                     .andExpect(status().isBadRequest()).andReturn().getResponse();
                 assertThat(json.readTree(response.getContentAsString()).get("detail").asString())
                     .isEqualTo("La solicitud de sincronización debe tener el cuerpo vacío.");
@@ -438,7 +444,7 @@ class CatalogSyncTests {
     interface Gate { CatalogSource.SourceSet fetch() throws IOException; }
     static volatile Gate sourceGate;
     // Run before later cases introduce synthetic URIs into the shared snapshot.
-    @Test @org.junit.jupiter.api.Order(1)
+    @Test @Order(1)
     void officialBytesAndGenerationGuards() throws Exception {
         var docs = new LinkedHashMap<String, String>();
         String[] names = {"terms", "dc", "dcterms"};
@@ -460,7 +466,7 @@ class CatalogSyncTests {
         assertThat(active.get("revision").asText()).isEqualTo("2".repeat(40));
         assertThat(active.get("snapshotVersion").asLong()).isEqualTo(previous.get("snapshotVersion").asLong() + 1);
         for (String key : new String[]{"added", "modified", "deprecated"}) assertThat(active.get(key).asInt()).isZero();
-        var store = context.getBean(CatalogStore.class);
+        var store = context.getBean(JpaCatalogStore.class);
         long stale = store.beginAttempt();
         long latest = store.beginAttempt();
         store.fail(latest);

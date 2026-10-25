@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.*;
 
@@ -39,8 +40,8 @@ class TdwgSourceTests {
     @ValueSource(strings = {"http", "redirect", "declaredOversize", "streamOversize", "truncated", "utf8", "timeout"})
     void rejectsFailedHttpAndIncompleteOrOversizedPayload(String kind) throws Exception {
         Connection connection = kind.equals("timeout") ? new Connection() {
-            @Override public InputStream getInputStream() throws java.net.SocketTimeoutException {
-                throw new java.net.SocketTimeoutException("Tiempo agotado simulado");
+            @Override public InputStream getInputStream() throws SocketTimeoutException {
+                throw new SocketTimeoutException("Tiempo agotado simulado");
             }
         } : new Connection();
         switch (kind) {

@@ -6,12 +6,13 @@ import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.mapper.Cata
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CatalogHttpMapperTests {
-    private final CatalogHttpMapper mapper = new CatalogHttpMapper();
+    private final CatalogHttpMapper mapper = Mappers.getMapper(CatalogHttpMapper.class);
 
     @Test
     void statusMapsEveryFieldWithoutExposingDomainRecords() {
@@ -33,6 +34,21 @@ class CatalogHttpMapperTests {
         assertThat(response.lastFailure()).isEqualTo("Fallo anterior");
         var json = JsonMapper.builder().build();
         assertThat(json.writeValueAsString(response)).isEqualTo(json.writeValueAsString(source));
+    }
+
+    @Test
+    void generatedMapperKeepsExactPublicJsonShape() {
+        var active = CatalogStatus.Active.builder().revision("rev").hash("hash").snapshotVersion(4)
+            .termCount(414).added(2).modified(3).deprecated(1).sourceHashes(Map.of("source", "hash")).build();
+        var status = CatalogStatus.builder().active(active).attempts(7).lastFailure("Fallo anterior").build();
+        var result = new CatalogOperations.Result(CatalogOperations.Outcome.SUCCESS, status,
+            new CatalogOperations.Attempt(99L, true, true));
+        var json = JsonMapper.builder().build();
+        assertThat(json.readTree(json.writeValueAsString(mapper.toResponse(result)))).isEqualTo(json.readTree("""
+            {"outcome":"SUCCESS","status":{"active":{"revision":"rev","hash":"hash","snapshotVersion":4,
+            "activatedAt":null,"termCount":414,"added":2,"modified":3,"deprecated":1,
+            "sourceHashes":{"source":"hash"}},"attempts":7,"lastAttempt":null,"lastFailure":"Fallo anterior"}}
+            """));
     }
 
     @Test

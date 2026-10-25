@@ -3,16 +3,15 @@ package co.edu.unicauca.backend.catalog.infrastructure.adapter.in.scheduling;
 import co.edu.unicauca.backend.catalog.application.port.in.CatalogOperations;
 import co.edu.unicauca.backend.catalog.domain.policy.CatalogPolicy;
 import co.edu.unicauca.backend.catalog.domain.model.CatalogStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 
 /** Ambos disparadores comparten el mismo caso de uso; aquí sólo quedan temporización y diagnóstico. */
+@Slf4j
+@RequiredArgsConstructor
 public class CatalogRefresh implements Runnable, CatalogOperations {
-    private static final Logger LOG = LoggerFactory.getLogger(CatalogRefresh.class);
     private final CatalogOperations operations;
-
-    public CatalogRefresh(CatalogOperations operations) { this.operations = operations; }
 
     @Override
     @Scheduled(fixedDelayString = "${catalog.sync.delay:86400000}", initialDelayString = "${catalog.sync.initial-delay:60000}")
@@ -35,9 +34,9 @@ public class CatalogRefresh implements Runnable, CatalogOperations {
 
     private void log(Attempt attempt) {
         if (!attempt.success()) {
-            LOG.warn(CatalogPolicy.SYNC_FAILURE);
+            log.warn(CatalogPolicy.SYNC_FAILURE);
             if (attempt.generation() != null && !attempt.failureRecorded()) {
-                LOG.warn("No se pudo registrar el fallo de sincronización TDWG.");
+                log.warn("No se pudo registrar el fallo de sincronización TDWG.");
             }
         }
     }
