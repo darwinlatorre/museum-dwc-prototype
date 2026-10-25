@@ -1,6 +1,6 @@
 package co.edu.unicauca.backend.catalog;
 
-import co.edu.unicauca.backend.catalog.adapter.out.tdwg.TdwgSource;
+import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.TdwgSource;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

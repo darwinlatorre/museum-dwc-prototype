@@ -1,6 +1,6 @@
 package co.edu.unicauca.backend.catalog.application.port.in;
 
-import co.edu.unicauca.backend.catalog.domain.CatalogStatus;
+import co.edu.unicauca.backend.catalog.domain.model.CatalogStatus;
 
 public interface CatalogOperations {
     String payload();
