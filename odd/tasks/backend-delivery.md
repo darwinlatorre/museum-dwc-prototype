@@ -10,8 +10,8 @@ Destino: github.com/darwinlatorre/museum-dwc-prototype; base main@8e151509c96088
 
 ## Tasks
 - T1 [S1–S3] done; destino/default/permisos ADMIN comprobados, issue #3 y etiquetas creadas con autorización humana; sin modificar código.
-- T2 [S2–S4] in_progress; bootstrap del tracker desde main y preparación de ramas por merges locales sin rebase ni force-push; commits de entrega pendientes.
-- T3 [S1–S4] pending; publicar ramas y PRs con `Refs #3`, exactamente una etiqueta de tipo y diagramas de dependencia.
+- T2 [S2–S4] done; tracker 583c8e4 y siete ramas preparadas por merges locales desde main, sin rebase ni force-push; árbol final igual a a470bc8 salvo este documento, conteos recalculados.
+- T3 [S1–S4] in_progress; publicar ramas y PRs con `Refs #3`, exactamente una etiqueta de tipo y diagramas de dependencia.
 - T4 [S1–S4] pending; contrastar diffs, enlaces, etiquetas, draft/checks y preservación de cambios humanos; registrar URLs sin fusionar.
 
 ## Log
@@ -43,3 +43,7 @@ Los cortes originales tienen 727, 755, 264, 133, 554, 500 y 106 líneas añadida
 La prueba integrada final aprobó 185 tests en 15 clases y package sobre copia aislada, 50/50 respuestas HTTP idénticas, 82/82 hashes, cinco mappers generados y verificador independiente sin bloqueadores. Corresponde al candidato final, **no** a cada corte individual; no se declaran suites nuevas ni CI remoto por abrir PRs. Las dos primeras reorganizaciones incluyeron aceptación previa documentada; ver VERIFICATION.md y las especificaciones de cada feature.
 La evaluación nativa no estuvo disponible por archivos untracked; no es aprobación. No se considera saneado el antiguo backend/target compartido. No se prueban servicios/datos vivos ni se publica evidencia local ignorada.
 El tracker debe permanecer draft/no-merge. Los hijos se revisan contra su padre inmediato; cualquier integración, retarget o aceptación posterior corresponde al humano.
+
+### L5 — Preparación comprobada
+Issue #3 abierta y status:approved confirmado; etiquetas autorizadas creadas. Sesión con permiso ADMIN. Bootstrap 583c8e4 sobre el default real, refs originales intactos.
+Merges de entrega: 1=3da5ec9, 2=ea6886f, 3=8672cc4, 4=8214aa5, 5=6cda944, 6=84a644d, 7=5caa238. Los conteos antes de esta actualización del log coinciden con los cortes originales. Se recalcula el último corte para incluir el seguimiento de entrega. git diff del árbol final contra a470bc8, excluyendo únicamente este documento autorizado, no mostró diferencias. No se repitieron suites ni se atribuyó aprobación por PR.
