@@ -1,41 +1,45 @@
 package co.edu.unicauca.backend.profile.infrastructure.adapter.out.database.mapper;
 
 import co.edu.unicauca.backend.profile.infrastructure.adapter.json.ProfileJson;
+import co.edu.unicauca.backend.profile.infrastructure.adapter.json.mapper.ProfileJsonMapper;
 import co.edu.unicauca.backend.profile.infrastructure.adapter.out.database.entity.ProfileEntity;
 import co.edu.unicauca.backend.profile.domain.model.Profile;
+import co.edu.unicauca.backend.shared.infrastructure.mapping.BackendMapperConfig;
+import java.util.List;
+import org.mapstruct.Context;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-public class ProfilePersistenceMapper {
-    private final ObjectMapper json;
+@Mapper(config = BackendMapperConfig.class)
+public interface ProfilePersistenceMapper extends ProfileJsonMapper {
+    @Mapping(target = "rules", source = "rules", qualifiedByName = "decodeRules")
+    Profile toDomain(ProfileEntity entity, @Context ObjectMapper json);
 
-    public ProfilePersistenceMapper(ObjectMapper json) {
-        this.json = json;
+    @Mapping(target = "rules", source = "rules", qualifiedByName = "encodeRules")
+    ProfileEntity toEntity(Profile profile, @Context ObjectMapper json);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "rules", source = "rules", qualifiedByName = "encodeRules")
+    void replace(@MappingTarget ProfileEntity entity, Profile profile, @Context ObjectMapper json);
+
+    ProfileEntity.Status status(Profile.Status status);
+
+    default String rules(Profile profile, @Context ObjectMapper json) {
+        return encodeRules(profile.rules(), json);
     }
 
-    public Profile toDomain(ProfileEntity entity) {
-        var rules = json.readValue(entity.getRules(), new TypeReference<java.util.List<ProfileJson.Rule>>() {});
-        return Profile.builder().id(entity.getId()).name(entity.getName()).version(entity.getVersion())
-            .status(Profile.Status.valueOf(entity.getStatus().name())).revision(entity.getRevision())
-            .description(entity.getDescription()).rules(rules.stream().map(ProfileJson.Rule::toDomain).toList())
-            .build();
+    @Named("decodeRules")
+    default List<Profile.Rule> decodeRules(String value, @Context ObjectMapper json) {
+        List<ProfileJson.Rule> rules = json.readValue(value, new TypeReference<List<ProfileJson.Rule>>() {});
+        return toDomainRules(rules);
     }
 
-    public ProfileEntity toEntity(Profile profile) {
-        return new ProfileEntity(profile.id(), profile.name(), profile.version(), status(profile), profile.revision(),
-            profile.description(), rules(profile));
-    }
-
-    public void replace(ProfileEntity entity, Profile profile) {
-        entity.replace(profile.name(), profile.version(), status(profile), profile.revision(),
-            profile.description(), rules(profile));
-    }
-
-    public ProfileEntity.Status status(Profile profile) {
-        return ProfileEntity.Status.valueOf(profile.status().name());
-    }
-
-    public String rules(Profile profile) {
-        return json.writeValueAsString(profile.rules());
+    @Named("encodeRules")
+    default String encodeRules(List<Profile.Rule> rules, @Context ObjectMapper json) {
+        return json.writeValueAsString(rules);
     }
 }

@@ -9,18 +9,15 @@ import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.mapper.Prof
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Coordinación HTTP: conversiones y restricciones de transporte fuera del núcleo puro. */
+@RequiredArgsConstructor
 public class ProfileWebService {
     private final ProfileLifecycle lifecycle;
     private final ProfileHttpMapper mapper;
-
-    public ProfileWebService(ProfileLifecycle lifecycle, ProfileHttpMapper mapper) {
-        this.lifecycle = lifecycle;
-        this.mapper = mapper;
-    }
 
     public List<ProfileResponse> list() {
         return lifecycle.list().stream().map(mapper::toResponse).toList();

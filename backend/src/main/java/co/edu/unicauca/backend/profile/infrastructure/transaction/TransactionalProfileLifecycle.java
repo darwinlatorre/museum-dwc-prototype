@@ -4,14 +4,12 @@ import co.edu.unicauca.backend.profile.application.port.in.ProfileLifecycle;
 import co.edu.unicauca.backend.profile.domain.model.Profile;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /** Una sola transacción por operación: desde el bloqueo hasta el flush. */
+@RequiredArgsConstructor
 public class TransactionalProfileLifecycle implements ProfileLifecycle {
     private final ProfileLifecycle delegate;
-
-    public TransactionalProfileLifecycle(ProfileLifecycle delegate) {
-        this.delegate = delegate;
-    }
 
     @Override
     @Transactional(readOnly = true)

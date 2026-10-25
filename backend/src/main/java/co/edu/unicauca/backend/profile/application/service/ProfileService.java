@@ -8,13 +8,11 @@ import co.edu.unicauca.backend.profile.domain.validation.ProfileValidation;
 import co.edu.unicauca.backend.profile.domain.exception.ProfileConflictException;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class ProfileService implements ProfileLifecycle {
     private final ProfileStore store;
-
-    public ProfileService(ProfileStore store) {
-        this.store = store;
-    }
 
     @Override
     public List<Profile> list() {
