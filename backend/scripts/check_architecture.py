@@ -7,6 +7,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1] / "src/main/java/co/edu/unicauca/backend"
 PACKAGE = "co.edu.unicauca.backend"
 IMPORT = re.compile(r"^import\s+(?:static\s+)?([\w.]+)", re.MULTILINE)
+# Generadores SOURCE: el bytecode del núcleo sigue sin dependencia runtime de Lombok.
+CORE_GENERATORS = {"lombok.Builder", "lombok.RequiredArgsConstructor"}
 
 
 def violations(root: Path) -> list[str]:
@@ -28,7 +30,7 @@ def violations(root: Path) -> list[str]:
                 allowed.append(f"{PACKAGE}.{feature}.application.")
             for path in (base / boundary).rglob("*.java"):
                 for imported in IMPORT.findall(path.read_text(encoding="utf-8")):
-                    if not any(imported.startswith(prefix) for prefix in allowed):
+                    if imported not in CORE_GENERATORS and not any(imported.startswith(prefix) for prefix in allowed):
                         errors.append(f"{path.relative_to(root)}: outward dependency {imported}")
         other = "catalog" if feature == "profile" else "profile"
         for path in sorted(base.rglob("*.java")):
