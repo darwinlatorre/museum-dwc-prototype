@@ -2,6 +2,8 @@ package co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg;
 
 import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import lombok.RequiredArgsConstructor;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -10,13 +12,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 
+@RequiredArgsConstructor
 public class TdwgSource implements CatalogSource {
     static final int MAX_BYTES = 4 * 1024 * 1024;
     private static final String COMMIT = "https://api.github.com/repos/tdwg/rs.tdwg.org/git/ref/heads/master";
     private static final String RAW = "https://raw.githubusercontent.com/tdwg/rs.tdwg.org/";
     private final ObjectMapper json;
-
-    public TdwgSource(ObjectMapper json) { this.json = json; }
 
     @Override public SourceSet fetch() throws IOException {
         String revision = json.readTree(download(URI.create(COMMIT), 128 * 1024)).path("object").path("sha").asString();
@@ -40,7 +41,7 @@ public class TdwgSource implements CatalogSource {
             if (connection.getResponseCode() != 200) throw new IOException("Respuesta HTTP TDWG no válida.");
             long expected = connection.getContentLengthLong();
             if (expected > limit) throw new IOException("La fuente TDWG supera el tamaño permitido.");
-            try (var input = connection.getInputStream(); var output = new java.io.ByteArrayOutputStream()) {
+            try (var input = connection.getInputStream(); var output = new ByteArrayOutputStream()) {
                 byte[] buffer = new byte[8192];
                 int count;
                 while ((count = input.read(buffer)) != -1) {

@@ -5,17 +5,12 @@ import co.edu.unicauca.backend.catalog.domain.model.CatalogStatus;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.dto.res.CatalogActiveResponse;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.dto.res.CatalogStatusResponse;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.dto.res.CatalogSyncResponse;
+import co.edu.unicauca.backend.shared.infrastructure.mapping.BackendMapperConfig;
+import org.mapstruct.Mapper;
 
-public class CatalogHttpMapper {
-    public CatalogStatusResponse toResponse(CatalogStatus status) {
-        var active = status.active();
-        return new CatalogStatusResponse(new CatalogActiveResponse(active.revision(), active.hash(),
-            active.snapshotVersion(), active.activatedAt(), active.termCount(), active.added(),
-            active.modified(), active.deprecated(), active.sourceHashes()),
-            status.attempts(), status.lastAttempt(), status.lastFailure());
-    }
-
-    public CatalogSyncResponse toResponse(CatalogOperations.Result result) {
-        return new CatalogSyncResponse(result.outcome().name(), toResponse(result.status()));
-    }
+@Mapper(config = BackendMapperConfig.class)
+public interface CatalogHttpMapper {
+    CatalogActiveResponse toResponse(CatalogStatus.Active active);
+    CatalogStatusResponse toResponse(CatalogStatus status);
+    CatalogSyncResponse toResponse(CatalogOperations.Result result);
 }
