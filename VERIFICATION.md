@@ -1,6 +1,33 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: responsabilidades y empaquetado del backend
+## Estado actual: Lombok, MapStruct y auditoría de los workers
+
+Cortes locales de código: `d53a1e1` (generación), `8f7b381` (perfil) y `75395bb` (catálogo), sobre `8dab659`. No se publicó la rama.
+
+**Comprobado por el padre sobre fuentes aisladas:** Lombok genera builders, constructores y accesores apropiados; cinco interfaces MapStruct generan conversiones HTTP, JSON y persistencia con `unmappedTargetPolicy=ERROR`. Los codecs Jackson usan `@Context`; las actualizaciones `@MappingTarget` no reemplazan la identidad administrada. El adaptador se llama `JpaCatalogStore`, los cuerpos Java usan imports/nombres cortos y se retiraron las tres carpetas vacías de fuentes/recursos. Sin cambios de contrato, esquema o datos vivos.
+
+| Comprobación nueva de este pedido | Resultado observado |
+|---|---|
+| Configuración de generación | RED 3→GREEN 3; regresión de arquitectura RED 1/12→GREEN 12/12; checker real PASS |
+| Corrección de builder | Compilación RED por sombreado de `Profile.Builder` sobre `@Builder`; nombre estándar `ProfileBuilder`, luego 20 focalizadas PASS |
+| Builder de `Term` | RED por `builder()` ausente; prueba incorporada y GREEN dentro de la suite final |
+| Suite final aislada | **185 pruebas en 15 clases, cero fallos, errores u omisiones**, Maven exit 0; las focalizadas son subconjunto y no se suman |
+| Paquete aislado | `package -DskipTests` exit 0 después de la suite; JAR con API MapStruct 1.6.3 y sin Lombok, binding ni procesadores |
+| Trazabilidad de fuentes | 82 SHA-256 del snapshot coinciden con fuentes/configuración/scripts del checkout actual; cinco `MapperImpl` generados y compilados |
+| Contrato HTTP | **50/50 observaciones idénticas** frente al baseline nuevo de `8dab659`, incluidos estado, cuerpo exacto y headers; ambos runners exit 0 |
+| Revisión independiente | **Perfil completo; catálogo completo; S1–S5 cumplidos, sin bloqueadores.** Contrastó 82/82 hashes, 50/50 respuestas, 185 tests/15 reportes, JAR, generados, API JPA mediante javap y scripts Python; no repitió Maven ni usó target compartido |
+
+### Incidentes, alcance y límites
+
+Los dos writers de perfil/catálogo terminaron con «assistant reported an error» y dejaron cambios parciales. El padre no los relanzó a ciegas: reprodujo los errores y reabrió la aceptación ante el pedido humano de comprobar todo el trabajo. Además del sombreado de `Builder`, corrigió tres imports de constantes que requerían `import static` y un consumidor de prueba del helper de estado convertido a MapStruct. Los primeros checks fallidos están conservados, no se presentan como GREEN.
+
+`backend/target` contenía una implementación MapStruct anterior a su interfaz y un `.class` con stub `Unresolved compilation problem`; no se determinó qué proceso lo reescribió. La aceptación no usa esos artefactos: se copiaron solo `pom.xml`, `mvnw`, `.mvn`, `src` y `scripts` a `.browser/backend-lombok-mapstruct/candidate-audit`. El primer build limpio ejecutó 185 pruebas, con cero fallos y un error porque la copia omitía los fixtures `sources/tdwg`. Tras copiar exactamente los tres CSV oficiales, la suite completa y el paquete aprobaron. No fue un fallo del producto ni se omitió la prueba para pasar.
+
+Evidencia durable ignorada en `.browser/backend-lombok-mapstruct/`: `baseline.{stdout,stderr,exit}`, `{resume-focused,corrected-focused,cleanup-green,cleanup-corrected,cleanup-final,isolated,isolated-corrected}.{stdout,stderr,exit}`, `audit-summary.json` y `candidate-audit/source-manifest.json`. No se usaron dotenv, datos vivos, servicios existentes ni pruebas de navegador nuevas. El verificador confirmó que `ProfileEntity.replace` sigue vivo por su constructor, por lo que no se borró por apariencia. Su primera lectura auxiliar buscó el manifiesto un nivel incorrecto (exit 1); corregida la ruta, los probes de aceptación dieron exit 0. Su scratch externo queda conservado: no se limpió sin autorización. No hace falta relanzar writers ni agregar el probe durable opcional como una nueva condición. No hay push ni PR autorizados. ASSESS sigue no evaluable por archivos untracked, sin `reviewDue` ni continuación: no se inventa START ni aprobación nativa ni se cambia RDD. Auditoría npm y demás límites históricos siguen sin resolverse.
+
+Ver [especificación y pedido humano](odd/tasks/backend-lombok-mapstruct.md), [perfiles](backend/PROFILE_ARCHITECTURE.md), [catálogo](backend/CATALOG_ARCHITECTURE.md) y [configuración](backend/README.md).
+
+## Historial: responsabilidades y empaquetado del backend
 
 **Resultado comprobado:** perfiles y catálogo conservan núcleos Java puros y paquetes explícitos `domain`, `application` e `infrastructure`. Los mappers HTTP y de persistencia pertenecen a infraestructura; las fachadas web coordinan conversiones sin introducir DTO HTTP en aplicación. `Profile.builder()` construye por campos nombrados, sin sustituir validación ni reglas de negocio. `ProfileBeanConfig` y `CatalogBeanConfig` componen los adaptadores. Se mantienen bloqueos, transacciones completas y actualización de entidades administradas, sin cambios de contratos HTTP, esquema ni dependencias. Alcance: [T2, S2/S3/S5/S6/S7](odd/tasks/backend-layer-responsibilities.md).
 
