@@ -1,6 +1,33 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: entorno raíz y arranque completo con Compose
+## Estado actual: responsabilidades y empaquetado del backend
+
+**Resultado comprobado:** perfiles y catálogo conservan núcleos Java puros y paquetes explícitos `domain`, `application` e `infrastructure`. Los mappers HTTP y de persistencia pertenecen a infraestructura; las fachadas web coordinan conversiones sin introducir DTO HTTP en aplicación. `Profile.builder()` construye por campos nombrados, sin sustituir validación ni reglas de negocio. `ProfileBeanConfig` y `CatalogBeanConfig` componen los adaptadores. Se mantienen bloqueos, transacciones completas y actualización de entidades administradas, sin cambios de contratos HTTP, esquema ni dependencias. Alcance: [T2, S2/S3/S5/S6/S7](odd/tasks/backend-layer-responsibilities.md).
+
+**Diferencial aprobado:** 50/50 observaciones HTTP idénticas contra `af5edab`. Cortes locales de código: perfiles `a6bd16e`, catálogo `3b99fb1`; referencias `refactor/backend-profile-layers` y `refactor/backend-catalog-layers`. Sin push ni PR. La verificación independiente no encontró bloqueadores.
+
+**Revisión nativa no disponible:** ASSESS, incluso con rangos `committedOnly`, rechazó la evaluación por archivos untracked sin declaración explícita. No devolvió `reviewDue` ni continuación; no se inventó START ni aprobación, ni se cambió el switch. El riesgo item 4 (concurrencia por reubicación transaccional/JPA) se cubrió con autoverificación y verificador independiente. La evaluación nativa fallida no se presenta como prueba aprobada.
+
+| Comprobación de esta refactorización | Resultado observado por el padre o verificador |
+|---|---|
+| Focalizadas Maven | 8 pruebas de builder, mappers HTTP/persistencia de perfiles y mapper HTTP del catálogo; cero fallos, errores u omisiones |
+| Suite Maven del padre | **171 pruebas en 13 clases de pruebas actuales**, cero fallos, errores u omisiones; las ocho focalizadas están incluidas, no se suman |
+| Paquete | `bash ./mvnw package -DskipTests`: exit 0, después de la suite; no sustituye la ejecución de pruebas |
+| Arquitectura | `python3 -B backend/scripts/test_architecture.py`: 10/10; `python3 backend/scripts/check_architecture.py` y `git diff --check`: exit 0 |
+| Verificador independiente | Sin bloqueadores; compilación pura `javac`, 65 casos de núcleo y comprobaciones Python aprobados, sin repetir Maven compartido |
+| Diferencial público | Baseline aislado `af5edab`, `ProfileContractTests`: exit 0 en 22 s; **50/50 diccionarios idénticos**, incluidos cuerpo exacto, estado y encabezados |
+
+Desde `backend/`, el padre ejecutó `bash ./mvnw test` y `bash ./mvnw package -DskipTests`. Los conteos se contrastaron con las 13 clases de fuentes actuales, sin sumar XML obsoletos, ejecuciones focalizadas ni pruebas independientes. Los contratos req/res se aplican a cuerpos de negocio: se preservan JSON publicado del catálogo sin envoltorio, parámetros de ruta, `ProblemDetail` y operaciones sin cuerpo.
+
+### Recuperación de evidencia y límites
+
+El log temporal original del baseline se perdió al reanudar. El padre regeneró **solo el baseline** en `.browser/backend-layers/baseline-af5edab`, con PostgreSQL desechable; recuperó las 50 observaciones actuales desde los XML Surefire existentes, **sin repetir la suite actual**. La comparación de diccionarios incluyó cuerpo como cadena exacta, estado y encabezados. Artefactos ignorados bajo `.browser/backend-layers/`: `baseline-contract.stdout`, `baseline-contract.stderr`, `baseline-contract.exit`, `current-contract.json`, `http-contract-comparison.json` y `suite-summary.json`. El incidente no se presenta como una ejecución perdida aprobada sin respaldo.
+
+El cierre documental es pasivo: lectura de documentos, contraste de ubicaciones Java y `git diff --check` acotado, sin RED significativo ni Maven nuevo. No agrega navegador, auditoría de seguridad, acceso a dotenv ni datos vivos. La auditoría npm pendiente aceptada y demás límites históricos permanecen. El padre conserva el registro de tareas y la decisión de commits/revisión/entrega.
+
+Ver [backend/README.md](backend/README.md), [arquitectura de perfiles](backend/PROFILE_ARCHITECTURE.md) y [arquitectura del catálogo](backend/CATALOG_ARCHITECTURE.md).
+
+## Historial: entorno raíz y arranque completo con Compose
 
 **Implementado y probado:** `start.sh` valida el entorno raíz con Compose, compila Angular y el JAR y ejecuta `up --build -d --wait --wait-timeout 180`. `docker-compose.yml` es el único manifiesto principal; sirve frontend nginx, backend Java21 no root y PostgreSQL17. El datasource usa5432 por defecto, con override `DB_PORT`; todos los puertos publicados son loopback. Se conserva `universidad_museum_mvp_data`, nunca el volumen original `universidad_postgres_data`.
 
@@ -52,7 +79,7 @@ El primer writer terminó parcial: dos errores de hoisting con0tests y una ejecu
 
 Comandos: `npm test -- --watch=false --runner-config ../.browser/frontend-architecture/vitest.serial.config.mjs --include=src/app/testing/query-usage.spec.ts` (RED/GREEN y contraste); suite sin include; `node scripts/check-architecture.mjs`; `npm run build`; `git diff --check`. Las salvedades existentes (refetch de perfiles no esperado por el callback, escritura ambigua ante fallo de red, abortos convertidos en error genérico) quedan documentadas, no corregidas subrepticiamente ni consideradas requisitos nuevos.
 
-## Backend hexagonal preservador
+## Historial: backend hexagonal preservador
 
 **Resultado:** `profile` y `catalog` tienen núcleo Java puro (`domain`, `application`), puertos, adaptadores y composición Spring explícita. Perfil conserva una transacción por operación completa; catálogo conserva la descarga fuera de transacción y la activación contra el snapshot bloqueado. No cambian esquema, recursos, dependencias, contrato HTTP ni datos vivos. Skills instaladas utilizadas: hexagonal-architecture, Java, Spring Boot, JPA, TDD y verificación Spring.
 
