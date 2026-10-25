@@ -1,11 +1,35 @@
 package co.edu.unicauca.backend.profile.domain.model;
 
+import co.edu.unicauca.backend.profile.domain.model.Profile.ProfileBuilder;
+
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ProfileBuilderTests {
+    @Test
+    void generatedBuilderKeepsConstructorDefaultsAndDoesNotCopyOrValidateRules() {
+        ProfileBuilder builder = Profile.builder();
+        assertThat(builder.build()).isEqualTo(new Profile(null, null, null, null, 0, null, null));
+        var rules = new ArrayList<Profile.Rule>();
+        rules.add(null);
+        Profile source = builder.id(" id ").name(" nombre ").revision(-1).rules(rules).build();
+        assertThat(source).isEqualTo(new Profile(" id ", " nombre ", null, null, -1, null, rules));
+        assertThat(source.rules()).isSameAs(rules);
+        assertThat(source.toBuilder().build().rules()).isSameAs(rules);
+        assertThat(source.toBuilder().build()).isEqualTo(source);
+    }
+
+    @Test
+    void nestedBuildersKeepCanonicalConstructorSemantics() {
+        var rule = Profile.Rule.builder().field(" campo ").message(" mensaje Ω\n ").build();
+        assertThat(rule).isEqualTo(new Profile.Rule(" campo ", null, null, null, " mensaje Ω\n ", null));
+        var content = Profile.Content.builder().name(" nombre ").rules(List.of(rule)).build();
+        assertThat(content).isEqualTo(new Profile.Content(" nombre ", null, null, List.of(rule)));
+    }
+
     @Test
     void namedConstructionPreservesEveryValueWithoutNormalizingHistoricalData() {
         var rule = new Profile.Rule(" county ", Profile.Kind.requiredColumn, Profile.Severity.WARNING,

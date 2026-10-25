@@ -6,29 +6,18 @@ import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.dto.req.Upd
 import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.dto.res.ProfileResponse;
 import co.edu.unicauca.backend.profile.infrastructure.adapter.in.web.dto.res.RuleResponse;
 import co.edu.unicauca.backend.profile.domain.model.Profile;
-import java.util.List;
+import co.edu.unicauca.backend.shared.infrastructure.mapping.BackendMapperConfig;
+import org.mapstruct.Mapper;
 
-public class ProfileHttpMapper {
-    public Profile.Content toContent(CreateProfileRequest request) {
-        return toContent(request.name(), request.version(), request.description(), request.rules());
-    }
+@Mapper(config = BackendMapperConfig.class)
+public interface ProfileHttpMapper {
+    Profile.Content toContent(CreateProfileRequest request);
 
-    public Profile.Content toContent(UpdateProfileRequest request) {
-        return toContent(request.name(), request.version(), request.description(), request.rules());
-    }
+    Profile.Content toContent(UpdateProfileRequest request);
 
-    private Profile.Content toContent(String name, String version, String description, List<RuleRequest> rules) {
-        return new Profile.Content(name, version, description, rules.stream()
-            .map(rule -> new Profile.Rule(rule.field(), Profile.Kind.valueOf(rule.kind().name()),
-                Profile.Severity.valueOf(rule.severity().name()), Profile.Condition.valueOf(rule.condition().name()),
-                rule.message(), rule.source())).toList());
-    }
+    Profile.Rule toRule(RuleRequest request);
 
-    public ProfileResponse toResponse(Profile profile) {
-        return new ProfileResponse(profile.id(), profile.name(), profile.version(), profile.status().name(), profile.revision(),
-            profile.description(), profile.rules().stream()
-                .map(rule -> new RuleResponse(rule.field(), rule.kind().name(), rule.severity().name(),
-                    rule.condition().name(), rule.message(), rule.source()))
-                .toList());
-    }
+    ProfileResponse toResponse(Profile profile);
+
+    RuleResponse toResponse(Profile.Rule rule);
 }

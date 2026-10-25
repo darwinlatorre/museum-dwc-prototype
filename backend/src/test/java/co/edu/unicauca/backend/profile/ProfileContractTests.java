@@ -1,5 +1,8 @@
 package co.edu.unicauca.backend.profile;
 
+import java.util.Arrays;
+import java.util.TreeMap;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -126,11 +129,11 @@ class ProfileContractTests {
             generatedIds.put(id, "<generated-" + generatedIds.size() + ">");
         }
         for (var entry : generatedIds.entrySet()) body = body.replace(entry.getKey(), entry.getValue());
-        var headers = new java.util.TreeMap<String, List<String>>();
+        var headers = new TreeMap<String, List<String>>();
         for (String name : response.getHeaderNames()) {
             var values = new ArrayList<>(response.getHeaders(name));
             if (name.equalsIgnoreCase("Allow")) {
-                values = new ArrayList<>(List.of(String.join(",", java.util.Arrays.stream(values.getFirst().split(","))
+                values = new ArrayList<>(List.of(String.join(",", Arrays.stream(values.getFirst().split(","))
                     .map(String::trim).sorted().toList())));
             }
             headers.put(name, values);
