@@ -1,9 +1,7 @@
 package co.edu.unicauca.backend.shared.infrastructure.adapter.in.web.exception;
 
-import co.edu.unicauca.backend.profile.domain.exception.ProfileNotFoundException;
-import co.edu.unicauca.backend.profile.domain.exception.ProfileValidationException;
-import co.edu.unicauca.backend.profile.domain.exception.ProfileConflictException;
-
+import co.edu.unicauca.backend.validationconfiguration.domain.exception.ConfigurationConflictException;
+import co.edu.unicauca.backend.validationconfiguration.domain.exception.ConfigurationValidationException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -22,26 +20,24 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
-    @ExceptionHandler(ProfileConflictException.class)
-    public ProblemDetail conflict(ProfileConflictException exception) {
+    @ExceptionHandler(ConfigurationValidationException.class)
+    public ProblemDetail configurationInvalid(ConfigurationValidationException exception) {
+        return problem(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(ConfigurationConflictException.class)
+    public ProblemDetail configurationConflict(ConfigurationConflictException exception) {
         return problem(HttpStatus.CONFLICT, exception.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail integrityConflict() {
-        // Never expose SQL, schema names, or database exception details to clients.
-        return problem(HttpStatus.CONFLICT,
-            "El nombre y la versión del perfil deben ser únicos; las versiones publicadas son inmutables.");
+        return problem(HttpStatus.CONFLICT, "No se pudo guardar el cambio por un conflicto de datos.");
     }
 
-    @ExceptionHandler(ProfileNotFoundException.class)
-    public ProblemDetail missingProfile(ProfileNotFoundException exception) {
-        return problem(HttpStatus.NOT_FOUND, exception.getMessage());
-    }
-
-    @ExceptionHandler({ConstraintViolationException.class, ProfileValidationException.class})
+    @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail invalid() {
-        return problem(HttpStatus.BAD_REQUEST, "El contenido del perfil no es válido.");
+        return problem(HttpStatus.BAD_REQUEST, "El contenido de la solicitud no es válido.");
     }
 
     @ExceptionHandler(ResponseStatusException.class)
@@ -59,14 +55,15 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             : ProblemDetail.forStatus(statusCode);
         detail.setTitle(title(status));
         detail.setDetail(switch (status) {
-            case BAD_REQUEST -> "El contenido del perfil no es válido.";
+            case BAD_REQUEST -> request.getDescription(false).equals("uri=/api/validation-configuration")
+                ? "El contenido de la configuración de validación no es válido."
+                : "El contenido de la solicitud no es válido.";
             case NOT_FOUND -> "No se encontró el recurso solicitado.";
             case METHOD_NOT_ALLOWED -> "El método HTTP no está permitido para este recurso.";
             case UNSUPPORTED_MEDIA_TYPE -> "El tipo de contenido no es compatible; utilice application/json.";
             case NOT_ACCEPTABLE -> "No se puede generar una respuesta en el formato solicitado.";
             default -> "No se pudo procesar la solicitud.";
         });
-        // Preserve Spring's status, instance and protocol headers (including Allow/Accept).
         return super.createResponseEntity(detail, headers, statusCode, request);
     }
 

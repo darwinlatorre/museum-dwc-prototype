@@ -13,7 +13,11 @@ CORE_GENERATORS = {"lombok.Builder", "lombok.RequiredArgsConstructor"}
 
 def violations(root: Path) -> list[str]:
     errors: list[str] = []
-    for feature in ("profile", "catalog"):
+    features = sorted({"validationconfiguration", "catalog"} | {
+        path.name for path in root.iterdir() if path.is_dir() and path.name != "shared"
+        and any(any((path / layer).rglob("*.java")) for layer in ("domain", "application", "infrastructure"))
+    })
+    for feature in features:
         base = root / feature
         for boundary in ("domain/model", "application/port/in", "application/port/out",
                          "application/service", "infrastructure/adapter/in/web",
@@ -32,7 +36,6 @@ def violations(root: Path) -> list[str]:
                 for imported in IMPORT.findall(path.read_text(encoding="utf-8")):
                     if imported not in CORE_GENERATORS and not any(imported.startswith(prefix) for prefix in allowed):
                         errors.append(f"{path.relative_to(root)}: outward dependency {imported}")
-        other = "catalog" if feature == "profile" else "profile"
         for path in sorted(base.rglob("*.java")):
             relative = path.relative_to(base)
             location = path.relative_to(root)
@@ -47,7 +50,7 @@ def violations(root: Path) -> list[str]:
             if dto and relative.parts[5] not in ("req", "res"):
                 errors.append(f"{location}: DTO must belong to req or res")
             for imported in IMPORT.findall(text):
-                if imported.startswith(f"{PACKAGE}.{other}."):
+                if any(imported.startswith(f"{PACKAGE}.{other}.") for other in features if other != feature):
                     errors.append(f"{location}: cross-feature dependency {imported}")
                 if dto and imported.startswith(f"{PACKAGE}.") and not any(
                         codec in imported for codec in (".infrastructure.adapter.in.web.dto.",

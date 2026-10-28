@@ -282,8 +282,8 @@ class CatalogSyncTests {
         } finally { release.countDown(); sourceGate = null; }
     }
     @Test @Order(2)
-    void manualSyncReportsConfirmedSuccessWithoutChangingProfiles() throws Exception {
-        String profiles = profileBytes();
+    void manualSyncReportsConfirmedSuccessWithoutChangingConfiguration() throws Exception {
+        String configuration = configurationBytes();
         JsonNode before = json.readTree(getCatalog());
         long attempts = metadata().get("attempts").asLong();
         source.next = feeds(terms(), "f".repeat(40));
@@ -294,12 +294,12 @@ class CatalogSyncTests {
         assertThat(metadata().get("active").get("revision").asString()).isEqualTo("f".repeat(40));
         assertThat(metadata().get("lastFailure").isNull()).isTrue();
         assertThat(json.readTree(getCatalog())).isEqualTo(before);
-        assertThat(profileBytes()).isEqualTo(profiles);
+        assertThat(configurationBytes()).isEqualTo(configuration);
     }
 
     @Test @Order(3)
     void manualFailureReportsFailurePreservesLastValidAndCanRecover() throws Exception {
-        String profiles = profileBytes();
+        String configuration = configurationBytes();
         String payload = getCatalog();
         JsonNode before = metadata();
         source.failure = new IOException("Fallo simulado");
@@ -316,7 +316,7 @@ class CatalogSyncTests {
         assertThat(manual().get("outcome").asString()).isEqualTo("SUCCESS");
         assertThat(metadata().get("lastFailure").isNull()).isTrue();
         assertThat(getCatalog()).isEqualTo(payload);
-        assertThat(profileBytes()).isEqualTo(profiles);
+        assertThat(configurationBytes()).isEqualTo(configuration);
     }
 
     @ParameterizedTest @Order(4)
@@ -324,19 +324,19 @@ class CatalogSyncTests {
     void manualSyncRejectsEveryNonemptyBodyWithoutChangingCounters(String body) throws Exception {
         JsonNode before = metadata();
         String payload = getCatalog();
-        String profiles = profileBytes();
+        String configuration = configurationBytes();
         var result = mvc.perform(post("/api/catalog/sync").content(body)).andExpect(status().isBadRequest())
             .andReturn().getResponse();
         assertThat(json.readTree(result.getContentAsString()).get("detail").asString())
             .isEqualTo("La solicitud de sincronización debe tener el cuerpo vacío.");
         assertThat(metadata()).isEqualTo(before);
         assertThat(getCatalog()).isEqualTo(payload);
-        assertThat(profileBytes()).isEqualTo(profiles);
+        assertThat(configurationBytes()).isEqualTo(configuration);
     }
 
     @Test @Order(5)
     void manualAttemptCannotClaimSuccessAfterNewerScheduledActivation() throws Exception {
-        String profiles = profileBytes();
+        String configuration = configurationBytes();
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         var older = source.next;
@@ -357,15 +357,15 @@ class CatalogSyncTests {
             assertThat(result.get("outcome").asString()).isEqualTo("SUPERSEDED");
             assertThat(result.get("status")).isEqualTo(latest);
             assertThat(metadata()).isEqualTo(latest);
-            assertThat(profileBytes()).isEqualTo(profiles);
+            assertThat(configurationBytes()).isEqualTo(configuration);
         } finally { release.countDown(); sourceGate = null; }
     }
 
     JsonNode manual() throws Exception {
         return json.readTree(mvc.perform(post("/api/catalog/sync")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
     }
-    String profileBytes() throws Exception {
-        return mvc.perform(get("/api/profiles")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    String configurationBytes() throws Exception {
+        return mvc.perform(get("/api/validation-configuration")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
     }
 
     String publicSnapshotHash() throws Exception {

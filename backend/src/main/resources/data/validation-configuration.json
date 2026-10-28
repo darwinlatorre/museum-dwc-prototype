@@ -1,0 +1,115 @@
+{
+  "revision": 0,
+  "contexts": [
+    {
+      "context": "collection",
+      "requiredFields": [
+        "occurrenceID",
+        "basisOfRecord",
+        "institutionCode",
+        "collectionCode",
+        "type",
+        "catalogNumber",
+        "institutionID",
+        "collectionID",
+        "country",
+        "scientificName",
+        "taxonRank",
+        "recordedBy",
+        "eventDate",
+        "year",
+        "month",
+        "day",
+        "stateProvince",
+        "county",
+        "locality",
+        "minimumElevationInMeters",
+        "decimalLatitude",
+        "decimalLongitude",
+        "identifiedBy",
+        "order",
+        "superfamily",
+        "family",
+        "subfamily",
+        "tribe",
+        "subtribe",
+        "genus"
+      ]
+    },
+    {
+      "context": "permit",
+      "requiredFields": [
+        "occurrenceID",
+        "basisOfRecord",
+        "institutionCode",
+        "type",
+        "institutionID",
+        "country",
+        "scientificName",
+        "taxonRank",
+        "individualCount",
+        "organismQuantity",
+        "organismQuantityType",
+        "recordedBy",
+        "preparations",
+        "disposition",
+        "eventDate",
+        "stateProvince",
+        "county",
+        "locality",
+        "minimumElevationInMeters",
+        "decimalLatitude",
+        "decimalLongitude",
+        "geodeticDatum"
+      ]
+    },
+    {
+      "context": "sampling",
+      "requiredFields": [
+        "occurrenceID",
+        "basisOfRecord",
+        "institutionCode",
+        "type",
+        "institutionID",
+        "country",
+        "scientificName",
+        "taxonRank",
+        "eventID",
+        "eventDate"
+      ]
+    },
+    {
+      "context": "marine",
+      "requiredFields": [
+        "occurrenceID",
+        "basisOfRecord",
+        "institutionCode",
+        "type",
+        "institutionID",
+        "country",
+        "scientificName",
+        "taxonRank",
+        "occurrenceStatus",
+        "eventID",
+        "eventDate",
+        "locality",
+        "decimalLatitude",
+        "decimalLongitude",
+        "scientificNameID"
+      ]
+    },
+    {
+      "context": "other",
+      "requiredFields": [
+        "occurrenceID",
+        "basisOfRecord",
+        "institutionCode",
+        "type",
+        "institutionID",
+        "country",
+        "scientificName",
+        "taxonRank"
+      ]
+    }
+  ]
+}

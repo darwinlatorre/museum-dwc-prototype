@@ -3,15 +3,15 @@ import csv
 import hashlib
 import json
 import pathlib
-import uuid
 import xml.etree.ElementTree as ET
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / 'backend/src/main/resources/data'
 DATA.mkdir(parents=True, exist_ok=True)
+
 def write_if_changed(path, content):
-    # Do not rewrite immutable seeds or source evidence when their bytes already match.
+    # Do not rewrite seeds or source evidence when their bytes already match.
     if not path.exists() or path.read_text() != content:
         path.write_text(content)
 
@@ -21,12 +21,11 @@ for name in ['terms', 'dc', 'dcterms']:
         for row in csv.DictReader(file):
             uri = row['term_isDefinedBy'] + row['term_localName']
             terms[uri] = dict(name=row['term_localName'], uri=uri,
-                definition=row['rdfs_comment'],
-                category=row['tdwgutility_organizedInClass'],
+                definition=row['rdfs_comment'], category=row['tdwgutility_organizedInClass'],
                 status='deprecated' if row['term_deprecated'] else 'current')
 write_if_changed(DATA / 'catalog.json', json.dumps(list(terms.values()), ensure_ascii=False, indent=2))
 
-# Preserve the actual instruction matrix, not an inferred list from candidate fields.
+# Preserve the official evidence verbatim, independently of the local active policy.
 ns = {'s': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 with zipfile.ZipFile(ROOT / 'sources/sib/records-4.1.xlsx') as book:
     strings = [''.join(t.itertext()) for t in ET.fromstring(book.read('xl/sharedStrings.xml')).findall('s:si', ns)]
@@ -40,71 +39,17 @@ with zipfile.ZipFile(ROOT / 'sources/sib/records-4.1.xlsx') as book:
         rows.append(cells)
 write_if_changed(ROOT / 'sources/sib/instructions.json', json.dumps(rows, ensure_ascii=False, indent=2))
 
-SOURCE = 'https://biodiversidad.co/recursos/plantillas-dwc/ (Registros Biológicos v4.1, Instrucciones rows 25–53)'
-def rule(field, condition='always', kind='required', severity='ERROR', message=None):
-    return dict(field=field, condition=condition, kind=kind, severity=severity,
-        message=message or f'{field} is required for this context.', source=SOURCE)
-
-sib = [rule(f) for f in 'occurrenceID basisOfRecord institutionCode institutionID type country scientificName taxonRank'.split()]
-sib += [rule(f, 'collection') for f in 'collectionCode collectionID catalogNumber'.split()]
-sib += [rule(f, 'permit') for f in 'organismQuantity organismQuantityType recordedBy preparations eventDate stateProvince county locality minimumElevationInMeters decimalLatitude decimalLongitude geodeticDatum'.split()]
-sib += [rule(f, 'marine') for f in 'occurrenceStatus eventID eventDate locality decimalLatitude decimalLongitude scientificNameID'.split()]
-sib += [rule(f, 'sampling') for f in 'eventID eventDate'.split()]
-# Table and definition disagree on empty disposition; preserve evidence without false rejection.
-for context in ['permit', 'collection']:
-    sib.append(rule('disposition', context, 'requiredColumn', 'WARNING',
-        'SiB matrix requests disposition here; its definition permits an empty value unless collected under permit and deposited.'))
-sib.append(rule('disposition', 'permitAndCollection', message='Document disposition (En colección) for permitted specimens deposited in a collection.'))
-sib.append(rule('individualCount', 'permit', 'required', 'WARNING',
-    'The v4.1 instruction matrix marks individualCount** but SiB version history calls it recommended; review quantity documentation.'))
-MUSEUM = 'catalogNumber recordedBy eventDate year month day country stateProvince county locality minimumElevationInMeters decimalLatitude decimalLongitude identifiedBy scientificName order superfamily family subfamily tribe subtribe genus'.split()
-museum = [dict(rule(f), source='Museo de Historia Natural, Universidad del Cauca — requested profile 1.0') for f in MUSEUM]
-profiles = []
-for key, name, version, rules, description in [
-    ('sib', 'SiB Registros Biológicos', '4.1', sib,
-     'Based on official v4.1 XLSX instruction matrix (May 2024) and SiB term definitions. Select collection, permit, sampling and marine contexts explicitly. disposition and individualCount carry documented source discrepancies. Permit records also require a GGBN extension, which this core-only MVP does not validate. country must not be invented when unknown; review missing-country errors with the publisher.'),
-    ('museum', 'Museo', '1.0', museum,
-     'Museum-specific mandatory fields, independently versioned; these are not universal Darwin Core requirements.')]:
-    profiles.append(dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'unicauca/'+key)), name=name, version=version,
-        status='PUBLISHED', revision=0, description=description, rules=rules))
-
-
-def combine_profiles(originals):
-    # First occurrence determines order; only the complete predicate is deduplicated.
-    combined = {}
-    for profile in originals:
-        for original in profile['rules']:
-            predicate = tuple(original[k] for k in ('field', 'kind', 'severity', 'condition'))
-            citation = f"{profile['name']} {profile['version']}: {original['source']}"
-            if predicate in combined:
-                combined[predicate]['source'] += ' | ' + citation
-                continue
-            field = original['field']
-            if field == 'disposition' and original['kind'] == 'requiredColumn':
-                message = ('La matriz SiB solicita la columna disposition en este contexto; '
-                    'su definición permite un valor vacío salvo para especímenes recolectados '
-                    'con permiso y depositados en una colección.')
-            elif field == 'disposition':
-                message = ('Documente disposition (En colección) para especímenes recolectados '
-                    'con permiso y depositados en una colección.')
-            elif field == 'individualCount':
-                message = ('La matriz de instrucciones v4.1 marca individualCount**, pero el '
-                    'historial SiB lo considera recomendado; revise la documentación de cantidades.')
-            else:
-                message = f'Se requiere {field} para este contexto.'
-            combined[predicate] = dict(original, message=message, source=citation)
-    return dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL, 'unicauca/museum-sib')),
-        name='Museo + SiB', version='1.0', status='PUBLISHED', revision=0,
-        description=('Perfil de composición local de Museo 1.0 y SiB Registros Biológicos 4.1. '
-            'Conserva los requisitos del Museo y los contextos y advertencias SiB; no son '
-            'requisitos universales Darwin Core y no certifica publicación oficial SiB. '
-            'No valida la extensión de permisos GGBN. No invente country si se desconoce; '
-            'revise el diagnóstico con el publicador.'), rules=list(combined.values()))
-
-
-# Compose only after the original immutable objects have been constructed.
-profiles.append(combine_profiles([profiles[1], profiles[0]]))
-write_if_changed(DATA / 'profiles.json', json.dumps(profiles, ensure_ascii=False, indent=2))
+# Requisitos locales exactos de global-validation.md, no obligaciones universales TDWG.
+base = 'occurrenceID basisOfRecord institutionCode type institutionID country scientificName taxonRank'.split()
+matrix = {
+    'collection': 'occurrenceID basisOfRecord institutionCode collectionCode type catalogNumber institutionID collectionID country scientificName taxonRank recordedBy eventDate year month day stateProvince county locality minimumElevationInMeters decimalLatitude decimalLongitude identifiedBy order superfamily family subfamily tribe subtribe genus'.split(),
+    'permit': base + 'individualCount organismQuantity organismQuantityType recordedBy preparations disposition eventDate stateProvince county locality minimumElevationInMeters decimalLatitude decimalLongitude geodeticDatum'.split(),
+    'sampling': base + 'eventID eventDate'.split(),
+    'marine': base + 'occurrenceStatus eventID eventDate locality decimalLatitude decimalLongitude scientificNameID'.split(),
+    'other': base,
+}
+configuration = dict(revision=0, contexts=[dict(context=key, requiredFields=fields) for key, fields in matrix.items()])
+write_if_changed(DATA / 'validation-configuration.json', json.dumps(configuration, ensure_ascii=False, indent=2))
 manifest = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'sources').rglob('*') if p.is_file() and p.suffix in ['.csv','.xlsx']}
 write_if_changed(DATA / 'provenance.json', json.dumps(manifest, indent=2))
-print(f'Generated {len(terms)} terms and {len(profiles)} profiles.')
+print(f'Generated {len(terms)} terms and {len(matrix)} validation contexts.')
