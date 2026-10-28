@@ -1,4 +1,4 @@
-import type { Profile } from '../../profiles/models/profile';
+import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
 import type { Term } from '../../catalog/models/catalog-term';
 import type { Dataset } from './dataset';
 import type { Context } from './context';
@@ -12,7 +12,7 @@ export type WorkerRequest =
       kind: 'validate';
       data: Dataset;
       mapping: Record<string, string>;
-      profiles: Profile[];
+      configuration: ValidationConfiguration;
       terms: Term[];
       context: Context;
       options: Normalization;

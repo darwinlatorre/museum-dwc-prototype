@@ -2,8 +2,8 @@
   <div>
     <h2>Catálogo Darwin Core</h2>
     <p>
-      Vocabulario oficial, no una lista de campos obligatorios. Los perfiles definen los
-      requisitos. Las definiciones, categorías y estados se conservan en el idioma de la fuente
+      Vocabulario oficial, no una lista de campos obligatorios. La configuración global define los requisitos.
+      Las definiciones, categorías y estados se conservan en el idioma de la fuente
       oficial TDWG (inglés).
     </p>
   </div>
@@ -26,7 +26,7 @@
   [class.sync-failure]="!sync.isPending() && (sync.isError() || sync.data()?.outcome === 'FAILED')"
   [class.sync-success]="!sync.isPending() && sync.data()?.outcome === 'SUCCESS'">
   {{ sync.isPending() ? 'Consultando TDWG. Puede seguir consultando y filtrando el catálogo.'
-    : notice() || 'Vocabulario oficial TDWG. Actualizar no modifica perfiles ni archivos.' }}
+    : notice() || 'Vocabulario oficial TDWG. Actualizar no modifica la configuración de validación ni los archivos.' }}
 </div>
 <div class="toolbar">
   <label

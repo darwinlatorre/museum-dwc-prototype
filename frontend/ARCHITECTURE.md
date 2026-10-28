@@ -1,8 +1,8 @@
 # Frontend organizado por funcionalidad
 
 El árbol de `src/app` expresa los tres dominios visibles: catálogo Darwin Core,
-perfiles de validación y análisis local de colecciones. Los movimientos conservan
-los componentes, controles, señales y contratos existentes; no añaden capas de estado.
+configuración global de validación y análisis local de colecciones. El contexto es
+único por archivo; las revisiones son control de concurrencia, no un ciclo de publicación.
 
 ## Comprobación rápida
 
@@ -22,7 +22,7 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 | Ubicación | Responsabilidad |
 | --- | --- |
 | `features/catalog` | `Catalog`, su HTML y el contrato `Term` en `models/catalog-term.ts`. |
-| `features/profiles` | `Profiles`, su HTML y `Profile`, `ProfileInput`, `Rule`, `Condition` en `models/profile.ts`. |
+| `features/validation-configuration` | Editor global, HTML/SCSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
 | `features/importer/workbench` | Orquestación del análisis y HTML; conserva `map`, invalidación, cancelación y guardas de generación/navegación. |
 | `features/importer/components` | Componentes existentes `column-mapping` y `record-context`, cada uno en su carpeta; sin envoltorios nuevos. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
@@ -46,8 +46,11 @@ El motor no importa transporte ni vistas: el archivo y sus celdas permanecen en 
 - `workbench/import-workbench.ts` crea el worker mediante
   `new URL('../engine/analysis.worker', import.meta.url)`; Angular debe empaquetarlo
   como módulo independiente. El worker conserva sus imports locales del motor.
-- Los HTML grandes están junto a `catalog.ts` y `profiles.ts`; las plantillas pequeñas
-  de los componentes auxiliares siguen inline. No cambian selectores, clases ni etiquetas.
+- Los HTML grandes están junto a `catalog.ts`, `validation-configuration.ts` y al workbench;
+  las plantillas pequeñas de los auxiliares siguen inline.
+- El editor guarda cinco contextos con revisión, sin enviar datos del archivo. Query actualiza
+  el snapshot global y el importador invalida su generación cuando cambia. Los errores
+  conservan las entradas locales; el shell protege la salida con cambios sin guardar.
 - Cada funcionalidad posee su hoja SCSS. `src/styles.scss` las carga después de
   las primitivas compartidas, de forma global para conservar overlays y encapsulación.
   `app.config.ts` consume `MuseumPreset`; la paleta solo se define en los tokens CSS.

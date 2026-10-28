@@ -37,7 +37,7 @@ addEventListener('message', async ({ data: request }: MessageEvent<WorkerRequest
         issues: validate(
           normalized.data,
           request.mapping,
-          request.profiles,
+          request.configuration,
           request.terms,
           request.context,
         ),

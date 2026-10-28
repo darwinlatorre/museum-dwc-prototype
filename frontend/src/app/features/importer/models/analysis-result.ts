@@ -1,8 +1,9 @@
+import type { Context } from '../../validation-configuration/models/validation-configuration';
 export interface Issue {
   field: string;
   row: number | null;
   description: string;
   severity: 'ERROR' | 'WARNING';
-  profile: string;
-  version: string;
+  context: Context | 'system';
+  configurationRevision: number;
 }

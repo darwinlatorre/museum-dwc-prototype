@@ -3,28 +3,10 @@ import { parseCsv, fromMatrix } from './parser';
 import { normalize } from './normalizer';
 import { validate } from './validator';
 import { csvReport, jsonReport } from './export';
-import type { Context } from '../models/context';
-import type { Profile, Rule } from '../../profiles/models/profile';
+import { configurationFixture, contextKeys, requiredSets } from '../../../testing/validation-fixture';
 import type { Term } from '../../catalog/models/catalog-term';
 
-const context: Context = { collection: false, permit: false, marine: false, sampling: false };
-const rule = (kind: Rule['kind'] = 'required', condition: Rule['condition'] = 'always'): Rule => ({
-  field: 'catalogNumber',
-  kind,
-  condition,
-  severity: 'ERROR',
-  message: 'Catalog number required',
-  source: 'Museum policy',
-});
-const profile = (rules: Rule[], name = 'Museum'): Profile => ({
-  id: name,
-  name,
-  version: '1.0',
-  status: 'PUBLISHED',
-  revision: 1,
-  description: '',
-  rules,
-});
+const context = 'other' as const;
 const terms: Term[] = [
   'catalogNumber',
   'eventDate',
@@ -40,8 +22,8 @@ const terms: Term[] = [
   category: 'Record',
   status: 'recommended',
 }));
-const run = (text: string, rules: Rule[] = [], ctx = context) =>
-  validate(parseCsv(text), {}, [profile(rules)], terms, ctx);
+const run = (text: string, fields: string[] = []) =>
+  validate(parseCsv(text), {}, configurationFixture(fields), terms, context);
 
 describe('Spanish presentation preserves contracts and data', () => {
   it('reports exact Spanish parser errors without changing the source', () => {
@@ -52,48 +34,25 @@ describe('Spanish presentation preserves contracts and data', () => {
     expect(source).toBe('a,a\n1,2');
     expect(() => parseCsv('')).toThrow('El archivo está vacío.');
   });
-  it('localizes historical seeded messages only for presentation and preserves arbitrary messages', () => {
-    const seeded = {
-      ...profile(
-        [
-          {
-            ...rule(),
-            message: 'catalogNumber is required for this context.',
-            source: 'Museo de Historia Natural, Universidad del Cauca — requested profile 1.0',
-          },
-        ],
-        'Museo',
-      ),
-      id: 'ea25b7e8-9d05-5427-8e0d-c0200785fb2d',
-    };
-    const before = structuredClone(seeded);
-    const data = parseCsv('catalogNumber\n""');
-    const issues = validate(data, {}, [seeded], terms, context);
-    expect(issues).toEqual([
-      {
-        field: 'catalogNumber',
-        row: 2,
-        description: 'catalogNumber es obligatorio en este contexto.',
-        severity: 'ERROR',
-        profile: 'Museo',
-        version: '1.0',
-      },
-    ]);
+  it('conserva el contexto, la revisión real y textos de campos arbitrarios sin cambiar el snapshot', () => {
+    const config = configurationFixture(['  campo libre  ']);
+    const before = structuredClone(config);
+    const issues = validate(parseCsv('catalogNumber\nA'), {}, config, terms, context);
+    expect(issues).toEqual([{ field: '  campo libre  ', row: null,
+      description: '  campo libre   es obligatorio en este contexto.', severity: 'ERROR',
+      context: 'other', configurationRevision: 7 }]);
     expect(JSON.parse(jsonReport(issues))).toEqual(issues);
-    expect(seeded).toEqual(before);
-    const custom = { ...seeded, id: 'custom', name: 'My profile' };
-    expect(validate(data, {}, [custom], terms, context)[0].description).toBe(
-      'catalogNumber is required for this context.',
-    );
-    expect(run('catalogNumber\n""', [rule()])[0].description).toBe('Catalog number required');
+    expect(config).toEqual(before);
+    expect(issues[0]).not.toHaveProperty('profile');
+    expect(issues[0]).not.toHaveProperty('version');
   });
   it('uses Spanish system diagnostics with unchanged technical identifiers', () => {
     expect(run('Catalog Number\nA')[0]).toEqual({
       field: 'Catalog Number',
       row: null,
       severity: 'WARNING',
-      profile: 'Sistema',
-      version: '1',
+      context: 'system',
+      configurationRevision: 7,
       description: 'Columna desconocida. Posible equivalencia: catalogNumber.',
     });
     expect(run('eventDate\n2023-02-29')[0].description).toBe(
@@ -150,50 +109,24 @@ describe('controlled normalization', () => {
   });
 });
 describe('validation', () => {
-  it('distinguishes missing columns, blank required cells and column-only rules', () => {
-    expect(run('eventDate\n2024-01-01', [rule()])[0]).toMatchObject({
-      row: null,
-      field: 'catalogNumber',
-      severity: 'ERROR',
-      profile: 'Museum',
-      version: '1.0',
-      description: 'Catalog number required',
-    });
-    expect(run('catalogNumber\n""', [rule()])[0].row).toBe(2);
-    expect(run('catalogNumber\n""', [rule('requiredColumn')])).toEqual([]);
-    expect(run('eventDate\n2024-01-01', [rule('requiredColumn')])).toHaveLength(1);
-  });
-  it.each(['collection', 'permit', 'marine', 'sampling', 'permitAndCollection'] as const)(
-    'honors explicit %s context',
-    (condition) => {
-      expect(run('catalogNumber\n""', [rule('required', condition)])).toEqual([]);
-      const ctx = {
-        ...context,
-        [condition]: true,
-        ...(condition === 'permitAndCollection' ? { permit: true, collection: true } : {}),
-      };
-      expect(run('catalogNumber\n""', [rule('required', condition)], ctx)).toHaveLength(1);
-      if (condition === 'permitAndCollection')
-        expect(
-          run('catalogNumber\n""', [rule('required', condition)], { ...context, permit: true }),
-        ).toEqual([]);
-    },
-  );
-  it('retains independent profile versions and leaves source unchanged', () => {
-    const data = parseCsv('catalogNumber\n""');
+  it('distinguishes missing columns from blank cells and leaves source unchanged', () => {
+    expect(run('eventDate\n2024-01-01', ['catalogNumber'])).toEqual([{
+      row: null, field: 'catalogNumber', severity: 'ERROR', context: 'other', configurationRevision: 7,
+      description: 'catalogNumber es obligatorio en este contexto.',
+    }]);
+    const data = parseCsv('catalogNumber\n\n""');
     const before = JSON.stringify(data);
-    const result = validate(
-      data,
-      {},
-      [profile([rule()]), { ...profile([rule()], 'SiB'), version: '4.1' }],
-      terms,
-      context,
-    );
-    expect(result.map((i) => [i.profile, i.version])).toEqual([
-      ['Museum', '1.0'],
-      ['SiB', '4.1'],
-    ]);
+    expect(validate(data, {}, configurationFixture(['catalogNumber']), terms, context)).toEqual([{
+      field: 'catalogNumber', row: 3, description: 'catalogNumber es obligatorio en este contexto.',
+      severity: 'ERROR', context: 'other', configurationRevision: 7,
+    }]);
     expect(JSON.stringify(data)).toBe(before);
+  });
+  it.each(contextKeys)('diagnostica exactamente los requisitos de %s sin contarlos dos veces', selected => {
+    const config = configurationFixture();
+    const issues = validate({ headers: [], rows: [] }, {}, config, terms, selected);
+    expect(issues.map(issue => issue.field)).toEqual(requiredSets[selected]);
+    expect(issues.every(issue => issue.context === selected && issue.configurationRevision === 7 && issue.row === null)).toBe(true);
   });
   it.each([
     '2023-02-29',
@@ -205,7 +138,7 @@ describe('validation', () => {
     '0000-01-01',
     '2024-1-1',
     'not a date',
-  ])('rejects impossible date %s without profile date rules', (value) =>
+  ])('rejects impossible date %s independently of required fields', (value) =>
     expect(run('eventDate\n' + value)).toHaveLength(1),
   );
   it.each(['2024-02-29', '2000-02-29', '2024-12-31'])('accepts calendar date %s', (value) =>
@@ -230,7 +163,8 @@ describe('validation', () => {
     expect(run('Catalog Number\nA')[0]).toMatchObject({
       field: 'Catalog Number',
       severity: 'WARNING',
-      profile: 'Sistema',
+      context: 'system',
+      configurationRevision: 7,
       row: null,
     });
     expect(run('Catalog Number\nA')[0].description).toContain('catalogNumber');
@@ -238,7 +172,7 @@ describe('validation', () => {
       validate(
         parseCsv('Catalog Number\nA'),
         { 'Catalog Number': 'catalogNumber' },
-        [profile([rule()])],
+        configurationFixture(['catalogNumber']),
         terms,
         context,
       ),
@@ -247,7 +181,7 @@ describe('validation', () => {
       validate(
         parseCsv('a,b\nx,y'),
         { a: 'catalogNumber', b: 'catalogNumber' },
-        [],
+        configurationFixture([]),
         terms,
         context,
       ),
@@ -262,17 +196,16 @@ describe('download reports', () => {
         row: 2,
         description: '+formula',
         severity: 'WARNING' as const,
-        profile: '@Museum',
-        version: '-1',
+        context: 'other' as const,
+        configurationRevision: 57,
       },
     ];
     expect(JSON.parse(jsonReport(issues))).toEqual(issues);
     const csv = csvReport(issues);
-    expect(csv).toContain('field,row,description,severity,profile,version');
-    expect(csv).toContain("'@Museum");
+    expect(csv).toContain('field,row,description,severity,context,configurationRevision');
+    expect(csv).toContain('"other","57"');
     expect(csv).toContain("'+formula");
-    expect(csv).toContain("'-1");
     expect(csv).toContain("'=HYPERLINK");
-    expect(issues[0].profile).toBe('@Museum');
+    expect(issues[0].field).toBe('=HYPERLINK("x")');
   });
 });

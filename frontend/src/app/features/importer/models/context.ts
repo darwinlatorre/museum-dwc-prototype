@@ -1,6 +1,1 @@
-export interface Context {
-  collection: boolean;
-  permit: boolean;
-  marine: boolean;
-  sampling: boolean;
-}
+export type { Context } from '../../validation-configuration/models/validation-configuration';

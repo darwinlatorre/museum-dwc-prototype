@@ -21,6 +21,15 @@ function setup() {
 afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
 describe('Sincronización manual del catálogo', () => {
+  it('distingue vocabulario de configuración global sin conservar perfiles retirados', async () => {
+    const { fixture } = setup();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).not.toMatch(/\bperfiles?\b/i);
+    expect(fixture.nativeElement.textContent).toContain('La configuración global define los requisitos.');
+    expect(fixture.nativeElement.querySelector('[role=status]').textContent)
+      .toContain('Actualizar no modifica la configuración de validación ni los archivos.');
+  });
+
   it('envía un POST sin cuerpo, impide doble clic y refresca la caché tras confirmar éxito', async () => {
     let finish!: () => void;
     const request = vi.fn().mockImplementation(() => new Promise<Response>(resolve => {

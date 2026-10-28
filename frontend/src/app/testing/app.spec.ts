@@ -3,6 +3,8 @@ import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-exper
 import { App } from '../app';
 import { Api } from '../core/api/api';
 import { Component } from '@angular/core';
+import { vi } from 'vitest';
+import { configurationFixture } from './validation-fixture';
 
 // Compile the actual stylesheet: jsdom cannot provide browser geometry.
 @Component({ template: '', styleUrl: '../../styles.scss' })
@@ -10,20 +12,23 @@ class MappingStyleContract {}
 
 describe('Collection workspace', () => {
   beforeEach(async () => {
+    vi.stubGlobal('matchMedia', (media: string) => ({ matches: false, media, addEventListener() {}, removeEventListener() {} }));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     // This shell test starts with loaded metadata; no timer race with Query notifications.
     client.setQueryData(['catalog'], []);
-    client.setQueryData(['profiles'], []);
+    client.setQueryData(['validation-configuration'], configurationFixture([]));
     TestBed.configureTestingModule({
       deferBlockBehavior: DeferBlockBehavior.Manual,
       imports: [App],
       providers: [
         provideTanStackQuery(client),
-        { provide: Api, useValue: { catalog: async () => [], profiles: async () => [] } },
+        { provide: Api, useValue: { catalog: async () => [], validationConfiguration: async () => configurationFixture([]) } },
       ],
     });
     await TestBed.compileComponents();
   });
+
+  afterEach(() => { TestBed.resetTestingModule(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
   it('reserva un marco de trabajo estable y controles de mapeo con un tamaño común', async () => {
     const fixture = TestBed.createComponent(App);
@@ -40,6 +45,34 @@ describe('Collection workspace', () => {
     expect(shell).toMatch(/\.mapping-table[^{}]*\.suggestion-chips[^{}]*button[^{}]*\{[^}]*min-height:\s*2\.25rem/s);
     expect(shell).toMatch(/\.dwc-picker[^{}]*\.p-select-label[^{}]*\{[^}]*border: 0 !important/s);
     expect(shell).toMatch(/\.mapping-table[^{}]*app-dwc-picker[^{}]*\.dwc-picker[^{}]*\{[^}]*display: flex/s);
+  });
+
+  it('protege cambios globales sin guardar al navegar y cerrar la ventana', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const navigation = root.querySelectorAll<HTMLButtonElement>('nav button');
+    navigation[1].click(); await fixture.whenStable();
+    const blocks = await fixture.getDeferBlocks();
+    await blocks.at(-1)!.render(DeferBlockState.Complete);
+    await fixture.whenStable();
+    const input = root.querySelector<HTMLInputElement>('app-dwc-picker input')!;
+    input.value = 'local'; input.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+    [...root.querySelectorAll('button')].find(b => b.textContent?.trim() === 'Agregar campo')!.click();
+    await fixture.whenStable();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    navigation[2].click(); await fixture.whenStable();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(root.querySelector('app-validation-configuration')).toBeTruthy();
+    expect(root.textContent).toContain('local');
+    const unload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    confirm.mockReturnValue(true);
+    navigation[2].click(); await fixture.whenStable();
+    expect(root.querySelector('app-validation-configuration')).toBeNull();
+    confirm.mockRestore();
   });
 
   it('shows accessible navigation and local import guidance', async () => {

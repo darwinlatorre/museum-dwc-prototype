@@ -1,131 +1,115 @@
 # Área de trabajo de las colecciones del museo
 
-Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** ofrecen una interfaz de gestión para revisar la calidad de archivos locales. La API almacena exclusivamente metadatos de catálogo y perfiles versionados. Los bytes del archivo y sus registros no se envían al servidor.
+Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten revisar archivos locales. La API almacena exclusivamente metadatos de catálogo y configuración global de validación. Los archivos, nombres de archivo, celdas y registros biológicos no se envían al servidor.
 
 ## Ejecución
 
-Flujo principal: ejecutar `./start.sh` desde la raíz, con Node.js 24 y los demás requisitos del [README principal](../README.md#ejecución-local). Valida el único `.env` raíz, instala con `npm ci --no-audit --no-fund`, compila Angular y Spring y despliega `docker-compose.yml` esperando salud. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
+Flujo principal: ejecutar `./start.sh` desde la raíz, con Node.js 24 y los requisitos del [README principal](../README.md#ejecución-local). Valida el único `.env` raíz, instala con `npm ci --no-audit --no-fund`, compila Angular y Spring y despliega `docker-compose.yml` esperando salud. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
 
-Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy de desarrollo dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
+Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
 
 ```bash
+node scripts/check-architecture.mjs
 npm test -- --watch=false
 npm run build
 ```
 
-El build de aplicación Angular genera `dist/frontend/browser`. El Dockerfile runtime `nginx:1.28-alpine` copia esa carpeta y el archivo hermano `dist/frontend/3rdpartylicenses.txt` sin recompilar fuentes. Las licencias se conservan en `/usr/share/nginx/html/3rdpartylicenses.txt`, también incluidas en la lista de permitidos del contexto. `nginx.conf` conserva `/api/` al enviar solicitudes a `backend:8080` y usa `index.html` como fallback de navegación SPA; el puerto publicado es solo `127.0.0.1:4200`. Su healthcheck usa wget y el inicio depende de la salud del backend. El contexto Docker excluye dotenv, fuentes y `node_modules` mediante una lista de permitidos.
+El build genera `dist/frontend/browser`. El Dockerfile runtime `nginx:1.28-alpine` copia esa carpeta y el archivo hermano `dist/frontend/3rdpartylicenses.txt` sin recompilar fuentes. Las licencias quedan en `/usr/share/nginx/html/3rdpartylicenses.txt`, incluidas en la lista de permitidos del contexto. `nginx.conf` conserva `/api/` al enviar solicitudes a `backend:8080` y usa `index.html` como fallback SPA; el puerto publicado es solo `127.0.0.1:4200`. Su healthcheck usa wget y el inicio depende de la salud del backend. El contexto Docker excluye dotenv, fuentes y `node_modules`.
 
-Este MVP debe permanecer en un entorno local confiable: no implementa ni simula autenticación. La integración OIDC/Keycloak se incorporará posteriormente al límite de metadatos.
+El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
 
-## Analizar una colección
+## Analizar una colección: seis pasos
 
-1. Seleccionar un CSV UTF-8 separado por comas o un XLSX. Para Excel, elegir explícitamente una pestaña en «Seleccione la hoja de cálculo que desea analizar» y pulsar «Leer la hoja seleccionada».
-2. En **Contexto y validación**, indicar los contextos antes de elegir perfiles:
-   - Colección biológica.
-   - Asociados a un permiso de recolección o acceso a recursos genéticos.
-   - Eventos de muestreo.
-   - Marinos.
-   - Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados.
+1. **Seleccionar archivo**: CSV UTF-8 separado por comas o XLSX. Para Excel, seleccionar explícitamente una pestaña y pulsar **Leer la hoja seleccionada**.
+2. **Contexto**: elegir exactamente un radio obligatorio entre colección biológica, permiso de recolección o acceso a recursos genéticos, eventos de muestreo, marinos y otros. No hay selección implícita ni contextos combinables. Se utiliza la configuración global del servidor con su revisión real. La ausencia de encabezados obligatorios no bloquea el paso siguiente: primero se permiten equivalencias.
+3. **Mapear columnas**: nombres exactos reconocidos sin cambios; sugerencias nunca automáticas. El selector DwC compartido permite texto libre, flechas/Enter, limpieza y deshabilitación. Limpiar retira la asignación explícita, no la columna ni el reconocimiento implícito del encabezado original. Los destinos deben ser únicos. Pulsar **Validar localmente** para diagnosticar los valores originales en el worker.
+4. **Diagnóstico**: resumen por campo obligatorio con registros sin datos sobre el total. Distingue **Columna ausente** de **Valores vacíos**; cada fila se cuenta una vez por campo. Diez vacíos de `subfamily` entre doce registros muestran **10 de 12**. No se inventan ubicaciones para columnas ausentes.
+5. **Normalizar**: aprobar opcionalmente recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. La vista previa muestra cambios de los primeros 20 registros. **Aplicar normalización y validar** actualiza el diagnóstico sobre una copia. Las dos opciones empiezan desactivadas; los originales no cambian. Cambiar opciones invalida el resultado hasta aplicar y validar de nuevo.
+6. **Finalizar**: vacío por ahora; no guarda ni envía registros.
 
-   Los cuatro primeros son combinables. Otros desmarca los cuatro y cualquiera de ellos desmarca Otros. No agrega condiciones al contrato de validación. La condición técnica `permitAndCollection` sigue requiriendo permiso y colección a la vez. La validación de los registros se ejecuta después del mapeo, no al declarar el contexto.
-3. Elegir uno o varios perfiles publicados. La comprobación local enumera los encabezados obligatorios de severidad error aplicables al contexto. Si falta alguno, no permite continuar: cambiar archivo, perfiles o contexto. Deben existir con sus nombres oficiales; no se aplican sugerencias antes del mapeo. Los requisitos con severidad advertencia no bloquean. Esta comprobación no rechaza las celdas vacías: se informan en el diagnóstico.
-4. Mapear los encabezados a campos Darwin Core con el selector PrimeNG compartido con el editor de reglas. Las columnas con al menos un valor no vacío aparecen primero; las totalmente vacías o compuestas solo por espacios aparecen después, en la misma tabla, con un separador fino **Campos sin datos**. El separador se repite si una página empieza dentro de ese grupo. El resumen indica las cantidades de ambos grupos. `NULL`, `N/A` y `0` cuentan como datos originales; no se normalizan al ordenar.
+### Mapeo y diagnóstico compactos
 
-   Escribir y filtrar en el único campo que muestra el destino actual; la flecha abre directamente la lista, alineada al ancho del campo. Usar las flechas del teclado y Enter para elegir. Se conserva la escritura libre de campos existentes. Los encabezados de origen están resaltados; las sugerencias muestran su selección y no se aplican automáticamente. «Limpiar» retira la asignación explícita y desmarca la sugerencia; no elimina la columna ni desactiva el reconocimiento implícito del encabezado original. Los nombres Darwin Core exactos se reconocen sin cambios. No se permiten destinos duplicados. Pulsar **Validar localmente** para analizar los valores originales en el worker.
-5. Revisar el **Diagnóstico**. Primero se muestra el resumen por campo obligatorio: registros sin datos sobre el total y distinción entre **Columna ausente** y **Valores vacíos**. Un registro se cuenta una sola vez por campo, aunque varios perfiles lo exijan. Por ejemplo, diez vacíos de `subfamily` en doce registros muestran **10 de 12**, no diez entradas repetidas en el resumen. Las reglas `requiredColumn` solo exigen la columna, no sus valores. El conteo de valores vacíos se puede abrir para consultar sus ubicaciones: columna de origen, campo mapeado, fila original y valores original/de trabajo. El detalle muestra el campo y la columna una vez sobre una tabla de filas y valores originales; añade valores de trabajo solo cuando hay cambios, sin repetir vacíos idénticos. Conserva los números originales aunque haya saltos. Al cerrarlo, el foco vuelve al conteo que lo abrió. Las columnas ausentes no ofrecen ubicaciones de celdas ficticias. Cambiar las entradas invalida y cierra ese detalle; las marcas `NULL`/`N/A` aparecen como faltantes solo si se aprobó la normalización correspondiente.
+El mapeo presenta las columnas con datos primero y las totalmente vacías o compuestas solo por espacios después, en una sola tabla. Un separador fino **Campos sin datos** se repite cuando una página comienza dentro de ese grupo. `NULL`, `N/A` y `0` cuentan como datos originales para ordenar. La presentación no cambia el índice físico de origen.
 
-   **Ver todas las incidencias** reemplaza el detalle de vacíos por el listado completo con sus filtros; nunca se muestran ambos detalles a la vez. Las descargas JSON/CSV completas permanecen disponibles junto al resumen. Cada incidencia conserva campo, fila de origen, descripción, severidad, perfil y versión. En CSV se antepone un apóstrofo a las celdas que podrían ejecutarse como fórmulas de hoja de cálculo. Los filtros del detalle no cambian los recuentos globales del resumen.
-6. En **Normalizar**, activar opcionalmente el recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. Revisar los primeros 20 registros y pulsar **Aplicar normalización y validar** para actualizar el diagnóstico de una copia de trabajo. Ambas opciones están desactivadas inicialmente; el primer diagnóstico siempre usa los valores originales. Cambiar opciones invalida el diagnóstico previo hasta volver a aplicar y validar. **Ver diagnóstico** permite revisar el resultado actualizado sin perder las opciones ni la vista previa. Los originales nunca cambian.
-7. **Finalizar** queda vacío por ahora, sin guardado, descarga adicional ni envío de registros.
+El conteo de vacíos abre un detalle único: campo y columna de origen una sola vez, filas físicas y valores originales; valores de trabajo solo si cambiaron. **Ver todas las incidencias** reemplaza ese detalle por el listado filtrable, nunca lo duplica. Abrir enfoca el encabezado sin salto vertical; cerrar devuelve el foco al disparador exacto. Cambiar entradas cierra los detalles. Las marcas `NULL`/`N/A` solo cuentan como faltantes tras aprobar la opción correspondiente.
 
-Los botones del progreso permiten volver a los pasos disponibles sin perder archivo, mapeo, opciones, contexto ni diagnóstico vigente. Se requiere archivo leído para contexto/perfiles, perfiles con encabezados obligatorios para mapear y destinos únicos con validación terminada para diagnóstico, normalización y finalización. Editar entradas invalida el diagnóstico; navegar por sí solo no cancela ni reinicia el worker.
+Las descargas JSON/CSV siempre incluyen todas las incidencias, sin filtros ni límites de página. Su contrato es `{field,row,description,severity,context,configurationRevision}`. `context` es uno de los cinco elegibles o `system` para integridad básica. La revisión es la del snapshot analizado, no una revisión inventada al descargar. CSV protege celdas que podrían ejecutarse como fórmulas mediante un apóstrofo.
 
-El área principal conserva como mínimo el espacio disponible de la ventana y crece verticalmente con su contenido; el pie se desplaza debajo, sin superponerse. Las tablas anchas se desplazan dentro de su región, sin ensanchar la página. Los siete pasos conservan su franja de navegación desplazable; al avanzar o redimensionar la ventana se desplaza solo esa franja para mantener visible el paso activo, sin saltar verticalmente. Las ayudas extensas y las descripciones de perfiles se consultan en desplegables nativos; nombre, versión y cantidad de reglas permanecen visibles.
+Las tablas resumen y detalle usan 10 filas iniciales; incidencias, 20. Ocultan paginadores cuando todo cabe en una página. El mapeo y catálogo conservan sus tamaños. Los selectores nativos y PrimeNG comparten tokens de geometría, foco y estados; no se reemplaza el comportamiento nativo.
 
-Cada encabezado de origen ocupa una fila de mapeo: selector, «Limpiar» compacto y equivalencias a la derecha. Se mantienen el fondo uniforme, los bordes finos, la selección verde, el foco visible y la franja horizontal de sugerencias. El separador de columnas vacías reutiliza los tokens del sistema de diseño; no crea otra paleta. En Excel, «Leer la hoja seleccionada» queda separado del selector por un margen superior.
+El progreso permite volver sin perder archivo, equivalencias, contexto, opciones o diagnóstico vigente. Para mapear se requiere archivo leído, un contexto y configuración disponible; para los pasos posteriores, destinos únicos y validación terminada. Navegar no reinicia el worker. El workbench permanece montado al consultar configuración o catálogo. La franja de los seis pasos desplaza solo su eje horizontal tras renderizar el paso activo y al redimensionar la ventana; retira el listener al destruirse. El pie crece debajo del contenido, sin superponerse.
 
-Los selectores de formularios, filtros, destinos y cantidad por página comparten altura, borde, tipografía, flecha y estados de foco/deshabilitado. Se conservan la edición libre del destino DwC y los controles nativos. El resumen, los detalles del diagnóstico y la vista previa de normalización solo muestran paginador cuando hay más de una página. Conservan sus cantidades iniciales (10; 20 en incidencias) y opciones de cantidad por página; no cambian la paginación de mapeo, administración de perfiles ni catálogo. Los filtros y las exportaciones no se limitan a la página visible.
+### Límites y originales
 
-### Límites y conservación del origen
+Hasta **10 MiB**, **50 000 registros**, **500 columnas** y **100 000 incidencias**. Se rechazan comillas mal formadas, anchos CSV inconsistentes, encabezados vacíos y duplicados equivalentes al ignorar mayúsculas o espacios.
 
-Se permiten hasta **10 MiB**, **50 000 registros**, **500 columnas** y **100 000 incidencias**. Se rechazan comillas mal formadas, filas CSV de ancho inconsistente, encabezados vacíos y duplicados equivalentes al ignorar mayúsculas o espacios.
+Las filas CSV conservan líneas físicas, incluidas filas vacías y saltos dentro de comillas. XLSX conserva posiciones de la hoja y convierte fechas Excel a ISO; los huecos se completan sin desplazar registros. Un archivo y una hoja por vez. XLSX **no se descomprime incrementalmente**: el tamaño comprimido no garantiza el consumo de memoria. Si es necesario, cancelar o usar CSV más pequeño.
 
-Las filas de CSV corresponden a líneas físicas, incluidas las filas vacías y las celdas entrecomilladas con saltos de línea. Las de XLSX corresponden a la posición original de la hoja. Las celdas de fecha de Excel se representan como fechas ISO para validarlas. Los huecos de filas y columnas se completan, sin desplazar registros.
-
-Se puede cancelar el proceso terminando el worker. Un cambio de mapeo, perfiles, normalización, contexto o metadatos invalida el diagnóstico anterior. Se procesa un archivo y una hoja por vez. La descompresión de XLSX **no es incremental**: un archivo comprimido puede consumir más memoria que su tamaño. Si sucede, cancelar o utilizar un CSV más pequeño; el límite de entrada no garantiza el uso máximo de memoria.
+Cancelar termina el worker. Cambios de mapeo, opciones, contexto, términos o configuración global invalidan el diagnóstico y las respuestas de generaciones anteriores. Una revisión global nueva no puede reutilizar un resultado viejo. No hay configuración sintética de respaldo ante fallos de consulta.
 
 ### Comprobaciones básicas
 
-Siempre se comprueban los valores no vacíos de:
+Independientemente de los campos obligatorios, siempre se verifican los valores no vacíos:
 
-- `eventDate`: fecha de calendario exacta `YYYY-MM-DD`.
-- `year`, `month`, `day`: enteros válidos, años bisiestos y coherencia entre componentes y `eventDate`.
-- `decimalLatitude`, `decimalLongitude`: números finitos dentro de ±90 y ±180, respectivamente.
+- `eventDate`: calendario exacto `YYYY-MM-DD`.
+- `year`, `month`, `day`: enteros válidos, bisiestos y coherencia con `eventDate`.
+- `decimalLatitude`, `decimalLongitude`: decimales finitos dentro de ±90 y ±180.
 
-Los valores opcionales vacíos se permiten. Los perfiles deciden qué columnas y valores son obligatorios; `requiredColumn` no exige contenido no vacío. Las columnas desconocidas generan advertencias del sistema con posibles equivalencias. Estos resultados orientan la calidad y **no certifican una publicación SiB**. No se validan extensiones fuera de los tipos de regla configurados.
+Los valores opcionales vacíos se permiten. Columnas desconocidas generan advertencias del sistema y posibles equivalencias. El diagnóstico **no certifica una publicación SiB**; no se validan extensiones GGBN.
 
-## Idioma de la interfaz y los datos
+## Configuración de validación
 
-Los textos de la interfaz, mensajes del sistema, ayudas y etiquetas del diagnóstico se presentan en español. Los valores técnicos `DRAFT`, `PUBLISHED`, `ERROR`, `WARNING`, tipos y condiciones conservan su contrato; sus etiquetas se traducen para mostrarlos. Las claves JSON no se renombran.
+Seleccionar un contexto y agregar/quitar campos obligatorios mediante el mismo selector DwC del mapeo. No se duplican campos dentro del contexto. Se permiten listas vacías explícitas, hasta 500 campos por contexto y 200 caracteres por campo; no se permiten campos vacíos. Los espacios de textos válidos se preservan, sin recorte implícito.
 
-Los términos Darwin Core, URI, nombres científicos y valores de los archivos permanecen intactos. Las definiciones oficiales TDWG se muestran como citas originales con el idioma de la fuente indicado. Los nombres, descripciones o mensajes creados por usuarios son datos, no textos que se deban traducir automáticamente. Los textos predeterminados conocidos de los perfiles iniciales se localizan para presentación, sin reescribir versiones publicadas ni cambiar sus reglas.
+**Guardar configuración** envía los cinco contextos completos con la revisión vigente. Un éxito confirmado actualiza la caché raíz e invalida el análisis. Un fallo HTTP 400, conflicto 409 o fallo de conexión conserva entradas y revisión locales y muestra el error real. **Actualizar del servidor y descartar cambios locales** sustituye el contenido únicamente tras una consulta correcta; si falla, conserva las entradas. Una revisión entrante no pisa cambios pendientes. Navegar fuera pide confirmación y cerrar la ventana activa la protección nativa de cambios sin guardar.
 
-## Administrar perfiles
+| Contexto | Campos iniciales | Particularidad |
+|---|---:|---|
+| `collection` | 30 | `disposition` opcional |
+| `permit` | 22 | `disposition` obligatorio |
+| `sampling` | 10 | Base más `eventID`, `eventDate` |
+| `marine` | 15 | Base más requisitos marinos |
+| `other` | 8 | Base común |
 
-Crear un perfil abre un diálogo modal con datos del perfil y grupos de reglas: campo, comprobación, condición, severidad, mensaje y fuente. Los seis campos de cada regla se distribuyen en tres columnas y dos filas en escritorio; en pantallas angostas se apilan para conservar su legibilidad. «Eliminar regla» mantiene su ubicación debajo del grupo. Guardar como borrador, editarlo o publicarlo explícitamente. Escape o «Cerrar editor» cierran el diálogo sin guardar; el foco vuelve al control que lo abrió. Un error al guardar mantiene el diálogo, el contenido y el mensaje de error. Las versiones publicadas son de solo lectura, incluido el selector de campos: se duplican en otra versión para evolucionar las reglas.
+Son semillas del servidor según el pedido, no defaults productivos del cliente ni una interpretación alternativa del vocabulario TDWG. Los perfiles y sus ciclos de publicación/duplicación se retiran; el retiro de sus datos almacenados corresponde a la migración backend autorizada. No se ofrece consulta de historial legado.
 
-Solo se informa éxito cuando responde correctamente la API. Los errores permanecen visibles; no hay persistencia local ni éxito simulado como reemplazo de una solicitud fallida. El backend rechaza cambios concurrentes mediante `revision`; actualizar los datos del servidor antes de volver a guardar.
+### API: solo metadatos
 
-Contrato de API:
+- `GET /api/catalog`.
+- `POST /api/catalog/sync`, cuerpo completamente vacío; resultado `{outcome,status}`.
+- `GET /api/validation-configuration`.
+- `PUT /api/validation-configuration`, cuerpo exacto `{revision: number, contexts: [{context, requiredFields: string[]}]}`. Exactamente los cinco contextos únicos; revisión obsoleta produce 409 sin cambios parciales.
 
-- `GET /api/catalog` y `GET /api/profiles`.
-- `POST /api/catalog/sync` con cuerpo completamente vacío; resultado `{outcome,status}`.
-- `POST /api/profiles` con `{name,version,description,rules}`.
-- `PUT /api/profiles/{id}` con los mismos campos y `revision`.
-- `POST /api/profiles/{id}/duplicate` con `{name,version}`.
-- `POST /api/profiles/{id}/publish` con cuerpo **completamente vacío**.
+No existe un endpoint de carga de archivos en este cliente. No se reintentan escrituras a ciegas tras fallos de transporte.
 
-No se usa ningún endpoint de carga de archivos.
+## Catálogo e idioma
 
-## Consultar el catálogo
+Búsqueda, categoría y estado se combinan. **Restablecer filtros** muestra todos los términos. Las categorías muestran el último segmento de su URI como etiqueta pero conservan el valor canónico; **Sin categoría** no inventa una clasificación oficial.
 
-La búsqueda, la categoría y el estado se combinan. «Restablecer filtros» vuelve a mostrar todos los términos. Las categorías muestran el último segmento de su URI solo como etiqueta; el filtro conserva el valor canónico. «Sin categoría» indica ausencia, no una clasificación oficial nueva. Los estados y las definiciones siguen siendo los de la fuente.
+**Sincronizar con TDWG** ejecuta una actualización real. El botón conserva ancho/altura, indicador y estados accesibles mientras se puede seguir filtrando. HTTP 200 no basta: se distingue `SUCCESS`, `FAILED` y `SUPERSEDED`. Al terminar se invalida solo catálogo; un fallo de transporte se informa como resultado no confirmado, sin afirmar que el servidor no hizo cambios.
 
-«Sincronizar con TDWG» solicita una actualización real, no solo otro GET del catálogo. La acción se ubica junto al encabezado y al total de términos, separada de los filtros. El botón mantiene su ancho al mostrar «Sincronizando…», con indicador animado (sin animación si se prefiere movimiento reducido), y queda deshabilitado mientras espera. Una región de estado permanente anuncia actividad y resultado sin insertar o retirar barras; se puede seguir filtrando el catálogo durante la consulta. Se diferencia éxito confirmado, fallo con última versión válida conservada e intento reemplazado por otro más reciente; un HTTP 200 no basta para anunciar éxito. Al terminar se invalida la caché compartida del catálogo para actualizar los términos, sin modificar perfiles ni enviar archivos. Ante un fallo de transporte se informa que el resultado no pudo confirmarse, sin afirmar que el servidor no hizo cambios.
-
-Los errores del diagnóstico se distinguen por texto, indicador y énfasis de fila y mensaje, además del color. Las descargas siguen incluyendo el diagnóstico completo aunque la tabla esté filtrada. El pie queda debajo del área principal, al fondo de la ventana si hay poco contenido y más abajo cuando el contenido crece, sin superponerse.
+Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNING`, contextos técnicos, términos Darwin Core, URI, nombres científicos y textos arbitrarios permanecen intactos. Las definiciones TDWG son citas en su idioma original, indicado en pantalla. Los errores se distinguen por texto, indicador y énfasis además del color.
 
 ## Arquitectura
 
 | Módulo | Responsabilidad |
 |---|---|
-| `features/catalog` | Catálogo, HTML, SCSS, pruebas y contrato `Term` |
-| `features/profiles` | Perfiles, editor, HTML, SCSS, pruebas y sus contratos de reglas |
-| `features/importer/workbench` | Orquestación de importación, navegación y worker |
-| `features/importer/components` | Mapeo y contexto, cada componente en su carpeta |
-| `features/importer/engine` | Parser, normalizador, validador, exportación y worker local |
-| `features/importer/models` | Dataset, límites, contexto, resultados, normalización y protocolo del worker |
-| `core/api` y `core/i18n` | Transporte exclusivo de metadatos y presentación localizada |
-| `shared/ui/dwc-picker` | Selector reutilizable de una entrada, adaptado a Signal Forms |
-| `shared/design-system` | Paleta CSS única, tokens, primitivas, adaptación PrimeNG y preset |
-| `testing` | Pruebas de composición y costuras entre funcionalidades |
+| `features/catalog` | Catálogo y contrato `Term` |
+| `features/validation-configuration` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
+| `features/importer/workbench` | Navegación, generaciones, cancelación y worker |
+| `features/importer/components` | Mapeo y contexto |
+| `features/importer/engine` | Parser, normalizador, validador y exportación locales |
+| `features/importer/models` | Dataset, límites, resultados y protocolo del worker |
+| `core/api`, `core/i18n` | Metadatos y presentación |
+| `shared/ui/dwc-picker`, `shared/design-system` | Selector, paleta única, primitivas y preset |
+| `testing` | Composición y costuras entre funcionalidades |
 
-La estructura y sus límites están en [ARCHITECTURE.md](ARCHITECTURE.md); los tokens y patrones visuales, en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+Ver [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) y [QUERY_USAGE.md](QUERY_USAGE.md). Cliente Query raíz obtenido con `inject(QueryClient)`, no el alias deprecado. `fetch` propaga `AbortSignal`; ni archivos ni análisis entran en el query cache. El checker estructural no sustituye pruebas, build ni navegador.
 
-La revisión de [TanStack Query](QUERY_USAGE.md) detalla las claves, frescura, cancelación, invalidaciones y salvedades. Usar `inject(QueryClient)` para obtener el cliente raíz existente; `injectQueryClient()` está deprecado en la versión instalada. La API devuelve promesas mediante `fetch` y propaga `AbortSignal`, sin almacenar archivos o registros biológicos en el query cache. Desde `frontend/`, ejecutar `node scripts/check-architecture.mjs` para detectar rutas antiguas, contratos duplicados e importaciones indebidas. No reemplaza pruebas ni build.
+## Versiones y licencias
 
-El workbench conserva la orquestación del worker, invalidación, destinos únicos y exportación; permanece montado al navegar. Los componentes de presentación no reimplementan parser, normalización, validación ni exportación.
+PrimeNG **21.1.10** comunitario y `@primeuix/themes` **2.0.3** se distribuyen bajo MIT según sus archivos de licencia. No se usan versiones `-lts`, temas 3.x ni PrimeNG 22 con claves PrimeUI. Conservar avisos al redistribuir; no ocultar avisos ni modificar proveedores.
 
-La localización debe conservar estos límites y no introducir escrituras en datos originales o publicaciones históricas.
+Angular/compiler/forms **21.2.25**, CDK **21.2.14**, CLI/build **21.2.27**, TypeScript **5.9.3**, Vitest **4.1.12**, Vite **7.3.6**. Los formularios de señales de Angular 21 son experimentales. TanStack Query **5.104.5** y `read-excel-file` **9.3.12** se conservan. Usar lockfile y `npm ci` para reproducibilidad.
 
-## Versiones y licencias de dependencias
-
-PrimeNG está fijado en **21.1.10**, versión comunitaria MIT verificada mediante el registro npm y el archivo distribuido `node_modules/primeng/LICENSE.md`. Ese archivo otorga MIT a la edición comunitaria; las condiciones comerciales LTS corresponden a versiones con sufijo `-lts`, que no se utilizan. Las versiones estables 22 disponibles al migrar exigían clave PrimeUI. No se inyectan claves, se ocultan avisos con CSS ni se modifica código del proveedor.
-
-`@primeuix/themes` está fijado en **2.0.3**: su `LICENSE` es MIT, al igual que los paquetes PrimeUI instalados de estilos, utilidades y movimiento. No se utilizan temas 3.x. Conservar los avisos de autoría y permiso al redistribuir las dependencias MIT.
-
-Angular, compilador y formularios están alineados en **21.2.25**; CDK en **21.2.14**; CLI/build en **21.2.27**, según la compatibilidad requerida por PrimeNG. TypeScript **5.9.3** satisface `>=5.9 <6.0`; Vitest **4.1.12** satisface `^4.0.8`. Los formularios basados en señales de Angular 21 son experimentales; se utiliza su API compatible de deshabilitación manteniendo el bloqueo de publicaciones. Se eliminó la sustitución de Vite 8; el conjunto compatible resuelve **Vite 7.3.6**.
-
-TanStack Query **5.104.5** y el lector XLSX `read-excel-file` **9.3.12** se conservaron. Guardar el lockfile junto con cambios de versiones y utilizar `npm ci` para reproducir el conjunto. Una instalación o compilación correcta no equivale a una auditoría de seguridad.
-
-La auditoría adicional autorizada agotó cinco minutos con código 124 y sin resultados. El usuario aceptó expresamente la entrega con esa verificación pendiente. No hay una auditoría aprobada ni reintentos automáticos; consultar [el informe](../VERIFICATION.md).
+La auditoría npm adicional agotó cinco minutos con código 124 y sin resultados; la limitación fue aceptada expresamente. No se presenta como aprobada ni se reintenta automáticamente. Consultar [VERIFICATION.md](../VERIFICATION.md) para evidencia histórica y actual: no sumar pruebas anteriores como una ejecución nueva.

@@ -64,7 +64,7 @@ describe('Sistema de diseño del museo', () => {
 
   it('incluye especializaciones móviles y una sola regla base de cada overlay', () => {
     expect(css).toMatch(/max-width:\s*800px/);
-    expect(css).toMatch(/\.rule-grid\s*\{\s*grid-template-columns:\s*1fr/);
+    expect(css).toMatch(/\.configuration-add\s*\{[^}]*flex-direction:\s*column/);
     expect(css).toMatch(/\.context-grid\s*\{\s*grid-template-columns:\s*1fr/);
     expect(css.match(/\.p-select-overlay\s*\{/g)).toHaveLength(1);
     expect(css.match(/\.p-select-option\s*\{/g)).toHaveLength(2); // base y panel DwC

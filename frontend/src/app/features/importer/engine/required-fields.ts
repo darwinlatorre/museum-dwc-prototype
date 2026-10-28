@@ -1,17 +1,14 @@
-import type { Profile } from '../../profiles/models/profile';
+import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
 import type { Context } from '../models/context';
 import type { Dataset } from '../models/dataset';
 import type { Normalization } from '../models/normalization';
 import { normalize } from './normalizer';
 
-/** Header requirements use the same explicit context as record validation. */
-export function requiredFields(profiles: Profile[], context: Context, blockingOnly = false): string[] {
-  return [...new Set(profiles.flatMap(profile => profile.rules
-    .filter(rule => (rule.kind === 'required' || rule.kind === 'requiredColumn') &&
-      (!blockingOnly || rule.severity === 'ERROR') &&
-      (rule.condition === 'always' || (rule.condition === 'permitAndCollection'
-        ? context.permit && context.collection : context[rule.condition])))
-    .map(rule => rule.field)))];
+/** No defaults: only the selected context of the server snapshot is authoritative. */
+export function requiredFields(configuration: ValidationConfiguration, context: Context): string[] {
+  const requirements = configuration.contexts.find(item => item.context === context);
+  if (!requirements) throw new Error('La configuración no contiene el contexto seleccionado. Actualice los datos.');
+  return requirements.requiredFields;
 }
 
 export interface MissingField {
@@ -42,23 +39,15 @@ export function missingCells(data: Dataset, mapping: Record<string, string>, fie
   }] : []);
 }
 
-/** Count records, not profile incidences; a shared requirement counts each row once. */
-export function missingFields(data: Dataset, mapping: Record<string, string>, profiles: Profile[], context: Context, options: Normalization): MissingField[] {
+/** Count each source record once per configured field. */
+export function missingFields(data: Dataset, mapping: Record<string, string>, configuration: ValidationConfiguration, context: Context, options: Normalization): MissingField[] {
   const headers = data.headers.map(header => mapping[header] || header);
-  const summaries = requiredFields(profiles, context).map(field => {
-    const index = headers.indexOf(field);
-    const needsValue = profiles.some(profile => profile.rules.some(rule =>
-      rule.field === field && rule.kind === 'required' &&
-      (rule.condition === 'always' || (rule.condition === 'permitAndCollection'
-        ? context.permit && context.collection : context[rule.condition]))));
-    return {
-      field,
-      missing: index < 0 ? data.rows.length : needsValue
-        ? missingCells(data, mapping, field, options).length : 0,
-      total: data.rows.length,
-      columnAbsent: index < 0,
-    };
-  });
+  const summaries = requiredFields(configuration, context).map(field => ({
+    field,
+    missing: headers.includes(field) ? missingCells(data, mapping, field, options).length : data.rows.length,
+    total: data.rows.length,
+    columnAbsent: !headers.includes(field),
+  }));
   return summaries.filter(item => item.columnAbsent || item.missing > 0)
     .sort((a, b) => b.missing - a.missing || a.field.localeCompare(b.field));
 }

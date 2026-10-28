@@ -1,0 +1,137 @@
+import { TestBed } from '@angular/core/testing';
+import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
+import { vi } from 'vitest';
+import { ValidationConfigurationEditor } from './validation-configuration';
+import { Api } from '../../core/api/api';
+import { configurationFixture, contextKeys } from '../../testing/validation-fixture';
+
+async function setup() {
+  const original = configurationFixture(['customField']);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  client.setQueryData(['validation-configuration'], original);
+  const api = {
+    validationConfiguration: vi.fn().mockResolvedValue(original),
+    updateValidationConfiguration: vi.fn().mockImplementation(async body => ({ ...body, revision: 8 })),
+  };
+  TestBed.configureTestingModule({ providers: [provideTanStackQuery(client), { provide: Api, useValue: api }] });
+  const f = TestBed.createComponent(ValidationConfigurationEditor);
+  f.componentRef.setInput('configuration', original);
+  f.componentRef.setInput('terms', [{ name: 'eventDate', uri: '', definition: '', category: '', status: 'recommended' }]);
+  await f.whenStable();
+  const root = f.nativeElement as HTMLElement;
+  const button = (name: string) => [...root.querySelectorAll('button')].find(b => b.textContent?.trim() === name || b.getAttribute('aria-label') === name)!;
+  const click = async (name: string) => { expect(button(name), name).toBeTruthy(); button(name).click(); await f.whenStable(); };
+  const type = async (value: string) => {
+    const input = root.querySelector<HTMLInputElement>('app-dwc-picker input')!;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await f.whenStable();
+  };
+  return { f, root, client, api, original, button, click, type };
+}
+beforeEach(() => vi.stubGlobal('matchMedia', (media: string) => ({ matches: false, media, addEventListener() {}, removeEventListener() {} })));
+afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
+
+describe('Editor global público', () => {
+  it('usa el selector compartido, preserva texto libre y limpieza sin duplicados y guarda cinco contextos', async () => {
+    const { f, root, client, api, original, button, click, type } = await setup();
+    const before = JSON.stringify(original);
+    expect([...root.querySelectorAll('select option')].map(option => (option as HTMLOptionElement).value)).toEqual([...contextKeys]);
+    expect(button('Guardar configuración').disabled).toBe(true);
+    await type('  freeValue  ');
+    await click('Agregar campo');
+    expect(root.textContent).toContain('Cambios sin guardar');
+    expect(root.querySelector('.configuration-fields')?.textContent).toContain('  freeValue  ');
+    await type('  freeValue  ');
+    expect(root.textContent).toContain('Este campo ya es obligatorio');
+    expect(button('Agregar campo').disabled).toBe(true);
+    await click('Limpiar Agregar campo obligatorio');
+    expect(root.querySelector<HTMLInputElement>('app-dwc-picker input')?.value).toBe('');
+    await click('Quitar customField');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(root.textContent).toContain('Configuración guardada en el servidor.'));
+    expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1);
+    const body = api.updateValidationConfiguration.mock.calls[0][0];
+    expect(body).toEqual({ revision: 7, contexts: original.contexts.map(item => item.context === 'collection' ? { ...item, requiredFields: ['  freeValue  '] } : item) });
+    expect(client.getQueryData(['validation-configuration'])).toEqual({ ...body, revision: 8 });
+    expect(JSON.stringify(original)).toBe(before);
+    expect(root.textContent).toContain('Sin cambios pendientes');
+    expect(f.componentInstance.client).toBe(client);
+  });
+
+  it.each(['Fallo de conexión', 'API 400: campos inválidos', 'API 409: revisión obsoleta'])('conserva cambios y revisión ante %s sin éxito ni reescritura', async message => {
+    const { f, root, client, api, original, click, type } = await setup();
+    api.updateValidationConfiguration.mockRejectedValue(new Error(message));
+    await type('  freeValue  ');
+    await click('Agregar campo');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(root.querySelector('[role=alert]')?.textContent).toContain(message));
+    expect(root.textContent).toContain('Cambios sin guardar');
+    expect(root.textContent).not.toContain('Configuración guardada');
+    expect(root.querySelector('.configuration-fields')?.textContent).toContain('  freeValue  ');
+    expect(client.getQueryData(['validation-configuration'])).toEqual(original);
+    expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1);
+    expect(api.updateValidationConfiguration.mock.calls[0][0].revision).toBe(7);
+    // Refresh failure must not destroy the local changes either.
+    api.validationConfiguration.mockRejectedValueOnce(new Error('Actualización fallida'));
+    await click('Actualizar del servidor y descartar cambios locales');
+    await vi.waitFor(() => expect(root.textContent).toContain('Actualización fallida'));
+    expect(root.querySelector('.configuration-fields')?.textContent).toContain('  freeValue  ');
+    const latest = { ...configurationFixture(['nuevo']), revision: 9 };
+    api.validationConfiguration.mockResolvedValue(latest);
+    await click('Actualizar del servidor y descartar cambios locales');
+    await vi.waitFor(() => expect(root.textContent).toContain('Configuración actualizada desde el servidor.'));
+    expect(root.querySelector('.configuration-fields')?.textContent).toContain('nuevo');
+    expect(root.querySelector('.configuration-fields')?.textContent).not.toContain('freeValue');
+    expect(client.getQueryData(['validation-configuration'])).toEqual(latest);
+    expect(api.validationConfiguration.mock.calls[0][0]).toBeInstanceOf(AbortSignal);
+    expect(root.textContent).toContain('Sin cambios pendientes');
+    await f.whenStable();
+  });
+
+  it('edita un contexto sin alterar los otros y admite una lista vacía explícita', async () => {
+    const { f, root, api, click, original } = await setup();
+    const select = root.querySelector('select')!;
+    select.value = 'permit'; select.dispatchEvent(new Event('change')); await f.whenStable();
+    await click('Quitar customField');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));
+    expect(api.updateValidationConfiguration.mock.calls[0][0]).toEqual({ revision: 7, contexts: original.contexts.map(item => item.context === 'permit' ? { ...item, requiredFields: [] } : item) });
+  });
+
+  it('mantiene cambios locales si llega una revisión nueva en vez de cambiar su revisión a escondidas', async () => {
+    const { f, root, click, type, api } = await setup();
+    await type('local'); await click('Agregar campo');
+    f.componentRef.setInput('configuration', { ...configurationFixture(['ajeno']), revision: 9 });
+    await f.whenStable();
+    expect(root.textContent).toContain('Hay una revisión más reciente');
+    expect(root.querySelector('.configuration-fields')?.textContent).toContain('local');
+    expect(root.querySelector('.configuration-fields')?.textContent).not.toContain('ajeno');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));
+    expect(api.updateValidationConfiguration.mock.calls[0][0].revision).toBe(7);
+  });
+
+  it('acepta 200 caracteres y 500 campos, y rechaza el campo 501 sin enviar una escritura', async () => {
+    const { f, root, type, click, button, api } = await setup();
+    const fields = Array.from({ length: 499 }, (_, i) => `field${i}`);
+    f.componentRef.setInput('configuration', configurationFixture(fields));
+    await f.whenStable();
+    await type('a'.repeat(200));
+    expect(button('Agregar campo').disabled).toBe(false);
+    await click('Agregar campo');
+    expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(500);
+    await type('field501');
+    expect(button('Agregar campo').disabled).toBe(true);
+    expect(root.textContent).toContain('No se pueden agregar más de 500 campos por contexto.');
+    expect(api.updateValidationConfiguration).not.toHaveBeenCalled();
+  });
+
+  it('no acepta campos vacíos ni mayores de 200 caracteres', async () => {
+    const { button, click, type, api } = await setup();
+    await type('   '); expect(button('Agregar campo').disabled).toBe(true);
+    await type('a'.repeat(201)); expect(button('Agregar campo').disabled).toBe(true);
+    await click('Agregar campo');
+    expect(api.updateValidationConfiguration).not.toHaveBeenCalled();
+  });
+});

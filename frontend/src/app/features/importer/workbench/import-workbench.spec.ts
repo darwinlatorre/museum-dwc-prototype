@@ -1,11 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { ImportWorkbench } from './import-workbench';
-import type { Profile } from '../../profiles/models/profile';
+import { configurationFixture } from '../../../testing/validation-fixture';
 import type { Dataset } from '../models/dataset';
 import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
 
-const profile: Profile = { id: 'p', name: 'Perfil', version: '1', status: 'PUBLISHED', revision: 1, description: '', rules: [] };
 type ResponseBody<T = WorkerResponse> = T extends WorkerResponse ? Omit<T, 'id'> : never;
 class DelayedWorker {
   static all: DelayedWorker[] = [];
@@ -19,9 +18,9 @@ class DelayedWorker {
     this.onmessage?.({ data: { ...response, id: this.request.id } } as MessageEvent<WorkerResponse>);
   }
 }
-async function setup(profiles = [profile], data: Dataset = { headers: ['a', 'b'], rows: [{ row: 2, values: ['1', '2'] }] }) {
+async function setup(fields: string[] = [], data: Dataset = { headers: ['a', 'b'], rows: [{ row: 2, values: ['1', '2'] }] }) {
   const f = TestBed.createComponent(ImportWorkbench);
-  f.componentRef.setInput('profiles', profiles);
+  f.componentRef.setInput('configuration', configurationFixture(fields));
   f.componentRef.setInput('terms', []);
   await f.whenStable();
   const root = f.nativeElement as HTMLElement;
@@ -38,15 +37,16 @@ async function setup(profiles = [profile], data: Dataset = { headers: ['a', 'b']
   await f.whenStable();
   DelayedWorker.all.at(-1)!.respond({ kind: 'parsed', data });
   await f.whenStable();
-  const selectProfile = async () => {
-    await click('Elegir perfiles');
-    (root.querySelector('.profile-options input') as HTMLInputElement).click();
+  const chooseContext = async (context = 'collection') => {
+    (root.querySelector(`.context-grid input[value=${context}]`) as HTMLInputElement).click();
     await f.whenStable();
   };
-  return { f, root, button, click, selectProfile };
+  const respond = async () => {
+    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
+    await f.whenStable();
+  };
+  return { f, root, button, click, chooseContext, respond };
 }
-const required = (field: string, condition: 'always' | 'collection' | 'permitAndCollection' = 'always') =>
-  ({ field, kind: 'required' as const, severity: 'ERROR' as const, condition, message: `Falta ${field}`, source: '' });
 
 describe('Preservación pública del análisis local', () => {
   beforeEach(() => {
@@ -56,64 +56,58 @@ describe('Preservación pública del análisis local', () => {
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
-  it('ordena los siete pasos, valida antes de normalizar y deja Finalizar vacío', async () => {
-    const { f, root, click, selectProfile } = await setup();
+  it('ordena seis pasos, exige un contexto único, valida antes de normalizar y deja Finalizar vacío', async () => {
+    const { f, root, button, click, chooseContext, respond } = await setup();
     expect([...root.querySelectorAll('.steps button')].map(b => b.textContent?.replace(/^\s*\d+\s*/, '').trim())).toEqual([
-      'Seleccionar archivo', 'Contexto y validación', 'Elegir perfiles', 'Mapear columnas', 'Diagnóstico', 'Normalizar', 'Finalizar',
+      'Seleccionar archivo', 'Contexto', 'Mapear columnas', 'Diagnóstico', 'Normalizar', 'Finalizar',
     ]);
     expect(root.querySelector('h3')?.textContent).toContain('contexto');
-    await selectProfile();
-    expect(root.textContent).toContain('Puede continuar');
+    expect(button('Mapear columnas').disabled).toBe(true);
+    expect([...root.querySelectorAll<HTMLInputElement>('.context-grid input')].every(input => !input.checked && input.type === 'radio')).toBe(true);
+    await chooseContext();
+    await chooseContext('permit');
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.context-grid input')];
+    expect(radios.filter(input => input.checked).map(input => input.value)).toEqual(['permit']);
     await click('Mapear columnas');
     await click('Validar localmente');
-    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: false, emptyMarkers: false } });
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-    await f.whenStable();
+    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', configuration: configurationFixture([]), context: 'permit', options: { trim: false, emptyMarkers: false } });
+    expect(DelayedWorker.all.at(-1)!.request).not.toHaveProperty('profiles');
+    await respond();
     expect(root.querySelector('h3')?.textContent).toBe('Diagnóstico');
     await click('Normalizar');
     (root.querySelector('.checks input') as HTMLInputElement).click();
     await f.whenStable();
     await click('Aplicar normalización y validar');
     expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: false } });
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-    await f.whenStable();
+    await respond();
     expect(root.querySelector('h3')?.textContent).toContain('Normalice');
     await click('Finalizar');
     expect(root.querySelector('.wizard-final')?.textContent?.trim()).toBe('');
     expect(root.textContent).toContain('original.csv');
   });
 
-  it('bloquea perfiles sin encabezados obligatorios según contexto sin analizar ni alterar los datos', async () => {
-    const p = { ...profile, rules: [required('a'), required('subfamily', 'collection'), required('permit', 'permitAndCollection')] };
-    const { f, root, button, click, selectProfile } = await setup([p]);
-    (root.querySelector('.context-grid input') as HTMLInputElement).click();
-    await f.whenStable();
-    await selectProfile();
-    expect(root.textContent).toContain('Faltan campos obligatorios: subfamily');
-    expect(root.textContent).not.toContain('Faltan campos obligatorios: permit');
-    expect(button('Mapear columnas').disabled).toBe(true);
-    expect(DelayedWorker.all).toHaveLength(1);
-    await click('Contexto y validación');
-    (root.querySelector('.context-grid input') as HTMLInputElement).click();
-    await f.whenStable();
-    await click('Elegir perfiles');
+  it('permite mapear sin encabezados obligatorios y envía el snapshot real al worker', async () => {
+    const { root, button, click, chooseContext } = await setup(['subfamily']);
+    await chooseContext();
     expect(button('Mapear columnas').disabled).toBe(false);
+    expect(DelayedWorker.all).toHaveLength(1);
     await click('Mapear columnas');
     await click('Validar localmente');
-    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ data: { headers: ['a', 'b'], rows: [{ row: 2, values: ['1', '2'] }] } });
+    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({
+      configuration: configurationFixture(['subfamily']), context: 'collection',
+      data: { headers: ['a', 'b'], rows: [{ row: 2, values: ['1', '2'] }] },
+    });
+    expect(root.textContent).not.toContain('No puede continuar');
   });
 
-  it('resume diez valores obligatorios ausentes sin duplicar filas entre perfiles y distingue columna ausente', async () => {
-    const p = { ...profile, rules: [required('subfamily'), { ...required('absent'), severity: 'WARNING' as const, kind: 'requiredColumn' as const }] };
+  it('resume diez valores obligatorios ausentes una sola vez y distingue columna ausente', async () => {
     const data = { headers: ['subfamily'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i + 2, values: [i < 10 ? '  ' : 'Formicinae'] })) };
-    const { f, root, click, selectProfile } = await setup([p, { ...p, id: 'q', name: 'Otro perfil' }], data);
-    await selectProfile();
-    (root.querySelectorAll('.profile-options input')[1] as HTMLInputElement).click();
-    await f.whenStable();
+    const { f, root, click, chooseContext } = await setup(['subfamily', 'absent'], data);
+    await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
     DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [
-      { field: 'subfamily', row: 2, description: 'Falta subfamily', severity: 'ERROR', profile: 'Perfil', version: '1' },
+      { field: 'subfamily', row: 2, description: 'Falta subfamily', severity: 'ERROR', context: 'collection', configurationRevision: 7 },
     ], changes: [] });
     await f.whenStable();
     const rows = [...root.querySelectorAll('.missing-summary tbody tr')];
@@ -123,20 +117,17 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('tr.issue-error')).toBeNull();
     await click('Ver todas las incidencias');
     expect(root.querySelector('tr.issue-error')?.textContent).toContain('Falta subfamily');
+    expect(root.querySelector('tr.issue-error')?.textContent).toContain('Colección biológica · 7');
     expect(data.rows[0].values[0]).toBe('  ');
   });
 
-  it('abre los faltantes con columna y filas originales sin duplicar perfiles y permite cerrar', async () => {
-    const p = { ...profile, rules: [required('subfamily'), { ...required('absent'), severity: 'WARNING' as const }] };
+  it('abre faltantes con columna y filas originales en un detalle único y devuelve el foco al cerrar', async () => {
     const data = { headers: ['vacía original', 'subfamily', 'con datos'], rows: [
-      { row: 4, values: ['  ', 'presente', 'x'] },
-      { row: 19, values: ['', 'presente', 'y'] },
+      { row: 4, values: ['  ', 'presente', 'x'] }, { row: 19, values: ['', 'presente', 'y'] },
     ] };
     const original = JSON.stringify(data);
-    const { f, root, button, click, selectProfile } = await setup([p, { ...p, id: 'q' }], data);
-    await selectProfile();
-    (root.querySelectorAll('.profile-options input')[1] as HTMLInputElement).click();
-    await f.whenStable();
+    const { f, root, button, click, chooseContext, respond } = await setup(['subfamily', 'absent'], data);
+    await chooseContext();
     await click('Mapear columnas');
     const edit = async (header: string, value: string) => {
       const input = root.querySelector<HTMLInputElement>(`input[aria-label="Mapear ${header}"]`)!;
@@ -148,8 +139,7 @@ describe('Preservación pública del análisis local', () => {
     await edit('subfamily', 'otro');
     await edit('vacía original', 'subfamily');
     await click('Validar localmente');
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-    await f.whenStable();
+    await respond();
     const trigger = button('Ver valores vacíos de subfamily');
     expect(trigger.type).toBe('button');
     expect(trigger.disabled).toBe(false);
@@ -165,13 +155,11 @@ describe('Preservación pública del análisis local', () => {
     expect(detail.getAttribute('role')).toBe('region');
     expect(detail.getAttribute('aria-labelledby')).toBe('missing-cell-title');
     expect(detail.querySelector('h4')?.textContent).toContain('subfamily · 2 registros sin datos');
+    expect(document.activeElement?.id).toBe('missing-cell-title');
     const rows = [...detail.querySelectorAll('tbody tr')].map(row => [...row.querySelectorAll('td')].map(cell => cell.textContent));
     expect(detail.querySelector('.missing-source')?.textContent).toContain('vacía original');
     expect(detail.querySelector('.missing-source')?.textContent).toContain('Columna 1');
-    expect(rows).toEqual([
-      ['4', '  '],
-      ['19', '(vacío)'],
-    ]);
+    expect(rows).toEqual([['4', '  '], ['19', '(vacío)']]);
     expect(getComputedStyle(detail.querySelector('.p-paginator')!).display).toBe('none');
     expect(getComputedStyle(root.querySelector('.missing-summary .p-paginator')!).display).toBe('none');
     button('Cerrar detalle de valores vacíos').focus();
@@ -180,14 +168,12 @@ describe('Preservación pública del análisis local', () => {
     expect(document.activeElement).toBe(trigger);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     await click('Ver todas las incidencias');
-    expect(root.querySelector('#all-issues-detail')).toBeTruthy();
     expect(document.activeElement?.id).toBe('all-issues-title');
     await click('Ver valores vacíos de subfamily');
     expect(root.querySelector('#all-issues-detail')).toBeNull();
     expect(root.querySelector('#missing-cell-detail')).toBeTruthy();
     await click('Ver todas las incidencias');
     expect(root.querySelector('#missing-cell-detail')).toBeNull();
-    expect(root.querySelector('#all-issues-detail')).toBeTruthy();
     await click('Cerrar incidencias');
     expect(document.activeElement).toBe(button('Ver todas las incidencias'));
     expect(JSON.stringify(data)).toBe(original);
@@ -196,12 +182,8 @@ describe('Preservación pública del análisis local', () => {
   it('localiza NULL y N/A solo con aprobación y elimina el detalle al invalidar', async () => {
     const data = { headers: ['subfamily'], rows: ['', 'NULL', 'N/A', ' n/a '].map((value, i) => ({ row: i * 7 + 3, values: [value] })) };
     const original = JSON.stringify(data);
-    const { f, root, click, selectProfile } = await setup([{ ...profile, rules: [required('subfamily')] }], data);
-    const respond = async () => {
-      DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-      await f.whenStable();
-    };
-    await selectProfile();
+    const { f, root, click, chooseContext, respond } = await setup(['subfamily'], data);
+    await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
     await respond();
@@ -225,41 +207,31 @@ describe('Preservación pública del análisis local', () => {
     await click('Aplicar normalización y validar');
     await respond();
     await click('Ver diagnóstico');
-    expect(root.querySelector('#missing-cell-detail')).toBeNull();
     await click('Ver valores vacíos de subfamily');
     const rows = [...root.querySelectorAll('#missing-cell-detail tbody tr')];
     expect(rows).toHaveLength(4);
     expect(rows.map(row => row.querySelectorAll('td')[2].textContent)).toEqual(['—', '(vacío)', '(vacío)', '(vacío)']);
     expect(rows[3].querySelectorAll('td')[1].textContent).toBe(' n/a ');
     await click('Cambiar contexto');
-    (root.querySelector('.context-grid input') as HTMLInputElement).click();
-    await f.whenStable();
+    await chooseContext('other');
     expect(root.querySelector('#missing-cell-detail')).toBeNull();
-    await click('Elegir perfiles');
     await click('Mapear columnas');
     await click('Validar localmente');
     await respond();
-    expect(root.querySelector('#missing-cell-detail')).toBeNull();
     await click('Ver valores vacíos de subfamily');
     expect(root.querySelectorAll('#missing-cell-detail tbody tr')).toHaveLength(1);
     expect(JSON.stringify(data)).toBe(original);
   });
 
-  it('pliega ayudas y descripciones sin perder sus textos ni las etiquetas de contexto', async () => {
-    const { f, root, click } = await setup([{ ...profile, description: 'Descripción extensa original' }]);
+  it('pliega ayudas sin perder las etiquetas ni las salvedades científicas', async () => {
+    const { root } = await setup();
     const help = root.querySelector('details');
     expect(help?.open).toBe(false);
     expect(help?.textContent).toContain('no constituye una certificación del SiB');
     help!.open = true;
     expect(help?.querySelector('summary')?.textContent).toContain('contexto');
-    await click('Elegir perfiles');
-    const description = root.querySelector('.profile-options details') as HTMLDetailsElement;
-    expect(description?.open).toBe(false);
-    expect(description?.textContent).toContain('Descripción extensa original');
-    description.open = true;
-    expect(root.querySelector('.profile-options label')?.textContent).toContain('Perfil 1');
-    expect(root.querySelector('.profile-options label')?.textContent).toContain('0 reglas');
-    await f.whenStable();
+    expect(root.textContent).toContain('revisión 7');
+    expect(root.textContent).toContain('Otros: observaciones en campo');
   });
 
   it('pide desplazamiento horizontal al cambiar de paso, no al cambiar solo el contexto', async () => {
@@ -267,16 +239,16 @@ describe('Preservación pública del análisis local', () => {
     const previous = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo');
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: scroll });
     try {
-      const { f, root, click } = await setup();
+      const { root, click, chooseContext } = await setup();
+      await chooseContext();
       scroll.mockClear();
-      await click('Elegir perfiles');
+      await click('Mapear columnas');
       expect(scroll).toHaveBeenCalledTimes(1);
       expect(scroll.mock.instances[0]).toBe(root.querySelector('.steps'));
       expect(scroll.mock.calls[0][0]).toMatchObject({ behavior: 'instant' });
-      await click('Contexto y validación');
+      await click('Contexto');
       scroll.mockClear();
-      (root.querySelector('.context-grid input') as HTMLInputElement).click();
-      await f.whenStable();
+      await chooseContext('other');
       expect(scroll).not.toHaveBeenCalled();
     } finally {
       if (previous) Object.defineProperty(HTMLElement.prototype, 'scrollTo', previous);
@@ -285,12 +257,11 @@ describe('Preservación pública del análisis local', () => {
   });
 
   it('mantiene visible el paso activo al redimensionar sin mover el documento y retira el listener al destruirse', async () => {
-    const { f, root, click, selectProfile } = await setup();
-    await selectProfile();
+    const { f, root, click, chooseContext, respond } = await setup();
+    await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-    await f.whenStable();
+    await respond();
     const strip = root.querySelector<HTMLElement>('.steps')!;
     const active = strip.querySelector<HTMLElement>('.current')!;
     const scroll = vi.fn();
@@ -305,7 +276,6 @@ describe('Preservación pública del análisis local', () => {
       expect(scroll.mock.calls).toEqual([[{ left: 332, behavior: 'instant' }]]);
       expect(strip.querySelector('.current')).toBe(active);
       expect(active.textContent).toContain('Diagnóstico');
-      // Also recover when the current step is clipped on the left.
       strip.scrollLeft = 332;
       item.mockReturnValue(new DOMRect(-28, 100, 135, 50));
       window.dispatchEvent(new Event('resize'));
@@ -317,21 +287,16 @@ describe('Preservación pública del análisis local', () => {
       scroll.mockClear();
       window.dispatchEvent(new Event('resize'));
       expect(scroll).not.toHaveBeenCalled();
-    } finally {
-      bounds.mockRestore();
-      item.mockRestore();
-      windowScroll.mockRestore();
-    }
+    } finally { bounds.mockRestore(); item.mockRestore(); windowScroll.mockRestore(); }
   });
 
-  it('pagina ubicaciones grandes, conserva tamaños y oculta controles en listas pequeñas o vacías', async () => {
+  it('pagina ubicaciones grandes y oculta controles en listas pequeñas o vacías', async () => {
     const data = { headers: ['a'], rows: Array.from({ length: 11 }, (_, i) => ({ row: i + 2, values: [' '] })) };
-    const { f, root, click, selectProfile } = await setup([{ ...profile, rules: [required('a')] }], data);
-    await selectProfile();
+    const { f, root, click, chooseContext, respond } = await setup(['a'], data);
+    await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-    await f.whenStable();
+    await respond();
     await click('Ver valores vacíos de a');
     expect(root.querySelectorAll('#missing-cell-detail tbody tr')).toHaveLength(10);
     expect(root.querySelector('#missing-cell-detail .p-paginator-rpp-dropdown')).toBeTruthy();
@@ -348,12 +313,12 @@ describe('Preservación pública del análisis local', () => {
   it('pagina más de diez campos y veinte incidencias y limpia ambos modos al cambiar entradas', async () => {
     const headers = Array.from({ length: 11 }, (_, i) => `campo${i}`);
     const data = { headers, rows: [{ row: 23, values: headers.map(() => '') }] };
-    const { f, root, click, selectProfile } = await setup([{ ...profile, rules: headers.map(h => required(h)) }], data);
-    await selectProfile();
+    const { f, root, click, chooseContext, respond } = await setup(headers, data);
+    await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
     DelayedWorker.all.at(-1)!.respond({ kind: 'result', changes: [], issues: Array.from({ length: 21 }, (_, i) => ({
-      field: 'campo0', row: 23, description: `Incidencia ${i}`, severity: 'WARNING', profile: 'Perfil', version: '1',
+      field: 'campo0', row: 23, description: `Incidencia ${i}`, severity: 'WARNING', context: 'system', configurationRevision: 7,
     })) });
     await f.whenStable();
     expect(root.querySelectorAll('.missing-summary tbody tr')).toHaveLength(10);
@@ -363,25 +328,21 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelectorAll('.missing-summary tbody tr')).toHaveLength(1);
     await click('Ver todas las incidencias');
     expect(root.querySelectorAll('#all-issues-detail tbody tr')).toHaveLength(20);
-    expect(root.querySelector('#all-issues-detail .p-paginator-rpp-dropdown')).toBeTruthy();
     (root.querySelector('#all-issues-detail .p-paginator-next') as HTMLButtonElement).click();
     await f.whenStable();
     expect(root.querySelectorAll('#all-issues-detail tbody tr')).toHaveLength(1);
     await click('Cambiar contexto');
-    (root.querySelector('.context-grid input') as HTMLInputElement).click();
-    await f.whenStable();
-    await click('Elegir perfiles');
+    await chooseContext('other');
     await click('Mapear columnas');
     await click('Validar localmente');
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
-    await f.whenStable();
+    await respond();
     expect(root.querySelector('#missing-cell-detail')).toBeNull();
     expect(root.querySelector('#all-issues-detail')).toBeNull();
   });
 
   it('conserva atrás, valores libres, limpieza, unicidad y rechazo de respuestas canceladas', async () => {
-    const { f, root, click, selectProfile } = await setup();
-    await selectProfile();
+    const { f, root, click, chooseContext } = await setup();
+    await chooseContext();
     await click('Mapear columnas');
     const edit = async (header: string, value: string) => {
       const field = root.querySelector<HTMLInputElement>(`input[aria-label="Mapear ${header}"]`)!;
@@ -394,7 +355,7 @@ describe('Preservación pública del análisis local', () => {
     await edit('b', 'customField');
     expect(root.textContent).toContain('Cada campo de destino puede usarse una sola vez.');
     await click('Limpiar Mapear b');
-    await click('Elegir perfiles');
+    await click('Contexto');
     await click('Mapear columnas');
     expect(root.querySelector<HTMLInputElement>('input[aria-label="Mapear a"]')?.value).toBe('customField');
     await click('Validar localmente');
@@ -408,17 +369,58 @@ describe('Preservación pública del análisis local', () => {
     expect(root.textContent).not.toContain('Descargar JSON');
     await click('Validar localmente');
     const stale = DelayedWorker.all.at(-1)!;
-    await click('Contexto y validación');
-    (root.querySelector('.context-grid input') as HTMLInputElement).click();
+    await click('Contexto');
+    await chooseContext('other');
+    expect(stale.terminated).toBe(true);
+    stale.respond({ kind: 'result', issues: [], changes: [] });
+    await f.whenStable();
+    expect(root.textContent).not.toContain('Descargar JSON');
+  });
+
+  it('invalida el diagnóstico y cancela generaciones cuando cambia la configuración global o falla su consulta', async () => {
+    const { f, root, click, chooseContext, respond } = await setup(['a']);
+    await chooseContext();
+    await click('Mapear columnas');
+    await click('Validar localmente');
+    await respond();
+    await click('Ver todas las incidencias');
+    const next = { ...configurationFixture(['b']), revision: 8 };
+    f.componentRef.setInput('configuration', next);
+    await f.whenStable();
+    expect(root.querySelector('#all-issues-detail')).toBeNull();
+    expect(root.textContent).not.toContain('Descargar JSON');
+    await click('Cambiar mapeo');
+    await click('Validar localmente');
+    const stale = DelayedWorker.all.at(-1)!;
+    expect(stale.request).toMatchObject({ configuration: next });
+    f.componentRef.setInput('configurationAvailable', false);
     await f.whenStable();
     expect(stale.terminated).toBe(true);
     stale.respond({ kind: 'result', issues: [], changes: [] });
     await f.whenStable();
     expect(root.textContent).not.toContain('Descargar JSON');
   });
+
+  it('rechaza respuestas de una revisión anterior y nunca envía datos biológicos por HTTP', async () => {
+    const http = vi.fn(); vi.stubGlobal('fetch', http);
+    const { f, root, click, chooseContext, respond } = await setup(['a']);
+    await chooseContext(); await click('Mapear columnas'); await click('Validar localmente');
+    const stale = DelayedWorker.all.at(-1)!;
+    f.componentRef.setInput('configuration', { ...configurationFixture(['b']), revision: 42 });
+    await f.whenStable();
+    expect(stale.terminated).toBe(true);
+    stale.respond({ kind: 'result', issues: [{ field: 'a', row: 2, severity: 'ERROR', description: 'Obsoleto', context: 'collection', configurationRevision: 7 }], changes: [] });
+    await f.whenStable();
+    expect(root.textContent).not.toContain('Descargar JSON');
+    await click('Validar localmente');
+    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ configuration: { revision: 42 } });
+    await respond(); await click('Normalizar');
+    expect(http).not.toHaveBeenCalled();
+  });
+
   it('explains which workbook sheet to analyze and reads the selected sheet locally', async () => {
     const f = TestBed.createComponent(ImportWorkbench);
-    f.componentRef.setInput('profiles', [profile]);
+    f.componentRef.setInput('configuration', configurationFixture([]));
     f.componentRef.setInput('terms', []);
     await f.whenStable();
     const root = f.nativeElement as HTMLElement;

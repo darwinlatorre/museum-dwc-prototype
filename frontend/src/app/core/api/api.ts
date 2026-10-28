@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { Profile, ProfileInput } from '../../features/profiles/models/profile';
+import type { ValidationConfiguration } from '../../features/validation-configuration/models/validation-configuration';
 import type { Term } from '../../features/catalog/models/catalog-term';
 
 export interface CatalogSyncResult {
@@ -38,19 +38,8 @@ export class Api {
   }
   catalog = (signal?: AbortSignal) => this.request<Term[]>('catalog', 'GET', undefined, signal);
   syncCatalog = () => this.request<CatalogSyncResult>('catalog/sync', 'POST');
-  profiles = (signal?: AbortSignal) =>
-    this.request<Profile[]>('profiles', 'GET', undefined, signal);
-  create = (body: ProfileInput) => this.request<Profile>('profiles', 'POST', body);
-  update = (profile: Profile, body: ProfileInput) =>
-    this.request<Profile>('profiles/' + encodeURIComponent(profile.id), 'PUT', {
-      ...body,
-      revision: profile.revision,
-    });
-  duplicate = (profile: Profile, name: string, version: string) =>
-    this.request<Profile>('profiles/' + encodeURIComponent(profile.id) + '/duplicate', 'POST', {
-      name,
-      version,
-    });
-  publish = (profile: Profile) =>
-    this.request<Profile>('profiles/' + encodeURIComponent(profile.id) + '/publish', 'POST');
+  validationConfiguration = (signal?: AbortSignal) =>
+    this.request<ValidationConfiguration>('validation-configuration', 'GET', undefined, signal);
+  updateValidationConfiguration = (body: ValidationConfiguration) =>
+    this.request<ValidationConfiguration>('validation-configuration', 'PUT', body);
 }

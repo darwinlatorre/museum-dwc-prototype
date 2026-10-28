@@ -6,15 +6,15 @@ import type { Change } from '../models/normalization';
 import type { Context } from '../models/context';
 import { type Dataset, LIMITS } from '../models/dataset';
 import type { Issue } from '../models/analysis-result';
-import type { Profile } from '../../profiles/models/profile';
+import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
 import type { Term } from '../../catalog/models/catalog-term';
 import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
 import { normalize } from '../engine/normalizer';
-import { missingCells, missingFields, requiredFields } from '../engine/required-fields';
+import { missingCells, missingFields } from '../engine/required-fields';
 import { ColumnMapping } from '../components/column-mapping/column-mapping';
 import { RecordContext } from '../components/record-context/record-context';
 import { csvReport, jsonReport } from '../engine/export';
-import { label, profileDescription } from '../../../core/i18n/localization';
+import { label } from '../../../core/i18n/localization';
 
 @Component({
   selector: 'app-import',
@@ -24,14 +24,12 @@ import { label, profileDescription } from '../../../core/i18n/localization';
 })
 export class ImportWorkbench implements OnDestroy {
   label = label;
-  profileDescription = profileDescription;
-  profiles = input.required<Profile[]>();
+  configuration = input.required<ValidationConfiguration>();
+  configurationAvailable = input(true);
   terms = input.required<Term[]>();
-  published = computed(() => this.profiles().filter((p) => p.status === 'PUBLISHED'));
   stages = [
     'Seleccionar archivo',
-    'Contexto y validación',
-    'Elegir perfiles',
+    'Contexto',
     'Mapear columnas',
     'Diagnóstico',
     'Normalizar',
@@ -43,41 +41,31 @@ export class ImportWorkbench implements OnDestroy {
   sheet = signal({ name: '' });
   sheetForm = form(this.sheet);
   data = signal<Dataset | undefined>(undefined);
-  selected = signal<string[]>([]);
   mapping = signal<Record<string, string>>({});
   options = signal({ trim: false, emptyMarkers: false });
   optionForm = form(this.options);
-  context = signal<Context>({ collection: false, permit: false, marine: false, sampling: false });
-  otherContext = signal(false);
+  context = signal<Context | undefined>(undefined);
   setContext(context: Context) {
-    this.otherContext.set(false);
     this.context.set(context);
-  }
-  setOtherContext(other: boolean) {
-    this.otherContext.set(other);
-    if (other) this.context.set({ collection: false, permit: false, marine: false, sampling: false });
-    this.invalidate();
   }
   busy = signal(false);
   error = signal('');
   issues = signal<Issue[] | undefined>(undefined);
   changes = signal<Change[]>([]);
   private diagnosticOptions = signal({ trim: false, emptyMarkers: false });
-  filter = signal({ text: '', severity: '', profile: '' });
+  filter = signal({ text: '', severity: '', context: '' });
   filterForm = form(this.filter);
   filtered = computed(() =>
     (this.issues() ?? []).filter(
       (i) =>
         (!this.filter().severity || i.severity === this.filter().severity) &&
-        (!this.filter().profile || `${i.profile} ${i.version}` === this.filter().profile) &&
-        `${i.field} ${i.row ?? ''} ${i.description} ${i.profile} ${i.version}`
+        (!this.filter().context || i.context === this.filter().context) &&
+        `${i.field} ${i.row ?? ''} ${i.description} ${label(i.context)} ${i.configurationRevision}`
           .toLowerCase()
           .includes(this.filter().text.toLowerCase()),
     ),
   );
-  issueProfiles = computed(() => [
-    ...new Set((this.issues() ?? []).map((i) => `${i.profile} ${i.version}`)),
-  ]);
+  issueContexts = computed(() => [...new Set((this.issues() ?? []).map(i => i.context))]);
   errors = computed(() => (this.issues() ?? []).filter((i) => i.severity === 'ERROR').length);
   warnings = computed(() => (this.issues() ?? []).filter((i) => i.severity === 'WARNING').length);
   preview = computed(() => {
@@ -88,13 +76,10 @@ export class ImportWorkbench implements OnDestroy {
   });
   mappedHeaders = computed(() => this.data()?.headers.map((h) => this.mapping()[h] || h) ?? []);
   mappingValid = computed(() => new Set(this.mappedHeaders()).size === this.mappedHeaders().length);
-  selectedProfiles = computed(() => this.published().filter(p => this.selected().includes(p.id)));
-  hasProfiles = computed(() => this.selectedProfiles().length > 0);
-  missingHeaders = computed(() => requiredFields(this.selectedProfiles(), this.context(), true)
-    .filter(field => !this.data()?.headers.includes(field)));
   missingSummary = computed(() => {
     const data = this.data();
-    return data ? missingFields(data, this.mapping(), this.selectedProfiles(), this.context(), this.diagnosticOptions()) : [];
+    const context = this.context();
+    return data && context ? missingFields(data, this.mapping(), this.configuration(), context, this.diagnosticOptions()) : [];
   });
   missingField = signal<string | undefined>(undefined);
   missingDetail = computed(() => {
@@ -131,14 +116,14 @@ export class ImportWorkbench implements OnDestroy {
     this.focusDetail.set(false);
     this.detailOpener?.focus({ preventScroll: true });
   }
-  private resultStep = 4;
+  private resultStep = 3;
   canVisit(index: number) {
     if (index < 0 || index >= this.stages.length) return false;
     if (index === 0) return true;
     if (!this.data()) return false;
-    if (index <= 2) return true;
-    if (!this.hasProfiles() || this.missingHeaders().length) return false;
-    if (index === 3) return true;
+    if (index === 1) return true;
+    if (!this.context() || !this.configurationAvailable()) return false;
+    if (index === 2) return true;
     if (!this.mappingValid()) return false;
     return this.issues() !== undefined;
   }
@@ -151,13 +136,13 @@ export class ImportWorkbench implements OnDestroy {
     effect(() => {
       this.options();
       this.context();
-      this.profiles();
+      this.configuration();
+      this.configurationAvailable();
       this.terms();
       this.invalidate();
     });
     effect(() => {
       this.data();
-      this.selected();
       this.mapping();
       this.missingField.set(undefined);
       this.showAllIssues.set(false);
@@ -167,7 +152,7 @@ export class ImportWorkbench implements OnDestroy {
       const focus = this.focusDetail();
       const field = this.missingField();
       const all = this.showAllIssues();
-      if (focus && this.step() === 4 && (field || all)) {
+      if (focus && this.step() === 3 && (field || all)) {
         this.host.nativeElement.querySelector<HTMLElement>(all ? '#all-issues-title' : '#missing-cell-title')
           ?.focus({ preventScroll: true });
       }
@@ -266,12 +251,6 @@ export class ImportWorkbench implements OnDestroy {
       this.dispatch({ id: ++this.generation, kind: 'parse', file, sheet: this.sheet().name });
     }
   }
-  toggleProfile(id: string, checked: boolean) {
-    this.invalidate();
-    this.selected.update((ids) =>
-      checked ? [...new Set([...ids, id])] : ids.filter((i) => i !== id),
-    );
-  }
   map(header: string, value: string) {
     this.invalidate();
     this.mapping.update((m) => ({ ...m, [header]: value }));
@@ -281,21 +260,21 @@ export class ImportWorkbench implements OnDestroy {
   }
   validate(normalizing = false) {
     const data = this.data();
-    const profiles = this.selectedProfiles();
-    if (!data || !profiles.length || this.missingHeaders().length || !this.mappingValid()) return;
+    const context = this.context();
+    if (!data || !context || !this.configurationAvailable() || !this.mappingValid()) return;
     this.missingField.set(undefined);
     this.showAllIssues.set(false);
     this.focusDetail.set(false);
-    this.resultStep = normalizing ? 5 : 4;
+    this.resultStep = normalizing ? 4 : 3;
     this.diagnosticOptions.set(normalizing ? { ...this.options() } : { trim: false, emptyMarkers: false });
     this.dispatch({
       id: ++this.generation,
       kind: 'validate',
       data,
       mapping: this.mapping(),
-      profiles,
+      configuration: this.configuration(),
       terms: this.terms(),
-      context: this.context(),
+      context,
       options: this.diagnosticOptions(),
     });
   }

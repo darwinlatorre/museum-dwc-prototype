@@ -55,8 +55,7 @@
   flex-wrap: wrap;
 }
 .file-summary button { margin-left: auto; }
-.profile-options { display: grid; gap: 0.8rem; }
-.profile-options label, .context-grid label {
+.context-grid label {
   display: flex;
   gap: 0.8rem;
   align-items: flex-start;
@@ -64,7 +63,7 @@
   padding: 1rem;
   border-radius: 5px;
 }
-.profile-options input, .context-grid input { margin-top: 0; }
+.context-grid input { margin-top: 0; }
 .workbench-help {
   margin: var(--museum-space-3) 0;
   color: var(--museum-text-muted);
@@ -79,7 +78,6 @@
   outline-offset: 3px;
 }
 .workbench-help p { margin: var(--museum-space-2) 0; }
-.profile-option > .workbench-help { margin: 0 var(--museum-space-4); }
 .diagnosis-actions { margin: var(--museum-space-4) 0; }
 .missing-source { overflow-wrap: anywhere; }
 #missing-cell-detail, #all-issues-detail { min-width: 0; }

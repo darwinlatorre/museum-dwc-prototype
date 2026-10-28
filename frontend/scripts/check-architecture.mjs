@@ -13,8 +13,9 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
 const required = [
   'features/catalog/catalog.ts', 'features/catalog/catalog.html',
   'features/catalog/models/catalog-term.ts',
-  'features/profiles/profiles.ts', 'features/profiles/profiles.html',
-  'features/profiles/models/profile.ts',
+  'features/validation-configuration/validation-configuration.ts',
+  'features/validation-configuration/validation-configuration.html',
+  'features/validation-configuration/models/validation-configuration.ts',
   'features/importer/workbench/import-workbench.ts',
   'features/importer/workbench/import-workbench.html',
   'features/importer/components/column-mapping/column-mapping.ts',
@@ -69,7 +70,7 @@ const workbench = join(app, 'features/importer/workbench/import-workbench.ts');
 const worker = read(workbench).match(/new Worker\(new URL\('([^']+)', import\.meta\.url\),\s*\{\s*type: 'module'/);
 assert.ok(worker, 'El worker debe conservar la URL relativa analizable por Angular');
 assert.equal(resolveImport(workbench, worker[1]), join(app, 'features/importer/engine/analysis.worker.ts'));
-for (const name of ['Term', 'Profile', 'Rule', 'Dataset', 'Context', 'Issue',
+for (const name of ['Term', 'ValidationConfiguration', 'ContextRequirements', 'Dataset', 'Context', 'Issue',
   'Normalization', 'Change', 'WorkerRequest', 'WorkerResponse']) {
   const declarations = sources.filter((file) => !file.endsWith('.spec.ts') &&
     new RegExp(`export (?:interface|type) ${name}\\b`).test(read(file)));

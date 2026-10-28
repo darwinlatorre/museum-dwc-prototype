@@ -1,9 +1,9 @@
-import type { Condition, Profile } from '../../profiles/models/profile';
+import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
 import type { Context } from '../models/context';
 import { type Dataset, LIMITS } from '../models/dataset';
 import type { Issue } from '../models/analysis-result';
 import type { Term } from '../../catalog/models/catalog-term';
-import { ruleMessage } from '../../../core/i18n/localization';
+import { requiredFields } from './required-fields';
 const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 export function suggestions(header: string, terms: Term[]): string[] {
   const needle = key(header);
@@ -15,14 +15,6 @@ export function suggestions(header: string, terms: Term[]): string[] {
     )
     .slice(0, 3)
     .map((t) => t.name);
-}
-function active(condition: Condition, context: Context): boolean {
-  return (
-    condition === 'always' ||
-    (condition === 'permitAndCollection'
-      ? context.permit && context.collection
-      : context[condition])
-  );
 }
 function calendar(y: number, m: number, d: number): boolean {
   const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
@@ -53,7 +45,7 @@ function coordinate(value: string, limit: number): boolean {
 export function validate(
   data: Dataset,
   mapping: Record<string, string>,
-  profiles: Profile[],
+  configuration: ValidationConfiguration,
   terms: Term[],
   context: Context,
 ): Issue[] {
@@ -64,7 +56,7 @@ export function validate(
   const add = (issue: Issue) => {
     if (issues.length >= LIMITS.issues)
       throw new Error(
-        'Se superó el límite de incidencias (100.000). Seleccione menos perfiles o un archivo más pequeño.',
+        'Se superó el límite de incidencias (100.000). Seleccione un archivo más pequeño.',
       );
     issues.push(issue);
   };
@@ -75,45 +67,24 @@ export function validate(
         field: data.headers[i],
         row: null,
         severity: 'WARNING',
-        profile: 'Sistema',
-        version: '1',
+        context: 'system',
+        configurationRevision: configuration.revision,
         description: `Columna desconocida.${proposed.length ? ' Posible equivalencia: ' + proposed.join(', ') + '.' : ' No se encontró una equivalencia Darwin Core.'}`,
       });
     }
   });
-  for (const profile of profiles)
-    for (const rule of profile.rules) {
-      if (!active(rule.condition, context)) continue;
-      const index = headers.indexOf(rule.field);
-      const issue = (row: number | null) =>
-        add({
-          field: rule.field,
-          row,
-          description: ruleMessage(profile, rule) || `Valor no válido para ${rule.field}.`,
-          severity: rule.severity,
-          profile: profile.name,
-          version: profile.version,
-        });
-      if (index < 0) {
-        if (rule.kind === 'required' || rule.kind === 'requiredColumn') issue(null);
-        continue;
-      }
-      for (const row of data.rows) {
-        const value = row.values[index];
-        const blank = !value.trim();
-        if (rule.kind === 'required' && blank) issue(row.row);
-        else if (
-          !blank &&
-          ((rule.kind === 'date' && !date(value)) ||
-            (rule.kind === 'latitude' && !coordinate(value, 90)) ||
-            (rule.kind === 'longitude' && !coordinate(value, 180)))
-        )
-          issue(row.row);
-      }
-    }
-  // Baseline integrity is independent of optional profile rules.
+  for (const field of requiredFields(configuration, context)) {
+    const index = headers.indexOf(field);
+    const issue = (row: number | null) => add({
+      field, row, description: `${field} es obligatorio en este contexto.`, severity: 'ERROR',
+      context, configurationRevision: configuration.revision,
+    });
+    if (index < 0) issue(null);
+    else for (const row of data.rows) if (!(row.values[index] ?? '').trim()) issue(row.row);
+  }
+  // Baseline integrity is independent of the required-field configuration.
   const base = (field: string, row: number, description: string) =>
-    add({ field, row, description, severity: 'ERROR', profile: 'Sistema', version: '1' });
+    add({ field, row, description, severity: 'ERROR', context: 'system', configurationRevision: configuration.revision });
   for (const row of data.rows) {
     const get = (field: string) => row.values[headers.indexOf(field)] ?? '';
     for (const field of ['eventDate', 'decimalLatitude', 'decimalLongitude']) {

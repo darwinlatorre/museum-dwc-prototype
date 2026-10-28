@@ -1,98 +1,51 @@
-# Uso de TanStack Query
+# Metadatos globales con TanStack Query
 
-## Veredicto y corrección
+Un único cliente raíz mantiene catálogo y configuración de validación. Archivos, nombres de archivo, filas, celdas, resultados y cambios de normalización permanecen fuera del query cache y de HTTP.
 
-El uso actual es adecuado para los metadatos del MVP. Se corrigió la deprecación
-real de `injectQueryClient()` sin cambiar transporte, políticas ni arquitectura.
+## Propiedad y consultas
 
-Versiones instaladas: Angular core **21.2.25**, `@tanstack/angular-query-experimental`
-y `@tanstack/query-core` **5.104.5** (sus respectivos `node_modules/.../package.json`).
-La declaración instalada
-`node_modules/@tanstack/angular-query-experimental/dist/inject-query-client.d.mts:8`
-indica exactamente: `@deprecated Use inject(QueryClient) instead.`
-Su implementación (`src/inject-query-client.ts:23`, dentro de ese paquete) obtenía
-el token `QueryClient` del inyector. Se usa ahora `inject(QueryClient)` en
-`src/app/features/catalog/catalog.ts:15` y `src/app/features/profiles/profiles.ts:26`,
-en inicializadores con contexto DI válido y sin crear otro cliente ni un wrapper.
+`src/app/app.config.ts` proporciona el cliente. Las features lo resuelven con `inject(QueryClient)`, sin proveedores propios ni el alias deprecado `injectQueryClient()`. El proveedor registra `mount()`/`unmount()` al resolver/destruir el inyector.
 
-## Auditoría del flujo existente
+| Clave | Lectura desde `app.ts` | Frescura |
+|---|---|---:|
+| `['catalog']` | `Api.catalog(signal)` | 300000 ms |
+| `['validation-configuration']` | `Api.validationConfiguration(signal)` | 30000 ms |
 
-- **Cliente y ciclo de vida:** `src/app/app.config.ts:12–14` proporciona un único
-  cliente raíz. El proveedor instalado registra el token y llama `mount()`/
-  `unmount()` al resolver/destruir el inyector (`node_modules/@tanstack/angular-query-experimental/src/providers.ts:25–33`).
-  Las features no añaden proveedores propios.
-- **Claves y activación:** `src/app/app.ts:16–25` define `['catalog']` y
-  `['profiles']`, con frescura de 300000 y 30000 ms. Su identidad es estructural;
-  no requiere conservar la misma instancia de array. Son lecturas globales sin
-  parámetros dependientes: no necesitan un predicado `enabled`. Se cargan desde
-  el shell independientemente de la sección visible, pues alimentan el workbench.
-- **Funciones de consulta:** devuelven `Promise` y pasan el `AbortSignal` hasta
-  `fetch` (`src/app/app.ts:18,23`, `src/app/core/api/api.ts:20–37`). **No se usa
-  HttpClient ni un puente Observable**. HTTP no exitoso rechaza la promesa, en
-  lugar de convertirse en datos exitosos para Query.
-- **Separación lectura/escritura:** el shell usa `injectQuery`; perfiles y sync
-  usan `injectMutation`. Crear, actualizar, duplicar y publicar comparten
-  invalidación de `['profiles']` en `onSuccess`
-  (`src/app/features/profiles/profiles.ts:59–67,120–138`). Sync invalida
-  `['catalog']` en `onSettled`, incluso ante fallo de transporte, y distingue
-  `SUCCESS`, `FAILED` y `SUPERSEDED`
-  (`src/app/features/catalog/catalog.ts:16–31`). Las consultas activas del shell
-  se vuelven a obtener; no se invalida la colección ajena.
-- **Estados y reintentos:** las lecturas tienen un reintento y no se refrescan
-  por foco (`src/app/app.config.ts:13`); el shell muestra carga/error y permite
-  refetch explícito (`src/app/app.html:44–56`, `src/app/app.ts:26–29`). Las
-  mutaciones de perfiles conservan el default sin reintentos automáticos;
-  sync lo declara explícitamente. Los controles deshabilitan envío pendiente y
-  muestran errores (`src/app/features/profiles/profiles.html:52,65–79,168`,
-  `src/app/features/catalog/catalog.html:12–28`).
-- **Privacidad y persistencia:** la API transporta catálogo y reglas/versiones
-  de perfiles (`src/app/core/api/api.ts:39–58`), no archivos ni registros
-  biológicos. No se configura un persister de Query. Archivos, filas y análisis
-  permanecen en señales y workers del importador, fuera del query cache
-  (`src/app/features/importer/workbench/import-workbench.ts:46–69,159–190,228–241`).
+Son metadatos globales sin parámetros dependientes: se consultan desde el shell independientemente de la sección visible. La identidad de claves es estructural, no depende de conservar el array. Las lecturas conservan un reintento y no se refrescan por foco. El shell muestra carga/error y permite refetch explícito; no fabrica configuración cuando falla la API.
 
-## Salvedades, sin cambios adicionales
+Las query functions devuelven promesas y propagan `AbortSignal` hasta `fetch`. Un HTTP no exitoso rechaza la promesa; no se transforma en datos de éxito. No se añade HttpClient ni puente Observable.
 
-- Perfiles lanza la invalidación sin esperarla: «Perfil guardado» confirma la
-  escritura, no que la lista ya esté refrescada. Un refetch fallido puede dejar
-  datos anteriores visibles junto al error del shell. No es una pérdida de la
-  invalidación ni motivo para introducir actualizaciones optimistas.
-- Un fallo de transporte de una escritura puede ser ambiguo respecto al servidor;
-  perfiles solo invalida al confirmar éxito. Además, el texto genérico de errores
-  HTTP «No se guardaron los cambios» (`src/app/core/api/api.ts:34`) no demuestra
-  por sí mismo rollback para cualquier error. Conviene tratar estas situaciones
-  en una tarea explícita de recuperación/UX, sin reintentar escrituras a ciegas.
-- `Api.request` convierte también abortos en un error genérico de conexión y
-  realiza una aserción de tipo JSON, no validación de esquema en ejecución.
-  Se conserva ese contrato; no se detectó necesidad de cambiarlo para esta DI.
-- SSR, persistencia, optimistic updates y opciones adicionales de caché no son
-  requisitos automáticos para este MVP. Esta revisión no es una auditoría de
-  seguridad ni una verificación con API viva o navegador.
+## Escrituras y recuperación
 
-## Evidencia ejecutada
+El editor de `features/validation-configuration` usa `injectMutation` para enviar `{revision, contexts}` completo. Solo tras éxito:
 
-Desde `frontend`, con el runner serial existente y sin modificar límites:
+1. Cancela consultas anteriores de configuración para que no pisen la respuesta guardada.
+2. Actualiza `['validation-configuration']` con el snapshot devuelto.
+3. Limpia el estado pendiente local y anuncia guardado confirmado.
+4. Invalida esa misma clave y espera su refresco; catálogo queda intacto.
 
-```text
-npm test -- --watch=false --runner-config ../.browser/frontend-architecture/vitest.serial.config.mjs --include=src/app/testing/query-usage.spec.ts
+La revisión nueva llega al workbench montado e invalida diagnóstico/generación; las respuestas del worker anterior se ignoran. No hay actualizaciones optimistas. Los errores conservan el contenido y revisión del editor; una revisión entrante tampoco pisa cambios pendientes. La actualización explícita cancela consultas anteriores y fuerza una lectura con frescura cero. Solo una lectura correcta descarta los cambios; su error mantiene entradas y se muestra separadamente.
+
+La sincronización TDWG conserva `injectMutation`, invalida `['catalog']` en `onSettled` incluso ante fallo de transporte y distingue `SUCCESS`, `FAILED` y `SUPERSEDED`. No cambia configuración. Las escrituras no se reintentan automáticamente; los controles bloquean envíos pendientes y muestran errores reales.
+
+## Límites del contrato
+
+- No se configura persister ni almacenamiento local de Query.
+- Un fallo de transporte puede ser ambiguo respecto a una escritura del servidor. No se debe anunciar éxito ni reenviar a ciegas; actualizar antes de reintentar.
+- El texto genérico HTTP «No se guardaron los cambios» no demuestra rollback para todos los posibles errores. El rechazo atómico por revisión 409 pertenece al contrato backend.
+- `Api.request` conserva la conversión de abortos a error genérico de conexión y una aserción TypeScript del JSON, no validación de esquema en runtime.
+- SSR, optimistic updates y persistencia no forman parte de esta tarea.
+
+## Verificación
+
+`testing/query-usage.spec.ts` comprueba identidad/ciclo de vida del cliente, AbortSignal, consulta fallida sin respaldo sintético, guardado con actualización/invalidation y aislamiento de catálogo, más los cuatro resultados de sincronización. `validation-configuration.spec.ts` ejercita controles públicos, fallos y retención de entradas. Las pruebas usan metadatos simulados del contrato L3, sin API viva.
+
+Ejecutar desde `frontend/`:
+
+```bash
+node scripts/check-architecture.mjs
+npm test -- --watch=false
+npm run build
 ```
 
-RED con producción anterior: exit 1, **9 PASS / 1 FAIL**, exactamente
-`expected 'class _Catalog {\n  terms = __vite_ss…' not to contain 'injectQueryClient'`.
-La guarda es estructural sobre las clases compiladas: sustituir un alias DI
-equivalente no tiene una diferencia funcional que pueda fallar por sí sola.
-GREEN después del reemplazo: exit 0, **10 PASS**. Las nueve pruebas restantes
-pasan antes y después: identidad/ciclo de vida e invalidación con refetch real
-mediante TestBed y API simulada. No leen historia Git ni contactan el servidor.
-
-Tres ejecuciones anteriores fueron fallos de preparación, **no RED esperado**:
-dos con `ReferenceError: Cannot access '__vi_import_4__' before initialization`
-(0 tests), y otra con metadatos de App sin resolver (10 fallidas). Se eliminó
-el mock y se corrigió el setup asíncrono con `compileComponents()`.
-
-- `node scripts/check-architecture.mjs`: exit 0, arquitectura correcta.
-- `npm test -- --watch=false --runner-config ../.browser/frontend-architecture/vitest.serial.config.mjs`:
-  exit 0, **99 pruebas / 11 archivos PASS**.
-- `npm run build`: exit 0; advertencia de bundle inicial **643.82 kB** frente
-  al presupuesto de aviso de **500 kB**. No se cambiaron budgets.
-- `git diff --check`: exit 0, sin salida.
+Los resultados concretos y las limitaciones de navegador/API se registran por el integrador en [VERIFICATION.md](../VERIFICATION.md). La evidencia histórica del reemplazo del alias DI no demuestra por sí sola el flujo global nuevo.

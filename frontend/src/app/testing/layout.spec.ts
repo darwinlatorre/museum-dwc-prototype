@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { Profiles } from '../features/profiles/profiles';
+import { ValidationConfigurationEditor } from '../features/validation-configuration/validation-configuration';
+import { configurationFixture } from './validation-fixture';
 import { RecordContext } from '../features/importer/components/record-context/record-context';
 import { Api } from '../core/api/api';
 import { ColumnMapping } from '../features/importer/components/column-mapping/column-mapping';
@@ -61,17 +62,14 @@ describe('Compact collection layouts', () => {
     expect(css).toMatch(/\.catalog-sync-button[^{}]*\{[^}]*white-space:\s*nowrap/s);
   });
 
-  it('offers page sizes for mapping, profiles and catalog while preserving defaults', async () => {
+  it('offers page sizes for mapping and catalog while preserving defaults', async () => {
     const mapping = TestBed.createComponent(ColumnMapping);
     mapping.componentRef.setInput('headers', ['a']);
     mapping.componentRef.setInput('terms', []);
     mapping.componentRef.setInput('mapping', {});
-    const profiles = TestBed.createComponent(Profiles);
-    profiles.componentRef.setInput('profiles', []);
-    profiles.componentRef.setInput('terms', []);
     const catalog = TestBed.createComponent(Catalog);
     catalog.componentRef.setInput('terms', []);
-    for (const [f, expected] of [[mapping, 12], [profiles, 10], [catalog, 15]] as const) {
+    for (const [f, expected] of [[mapping, 12], [catalog, 15]] as const) {
       await f.whenStable();
       const table = f.debugElement.query(By.directive(Table)).componentInstance as Table;
       expect(table.rows).toBe(expected);
@@ -84,25 +82,19 @@ describe('Compact collection layouts', () => {
   ] }));
   afterEach(() => TestBed.resetTestingModule());
 
-  it('lays out the six rule fields in a dedicated three-column grid without moving removal', async () => {
-    const f = TestBed.createComponent(Profiles);
-    f.componentRef.setInput('profiles', []);
+  it('agrupa el contexto y selector compartido sin editor de reglas legado', async () => {
+    const f = TestBed.createComponent(ValidationConfigurationEditor);
+    f.componentRef.setInput('configuration', configurationFixture(['eventDate']));
     f.componentRef.setInput('terms', []);
-    f.componentInstance.create();
-    f.componentInstance.addRule();
     await f.whenStable();
-    const rule = document.querySelector('fieldset')!;
-    const grid = rule.querySelector('.rule-grid');
-    expect(grid?.children.length).toBe(6);
-    expect(rule.querySelector('button')?.textContent).toContain('Limpiar');
-    const remove = [...rule.querySelectorAll('button')].find(b => b.textContent?.trim() === 'Eliminar regla')!;
-    expect(remove.parentElement).toBe(rule);
-    expect(f.componentInstance.model().rules[0]).toMatchObject({ field: '', kind: 'required', condition: 'always' });
+    expect(f.nativeElement.querySelector('app-dwc-picker')).toBeTruthy();
+    expect(f.nativeElement.querySelector('.rule-grid')).toBeNull();
+    expect(f.nativeElement.textContent).toContain('eventDate');
   });
 
   it('places collection before permit without selecting it or changing the emitted keys', async () => {
     const f = TestBed.createComponent(RecordContext);
-    const context = { collection: false, permit: false, sampling: false, marine: false };
+    const context = undefined;
     f.componentRef.setInput('context', context);
     await f.whenStable();
     const root = f.nativeElement as HTMLElement;
@@ -111,15 +103,14 @@ describe('Compact collection layouts', () => {
     const events: unknown[] = [];
     f.componentInstance.contextChanged.subscribe(value => events.push(value));
     root.querySelector('input')!.click();
-    expect(events).toEqual([{ ...context, collection: true }]);
-    expect(context.collection).toBe(false);
+    expect(events).toEqual(['collection']);
+    expect(context).toBeUndefined();
   });
 
-  it('uses three flexible rule columns and stacks only at narrow widths', async () => {
+  it('conserva la especialización móvil del contexto', async () => {
     const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
-    expect(css).toMatch(/\.rule-grid[^{}]*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
-    expect(css).toMatch(/\.rule-grid[^{}]*\{[^}]*grid-template-columns:\s*1fr/s);
+    expect(css).toMatch(/\.context-grid[^{}]*\{[^}]*grid-template-columns:\s*1fr/s);
   });
 
   it('keeps compact mapping suggestions in one horizontally scrollable strip', async () => {
