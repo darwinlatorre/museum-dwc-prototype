@@ -1,6 +1,7 @@
 package co.edu.unicauca.backend.validationconfiguration;
 
 import co.edu.unicauca.backend.BackendApplication;
+import co.edu.unicauca.backend.validationconfiguration.application.port.in.ConfigurationOperations;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.function.Function;
@@ -90,7 +91,10 @@ class ConfigurationMigrationTests {
             Callable<ConfigurableApplicationContext> start = () -> {
                 ready.countDown();
                 assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
-                var application = new SpringApplicationBuilder(BackendApplication.class).application();
+                // Two contexts share JVM-global Tomcat home properties; HTTP is covered separately.
+                // Keep the genuine Flyway/JPA/bootstrap race without racing embedded web containers.
+                var application = new SpringApplicationBuilder(BackendApplication.class)
+                    .web(WebApplicationType.NONE).application();
                 // Logging is JVM-global; two real bootstraps must not reconfigure Logback concurrently.
                 application.setListeners(application.getListeners().stream()
                     .filter(listener -> !(listener instanceof LoggingApplicationListener)).toList());
@@ -102,9 +106,9 @@ class ConfigurationMigrationTests {
                     for (var future : apps) {
                         var app = future.get();
                         assertRetired(app);
-                        var mvc = MockMvcBuilders.webAppContextSetup((WebApplicationContext) app).build();
-                        mvc.perform(get("/api/validation-configuration")).andExpect(status().isOk())
-                            .andExpect(jsonPath("$.revision").value(0)).andExpect(jsonPath("$.contexts.length()").value(5));
+                        var configuration = app.getBean(ConfigurationOperations.class).get();
+                        assertThat(configuration.revision()).isZero();
+                        assertThat(configuration.contexts()).hasSize(5);
                         assertThat(text(app, "select count(*)::text from validation_configuration")).isEqualTo("1");
                         assertThat(text(app, "select count(*)::text from flyway_schema_history where success")).isEqualTo("4");
                     }
