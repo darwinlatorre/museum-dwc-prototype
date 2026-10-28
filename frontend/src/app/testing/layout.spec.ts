@@ -107,6 +107,20 @@ describe('Compact collection layouts', () => {
     expect(context).toBeUndefined();
   });
 
+  it('mantiene radios nativos compactos y verdes sin heredar geometría de entradas de texto', async () => {
+    const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
+    const rule = css.match(/\.context-grid[^{}]*input\[type=["']?radio["']?\][^{}]*\{([^}]*)\}/s)?.[1];
+    expect(rule).toBeTruthy();
+    expect(rule).toMatch(/width:\s*18px/);
+    expect(rule).toMatch(/height:\s*18px/);
+    expect(rule).toMatch(/min-height:\s*18px/);
+    expect(rule).toMatch(/padding:\s*0/);
+    expect(rule).toMatch(/flex:\s*0 0 18px/);
+    expect(rule).toMatch(/accent-color:\s*var\(--pine\)/);
+    expect(css).toMatch(/\.context-grid[^{}]*input\[type=["']?radio["']?\][^{}]*:focus-visible[^{}]*\{[^}]*outline:\s*2px solid var\(--pine\)/s);
+  });
+
   it('conserva la especialización móvil del contexto', async () => {
     const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
