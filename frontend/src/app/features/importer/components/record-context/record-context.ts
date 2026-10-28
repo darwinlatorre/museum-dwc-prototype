@@ -13,8 +13,11 @@ import type { Context } from '../../models/context';
         <strong>Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados.</strong>
       </label>
     </div>
-    <p>Los cuatro primeros contextos se pueden combinar. Otros significa ninguno de los anteriores;
-      no agrega una regla de validación biológica.</p>
+    <details class="workbench-help">
+      <summary>Combinar contextos o elegir Otros</summary>
+      <p>Los cuatro primeros contextos se pueden combinar. Otros significa ninguno de los anteriores;
+        no agrega una regla de validación biológica.</p>
+    </details>
   `,
 })
 export class RecordContext {

@@ -65,6 +65,29 @@
   border-radius: 5px;
 }
 .profile-options input, .context-grid input { margin-top: 0; }
+.workbench-help {
+  margin: var(--museum-space-3) 0;
+  color: var(--museum-text-muted);
+}
+.workbench-help > summary {
+  cursor: pointer;
+  padding: var(--museum-space-3) 0;
+  color: var(--pine);
+}
+.workbench-help > summary:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 3px;
+}
+.workbench-help p { margin: var(--museum-space-2) 0; }
+.profile-option > .workbench-help { margin: 0 var(--museum-space-4); }
+.diagnosis-actions { margin: var(--museum-space-4) 0; }
+.missing-source { overflow-wrap: anywhere; }
+#missing-cell-detail, #all-issues-detail { min-width: 0; }
+#missing-cell-detail .section-heading, #all-issues-detail .section-heading { flex-wrap: wrap; }
+#missing-cell-title:focus-visible, #all-issues-title:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 3px;
+}
 .checks { display: flex; gap: 1.5rem; margin: 1.5rem 0; }
 .checks label { display: flex; align-items: center; gap: 0.5rem; }
 .checks input { margin: 0; }
@@ -81,6 +104,18 @@
 .mapping-table .p-datatable-table { table-layout: fixed; min-width: 52rem; }
 .mapping-table th:first-child { width: 20%; }
 .mapping-table th:nth-child(2) { width: 36%; }
+.mapping-summary {
+  margin: 0 0 var(--museum-space-3);
+  color: var(--museum-text-muted);
+}
+.mapping-table .mapping-empty-divider > th {
+  padding: var(--museum-space-2) var(--museum-space-3);
+  border-top: 1px solid var(--museum-line);
+  background: var(--museum-surface);
+  color: var(--museum-text-muted);
+  text-align: left;
+  font-weight: 500;
+}
 .mapping-table app-dwc-picker .dwc-picker { display: flex; align-items: center; }
 .mapping-table .dwc-picker > button {
   width: auto;

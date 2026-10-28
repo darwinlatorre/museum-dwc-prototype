@@ -15,7 +15,7 @@
 | 7 | `shared/design-system/_primeng.scss` | Tokens de select, overlays, paginadores y selector compartido `.dwc-picker`. |
 | 8–10 | `features/catalog/catalog.scss`, `features/profiles/profiles.scss`, `features/importer/importer.scss` | Sincronización/definiciones; editor/reglas; pasos/carga/contexto/mapeo/validación, respectivamente. |
 
-Las excepciones compactas de mapeo se aplican después de las primitivas. Los cinco paginadores comparten `.p-paginator .p-select`; no hay estilos por instancia. El corte móvil continúa en 800px y los overlays mantienen el límite del viewport.
+Las excepciones compactas de mapeo se aplican después de las primitivas. Todos los paginadores, incluido el resumen de campos obligatorios sin datos, comparten `.p-paginator .p-select`; no hay estilos por instancia. El corte móvil continúa en 800px y los overlays mantienen el límite del viewport.
 
 ## Tokens y uso
 
@@ -28,6 +28,8 @@ Las excepciones compactas de mapeo se aplican después de las primitivas. Los ci
 - `--museum-radius-{sm,md,lg,panel}`: radios compartidos; el control consume `md`.
 - `--museum-nav-*`, `--museum-workspace-border`, `--museum-footer-text`: superficies y estados semánticos del shell, sin colores duplicados en `app.scss`.
 - Se conservan `--pine`, `--ink`, `--muted`, `--line`, `--select-control-{height,border,radius}`, `--mapping-control-height` y `--p-primary-color` como alias. Las medidas particulares de cada funcionalidad permanecen junto a sus reglas; no se crea una escala sin consumidores.
+
+El mapeo conserva una única tabla: columnas con datos primero y un separador «Campos sin datos» de 1 px antes de las vacías, repetido al inicio de las páginas interiores de ese grupo. Su texto, superficie, borde y espacios consumen tokens existentes desde `importer.scss`; los recuentos y el rótulo evitan depender solo del color. El diagnóstico usa la misma primitiva de tabla para resumir faltantes sin reemplazar el detalle por fila. Sus conteos de valores vacíos son botones con estado expandido; abren una única región etiquetada con ubicaciones de las celdas originales. Campo y columna se presentan una vez, sobre las filas y valores; los valores de trabajo aparecen solo si hay cambios. «Ver todas las incidencias» reemplaza esa región por el detalle completo con filtros. El cierre devuelve el foco al disparador exacto; abrir o cambiar el modo enfoca su encabezado sin desplazamiento vertical. Las tablas de diagnóstico y normalización ocultan el paginador si todo cabe en una página, conservando tamaños y opciones. El detalle reutiliza tablas, acciones y controles existentes, sin otra paleta. Las ayudas y descripciones extensas usan `details`/`summary` nativos con foco visible y tokens existentes. La navegación desplaza solo su franja horizontal tras cambiar el paso activo o redimensionar la ventana, no en cada comprobación; el listener de ventana pertenece al componente y se retira al destruirlo; «Finalizar» no incorpora contenido todavía.
 
 Para añadir una acción, reutilizar `button` y `.actions`; para un formulario, `label` y `.form-grid`; para un selector DwC, el componente compartido existente y su clase `.dwc-picker`. No sustituir selects nativos ni duplicar su comportamiento.
 

@@ -1,6 +1,100 @@
 # Evidencia de verificación del MVP
 
-## Estado actual: Lombok, MapStruct y auditoría de los workers
+## Estado actual: flujo de análisis de colecciones
+
+Rama local `feat/normalization-data-treatment`, sin commit, push ni PR nuevos. Orden: archivo → contexto y validación → perfiles → mapeo → diagnóstico → normalización → finalizar. «Finalizar» permanece vacío. La comprobación de perfiles bloquea por encabezados obligatorios de severidad error aplicables al contexto; no bloquea por celdas vacías ni advertencias. No se aplican equivalencias automáticamente.
+
+El mapeo agrupa columnas con datos antes de las totalmente vacías, con recuentos y separador fino «Campos sin datos» en la misma tabla, también al empezar páginas interiores del grupo vacío. `NULL` y `N/A` siguen siendo datos hasta aprobar su normalización. El diagnóstico resume faltantes por campo con registros afectados/total, sin contar dos veces la misma fila entre perfiles, y conserva detalle, filtros y descargas completas. El primer diagnóstico usa originales; aplicar normalización vuelve a validar una copia sin modificar el archivo.
+
+| Comprobación nueva | Resultado observado |
+|---|---|
+| RED del flujo público | `npm test -- --watch=false --runner-config ../.browser/normalization/vitest.serial.config.mjs --include src/app/features/importer/workbench/import-workbench.spec.ts`: exit 1, cuatro fallidas y una aprobada antes de implementar |
+| Agrupación delegada | RED exit 1 (cinco fallidas, una aprobada); GREEN exit 0 (seis aprobadas). El padre leyó cambios/pruebas y las contrastó después en la suite completa |
+| Integración del flujo | Primera pasada: nueve aprobadas, dos fallidas por selector de prueba que no reconocía el número de los pasos; siguiente: 22 aprobadas, dos fallidas por fixture que duplicaba el destino `catalogNumber`. Se corrigieron las pruebas/fixture sin retirar aserciones de comportamiento |
+| Focalizadas finales | Workbench, requisitos y evolución: 18 pruebas aprobadas, exit 0; cubren el ejemplo `subfamily` 10 de 12, contexto, bloqueo, normalización, originales, cancelación, unicidad, navegación y descargas |
+| Suite frontend completa | `cd frontend && npm test -- --watch=false --runner-config ../.browser/normalization/vitest.serial.config.mjs`: **113 pruebas en 13 archivos**, exit 0. Incluye pruebas estructurales del sistema de diseño y seis de agrupación; no sumar las focalizadas |
+| Build | `cd frontend && npm run build`: exit 0. Advertencia: bundle inicial 644,16 kB frente al umbral de aviso 500 kB; no se cambió el presupuesto |
+| Arquitectura | `node frontend/scripts/check-architecture.mjs`: exit 0 |
+| Espacios/diff | `git diff --check`: exit 0 |
+
+### Ampliación: ubicaciones desde estadísticas de faltantes
+
+El conteo de valores vacíos abre una región inline paginada con encabezado y número de columna de origen (desde 1), campo mapeado, fila original y valores original/de trabajo. Conserva filas no contiguas y no duplica ubicaciones por perfiles. Las columnas completamente ausentes no ofrecen ubicaciones ficticias. El detalle puede cerrarse y se limpia al invalidar las entradas; `NULL`/`N/A` solo aparecen entre los vacíos con normalización aprobada.
+
+- Worker: dos pruebas DOM nuevas en RED (exit 1, diez existentes aprobadas), un fallo intermedio por invalidación reactiva que cancelaba el parseo, luego GREEN **12/12** focalizadas (exit 0). El padre leyó helper, componente, plantilla y pruebas; contrastó el resultado con la suite completa siguiente.
+- Padre: `cd frontend && npm test -- --watch=false --runner-config ../.browser/normalization/vitest.serial.config.mjs` terminó con **115 pruebas en 13 archivos aprobadas**, exit 0. Es la suite actual completa; no sumar las 113 anteriores ni las focalizadas.
+- Padre: `cd frontend && npm run build`, exit 0, con advertencia del bundle inicial **644,19 kB** frente a 500 kB. No se modificó el presupuesto.
+- Padre: `node frontend/scripts/check-architecture.mjs` y `git diff --check`, exit 0.
+- Segundo ASSESS sobre esta ampliación: no evaluable por untracked, sin `reviewDue` ni continuación; sin START ni aprobación nativa. La revisión visual real continúa pendiente por el mismo bloqueo de herramienta, sin reintentos.
+
+### Auditoría UX/UI posterior con agent-browser
+
+El usuario autorizó instalar `agent-browser` y Chrome globalmente para su usuario. CLI **0.40.0** comprobado; Chrome **156.0.8078.73** instalado en `/home/dark/.agent-browser/browsers/`. npm terminó exit 0 con postinstall bloqueado por su política; el CLI funcionó sin habilitar scripts ni cambiar configuración npm. El primer `open` falló por Chrome ausente; el diagnóstico offline confirmó la dependencia. La descarga local previa terminó pero se sustituyó por la global a pedido humano; no se borraron archivos.
+
+Sesión propia `normalization-ux-01a18024`, cerrada al terminar. Recorrido mediante controles públicos, sin inyectar estado: CSV sintético de 12 registros/22 columnas, contexto Otros, perfil Museo, segunda página de mapeo, diagnóstico, detalle mediante Enter, cierre, descarga JSON, normalización sin cambios y Finalizar vacío; segundo CSV sintético con encabezados faltantes para comprobar bloqueo. Viewports **1440×1000** y **390×844**. Capturas guardadas y abiertas/inspeccionadas en `.browser/normalization/ux/`: `desktop-{contexto,perfiles,mapeo-vacios,diagnostico,detalle}.png`, `mobile-{diagnostico,detalle,normalizar,finalizar,bloqueo}.png`.
+
+**Comprobaciones funcionales nuevas:**
+
+- `subfamily`: resumen **10 de 12**, detalle **columna original 19, filas 2–11**, sin duplicación; `tribe` y `subtribe`: 12 cada una. El JSON descargado contiene **34 incidencias** con esos mismos recuentos y filas.
+- La segunda página de mapeo muestra los dos campos totalmente vacíos tras el separador; la columna parcialmente vacía `subfamily` permanece entre las que sí contienen datos. El archivo incompleto muestra los encabezados faltantes y mantiene deshabilitado «Mapear columnas».
+- Enter abre el detalle; el cierre funciona. «Finalizar» permanece vacío, tal como fue solicitado. No se modificaron opciones de normalización durante esta auditoría; no se atribuye nueva cobertura visual de sus transformaciones.
+- HAR `auditoria.har`: cuatro entradas GET, ninguna operación de escritura ni nombre/contenido del CSV en solicitudes. Tres entradas de worker registran estado 0: se consideran solicitudes emitidas, no respuestas HTTP exitosas. No se afirmó que el HAR cubra tráfico anterior al inicio de grabación.
+- GET públicos de perfiles y estado de catálogo son **idénticos byte a byte antes/después**, guardados como `before-*.json`/`after-*.json`. Esto contrasta metadatos, no prueba ausencia universal de efectos.
+
+**Hallazgos de UX, no corregidos en esta auditoría:**
+
+1. Al abrir el conteo conviven **tres tablas**: resumen, ubicaciones y detalle general que repite las mismas incidencias. La página alcanza **2992 px en escritorio** y **3862 px en móvil**, con el fixture de solo 12 registros.
+2. El detalle repite por fila `subfamily`, el número 19, nuevamente `subfamily` y dos valores «(vacío)». La ubicación es correcta, pero el contexto común ocupa columnas innecesarias.
+3. Tras enfocar el botón de cierre y pulsar Enter, `document.activeElement.tagName` es **BODY**, no el conteo que abrió el detalle: se pierde la referencia de teclado.
+4. En móvil, el paso activo Diagnóstico queda fuera de la franja visible: posición horizontal x=563 frente al borde derecho del contenedor x=366. La franja no se desplaza automáticamente al avanzar.
+5. No hay desborde horizontal de la página (**390 px** de contenido y viewport), pero las tablas de ubicaciones y de incidencias requieren desplazamiento interno: **517/341 px** y **672/341 px**, respectivamente. Para conocer valores originales/de trabajo hay que desplazarse lateralmente.
+6. Perfiles muestra descripciones largas de las tres alternativas al mismo tiempo. Contexto y diagnóstico presentan varios párrafos de instrucciones; un resumen de tres campos y una vista previa vacía conservan paginadores y selectores sin aportar navegación útil.
+
+**Conclusión:** comprobación funcional observada, pero la presentación no se considera aceptada en usabilidad. Propuesta pendiente de decisión humana: resumen compacto por campo/tipo, una única vista de detalle bajo demanda, mostrar campo/columna una vez en el encabezado, filas/valores sin repetir contexto y ayudas extensas plegadas. Mantener descargas completas y los tokens/controles existentes. No se modificó la interfaz ni se ejecutaron suites nuevas: es una auditoría, no una corrección. La instalación global y el recorrido resuelven el bloqueo histórico de herramienta de los apartados anteriores; no convierten las 115 pruebas previas en una aprobación visual ni en auditoría exhaustiva de accesibilidad.
+
+### Simplificación autorizada tras la auditoría UX
+
+El usuario aceptó aplicar la propuesta a todo el flujo con «Si.». La implementación conserva los siete pasos y los contratos: ayudas/descripciones extensas desplegables, resumen por campo y un único detalle bajo demanda. «Ver todas las incidencias» reemplaza el detalle de vacíos; las descargas permanecen completas. Campo y columna se muestran una vez; valores de trabajo solo cuando hay cambios. Paginadores de diagnóstico/normalización ocultos si todo cabe en una página. El cierre devuelve foco al disparador y el cambio de paso desplaza solo la franja horizontal.
+
+**Comprobaciones automatizadas de esta simplificación:**
+
+- Worker: RED exit 1 (10 fallos esperados y 25 pases); pasada intermedia exit 1 (3 fallos y 33 pases) por aserciones que asumían ausencia DOM del paginador en vez de `display:none` de PrimeNG; GREEN exit 0, **36/36** en cuatro archivos. No se retiraron las aserciones de visibilidad.
+- Padre: fuentes, plantilla, estilos y documentación leídos; suite completa `cd frontend && npm test -- --watch=false --runner-config ../.browser/normalization/vitest.serial.config.mjs`, exit 0: **120 pruebas en 13 archivos aprobadas**. No sumar focalizadas ni suites anteriores.
+- Padre: `cd frontend && npm run build`, exit 0; aviso de bundle inicial **644,90 kB** frente a 500 kB, sin cambiar presupuesto.
+- Padre: `node frontend/scripts/check-architecture.mjs` y `git diff --check`, exit 0.
+- ASSESS sigue no evaluable por untracked, sin `reviewDue` ni continuación; no se inició ni se atribuye aprobación nativa.
+- La primera aceptación Chrome encontró un caso no cubierto: reducir 1440→390 px sin cambiar Diagnóstico dejaba el paso fuera de vista (x563–698 frente al borde366; scrollLeft0). Se reprodujo antes de corregirlo. Worker añadió RED (1 fallida/31 aprobadas), luego GREEN **32/32**. La corrección comparte `scrollActiveStep()` entre efecto de render y listener `window:resize` gestionado por Angular; la prueba cubre ambos bordes, ausencia de movimiento vertical y limpieza al destruir.
+- Padre, candidato final con resize: `cd frontend && npm test -- --watch=false --runner-config ../.browser/normalization/vitest.serial.config.mjs && npm run build`, exit 0: **121 pruebas en 13 archivos aprobadas**, build exit 0, aviso inicial **644,91 kB/500 kB**. Es la suite vigente, no se suma a las 120 anteriores. Checker de arquitectura y `git diff --check` también exit 0.
+
+**Aceptación real del flujo compacto:** sesión propia `normalization-compact-01a18024`, Chrome global, viewports 1440×1000 y 390×844, cerrada al terminar. Los CSV se seleccionaron mediante el control de archivo, sin inyectar estado. Se abrieron/inspeccionaron nueve capturas en `.browser/normalization/ux-compact/`: escritorio de contexto, perfiles, resumen y detalle; móvil de resumen, detalle, incidencias filtradas, normalización vacía y detalle normalizado.
+
+| Contraste observado en Chrome | Resultado |
+|---|---|
+| Vista inicial del diagnóstico | Una tabla, ningún detalle abierto y cero paginadores visibles para tres campos; ya no aparecen las incidencias completas de forma automática |
+| Ubicaciones de `subfamily` | Diez registros, columna19 indicada una vez, filas2–11; dos columnas en vez de seis. En móvil, ancho341px y scroll341px: no requiere desplazamiento horizontal |
+| Modos excluyentes | «Ver todas las incidencias» retira el detalle de vacíos y muestra el listado completo; los filtros siguen accesibles |
+| Teclado y foco | Enter abre y enfoca el encabezado; cerrar devuelve el foco al conteo exacto o a «Ver todas las incidencias», según el disparador |
+| Resize y navegación móvil | Tras 1440→390, Diagnóstico queda visible x231–366, `scrollLeft332`; también se observó Finalizar visible al avanzar. Página390px, sin desborde horizontal general |
+| Ayudas | Ayuda de contexto abierta/cerrada mediante `summary`; descripciones de perfiles y explicaciones extensas inicialmente plegadas, sin borrar su contenido |
+| Paginación | Resumen pequeño, detalle de diez filas y preview vacía sin controles visibles. Listado completo de34 incidencias conserva paginación; límites mayores cubiertos además por pruebas DOM |
+| Normalización con cambios | Segundo CSV sintético: `subfamily` pasa de8 a10 vacíos al aprobar trim+marcadores. Filas2/3 conservan originales ` NULL ` y `N/A`; trabajo `(vacío)`. La tercera columna aparece solo con cambios; filas sin cambio muestran `—` |
+| Finalizar | Vacío y paso activo visible, conforme al pedido |
+| Exportaciones con filtros activos | JSON y CSV contienen **34 incidencias completas**, no el resultado filtrado; JSON conserva subfamily10 y filas2–11, tribe12 y subtribe12 |
+| Tráfico y metadatos | HAR final seis GET, sin escrituras ni nombre/bytes del CSV. Cinco entradas de worker con estado0 no se atribuyen como HTTP exitosas. GET públicos de perfiles y estado del catálogo idénticos byte a byte antes/después |
+
+Con el mismo fixture, la altura de la vista inicial pasó de2348 a1047px en escritorio y de3112 a1307px en móvil; con detalle abierto, de2992 a1611px y de3862 a1918px, respectivamente. Es una comparación de estas capturas/estados, no una métrica universal ni una aceptación humana de estética. El listado completo avanzado sigue siendo ancho y puede requerir desplazamiento interno en móvil, pero ya no se muestra por defecto.
+
+Incidentes preservados: HMR recargó la sesión al aplicar el fix de resize, por lo que se repitió la selección pública del archivo y se separaron `intermediate.har` (47 entradas de desarrollo) y `final.har` (seis entradas). Un probe DOM falló por redeclarar una constante JavaScript en el contexto persistente del CLI; una nueva lectura encapsulada confirmó Finalizar vacío. No fue un fallo de producto, no se repitieron acciones de usuario para simular un resultado. No se ejecutó axe ni se afirma auditoría exhaustiva de accesibilidad/seguridad. Sin cambios backend, dotenv, datos vivos, dependencias de aplicación, commits o publicación.
+
+### Límites históricos de la implementación antes de habilitar el navegador
+
+- **Navegador real pendiente en la entrega inicial (resuelto para el recorrido posterior, con hallazgos abiertos):** `agent-browser skills get core` terminó con código 127 (`agent-browser: command not found`). No se instaló ni se intentó otro navegador. Las pruebas DOM y de CSS no prueban geometría, foco real, escritorio/móvil ni accesibilidad exhaustiva. Hace falta habilitar la herramienta o realizar aceptación visual humana.
+- **Revisión nativa no evaluable:** ASSESS rechazó archivos untracked sin declaración explícita; no devolvió `reviewDue` ni continuación. No se inició una revisión ni se inventó aprobación; RDD permanece habilitado. No se accedió ni se stageó `.env.example` para eludir la protección.
+- No se repitieron backend, semillas, Docker ni auditoría npm: no cambian código backend, contratos HTTP, datos o dependencias. La auditoría npm histórica sigue pendiente con aceptación humana.
+- No hay CLI u opción nuevos que requieran diferencial de comandos. Las regresiones de los controles compartidos se contrastaron mediante sus pruebas públicas existentes, adaptadas solo al nuevo orden y a un fixture con encabezado obligatorio presente.
+- Runner serial local ignorado `.browser/normalization/vitest.serial.config.mjs`: `maxWorkers: 1`, `fileParallelism: false`. No altera aserciones ni se presupone disponible en otro clon. Los originales, los dotenv y los datos MVP no se modificaron.
+
+## Historial: Lombok, MapStruct y auditoría de los workers
 
 Cortes locales de código: `d53a1e1` (generación), `8f7b381` (perfil) y `75395bb` (catálogo), sobre `8dab659`. No se publicó la rama.
 

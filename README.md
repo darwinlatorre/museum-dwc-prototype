@@ -44,11 +44,12 @@ No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Las imág
 ## Análisis de un archivo
 
 1. Seleccionar un CSV o XLSX y, cuando corresponda, su hoja. La primera fila contiene los encabezados y las siguientes los registros. Hay ejemplos en `examples/`.
-2. Elegir uno o varios perfiles **publicados**. Los borradores no se utilizan para diagnósticos reproducibles.
-3. Confirmar el mapeo de columnas. Las sugerencias Darwin Core no se aplican automáticamente.
-4. Elegir la normalización y revisar su vista previa. Los valores originales del archivo no cambian.
-5. Indicar los contextos aplicables: asociados a un permiso de recolección o acceso a recursos genéticos, colección biológica, eventos de muestreo y marinos. Los cuatro son combinables. «Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados» desmarca los cuatro; seleccionar cualquiera de ellos desmarca «Otros». Las condiciones corresponden al lote analizado; separar los lotes con contextos distintos.
-6. Validar, filtrar las incidencias y descargar el diagnóstico. La ausencia de una columna se informa en el encabezado; los errores de registros indican la fila original, a partir de la fila 2.
+2. En **Contexto y validación**, indicar los contextos aplicables: asociados a un permiso de recolección o acceso a recursos genéticos, colección biológica, eventos de muestreo y marinos. Los cuatro son combinables. «Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados» desmarca los cuatro; seleccionar cualquiera de ellos desmarca «Otros». Las condiciones corresponden al lote analizado; separar los lotes con contextos distintos.
+3. Elegir uno o varios perfiles **publicados**. Se comprueban los encabezados obligatorios de severidad error aplicables al contexto: si falta alguno, se informa cuál y se bloquea el avance hasta cambiar archivo, perfiles o contexto. Se exigen sus nombres oficiales, no equivalencias sugeridas. Las reglas de advertencia no bloquean; los valores vacíos se revisan después. Los borradores no se utilizan para diagnósticos reproducibles.
+4. Confirmar el mapeo de columnas: primero aparecen las que contienen datos y luego las vacías bajo «Campos sin datos». Las sugerencias Darwin Core no se aplican automáticamente. Ejecutar **Validar localmente**.
+5. Revisar el **Diagnóstico**: primero aparece un resumen compacto de campos obligatorios sin datos, sin duplicar registros entre perfiles. Abrir un conteo muestra sus filas originales y valores; el campo y la columna de origen se indican una sola vez en el encabezado, incluso con columnas mapeadas. **Ver todas las incidencias** permite consultar el detalle completo filtrable, en lugar de mostrar ambas vistas a la vez. Las descargas incluyen todo el diagnóstico. La ausencia de una columna se informa como tal, sin inventar celdas; los errores de registros indican la fila original, a partir de la fila 2.
+6. En **Normalizar**, elegir opciones, revisar la vista previa y pulsar **Aplicar normalización y validar** para actualizar el diagnóstico de una copia de trabajo. El primer diagnóstico usa los valores originales. El archivo original no cambia.
+7. **Finalizar** queda vacío por ahora; no guarda ni envía registros.
 
 El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de perfiles y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
 

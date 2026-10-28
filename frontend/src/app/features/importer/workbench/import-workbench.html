@@ -29,10 +29,13 @@
 @if (step() === 0) {
   <section class="upload">
     <h3>Seleccione un archivo de la colección</h3>
-    <p>
-      CSV (UTF-8 separado por comas) o XLSX. Hasta 10 MiB, 50.000 filas de datos y 500 columnas. Una
-      fila de encabezados con nombres únicos y no vacíos.
-    </p>
+    <p>CSV o XLSX · Hasta 10 MiB.</p>
+    <details class="workbench-help">
+      <summary>Formatos, límites y privacidad</summary>
+      <p>CSV (UTF-8 separado por comas) o XLSX. Hasta 10 MiB, 50.000 filas de datos y 500 columnas.
+        Una fila de encabezados con nombres únicos y no vacíos.</p>
+      <p>Los archivos se analizan en un Web Worker dedicado del navegador. No se envía nada al servidor de perfiles.</p>
+    </details>
     <label class="file-picker"
       >Archivo de la colección<input
         type="file"
@@ -40,10 +43,6 @@
         (change)="chooseFile($event)"
         [disabled]="busy()"
     /></label>
-    <p>
-      Los archivos se analizan en un Web Worker dedicado del navegador. No se envía nada al servidor
-      de perfiles.
-    </p>
     @if (sheets().length) {
       <label
         >Seleccione la hoja de cálculo que desea analizar<select [formField]="sheetForm.name">
@@ -64,13 +63,32 @@
   </div>
   @switch (step()) {
     @case (1) {
+      <h3>Declare el contexto de los registros</h3>
+      <details class="workbench-help">
+        <summary>Cómo se aplica el contexto</summary>
+        <p>Active solo los contextos que correspondan a este archivo. Las reglas condicionales no
+          deducen el contexto a partir de los valores de las celdas.</p>
+        <p>Las reglas con la condición «Permiso y depósito en colección» se aplican solo cuando ambos
+          contextos están activos. Las fechas y coordenadas siempre se verifican cuando tienen valor.
+          Este diagnóstico no constituye una certificación del SiB.</p>
+      </details>
+      <app-record-context [context]="context()" [other]="otherContext()"
+        (contextChanged)="setContext($event)" (otherChanged)="setOtherContext($event)" />
+      <div class="wizard-footer">
+        <button (click)="visit(0)">Atrás</button>
+        <p-button label="Elegir perfiles" [disabled]="busy()" (onClick)="visit(2)" />
+      </div>
+    }
+    @case (2) {
       <h3>Elija los perfiles publicados</h3>
-      <p>
-        Cada perfil se ejecuta de forma independiente. Cada incidencia conserva el nombre y la
-        versión del perfil que la originó.
-      </p>
+      <details class="workbench-help">
+        <summary>Cómo se combinan los perfiles</summary>
+        <p>Cada perfil se ejecuta de forma independiente. Cada incidencia conserva el nombre y la
+          versión del perfil que la originó.</p>
+      </details>
       <div class="profile-options">
         @for (profile of published(); track profile.id) {
+          <div class="profile-option">
           <label
             ><input
               type="checkbox"
@@ -78,105 +96,56 @@
               (change)="toggleProfile(profile.id, checked($event))"
             /><span
               ><strong>{{ profile.name }} {{ profile.version }}</strong
-              ><small
-                >{{ profileDescription(profile) }} · {{ profile.rules.length }} reglas</small
-              ></span
-            ></label
-          >
+              ><small>{{ profile.rules.length }} reglas</small></span></label>
+          <details class="workbench-help">
+            <summary [attr.aria-label]="'Descripción de ' + profile.name + ' ' + profile.version">Descripción</summary>
+            <p>{{ profileDescription(profile) }}</p>
+          </details>
+          </div>
         } @empty {
           <p>No hay perfiles publicados. Primero cree y publique un perfil.</p>
         }
       </div>
+      @if (hasProfiles()) {
+        @if (missingHeaders().length) {
+          <div class="notice" role="alert">
+            <strong>No puede continuar.</strong>
+            Faltan campos obligatorios: {{ missingHeaders().join(', ') }}.
+            Revise el archivo o cambie los perfiles o el contexto. Se exigen los nombres oficiales de los encabezados;
+            las equivalencias se eligen en el paso posterior de mapeo.
+          </div>
+        } @else {
+          <p class="notice" role="status">El archivo contiene los campos obligatorios para este contexto. Puede continuar.
+            Los valores vacíos y otras inconsistencias se revisarán en el diagnóstico.</p>
+        }
+      }
       <div class="wizard-footer">
-        <p-button label="Mapear columnas" [disabled]="!canVisit(2)" (onClick)="visit(2)" />
+        <button (click)="visit(1)">Atrás</button>
+        <p-button label="Mapear columnas" [disabled]="!canVisit(3)" (onClick)="visit(3)" />
       </div>
     }
-    @case (2) {
+    @case (3) {
       <h3>Identifique y mapee las columnas</h3>
-      <p>
-        Se reconocen los nombres exactos. Las sugerencias no se aplican hasta que las seleccione.
-        Deje las columnas desconocidas sin cambios para incluirlas como advertencias.
-      </p>
-      <app-column-mapping [headers]="dataset.headers" [terms]="terms()" [mapping]="mapping()"
+      <details class="workbench-help">
+        <summary>Ayuda para mapear columnas</summary>
+        <p>Se reconocen los nombres exactos. Las sugerencias no se aplican hasta que las seleccione.
+          Deje las columnas desconocidas sin cambios para incluirlas como advertencias.</p>
+      </details>
+      <app-column-mapping [headers]="dataset.headers" [rows]="dataset.rows" [terms]="terms()" [mapping]="mapping()"
         (mapped)="map($event.header, $event.value)" />
       @if (!mappingValid()) {
         <p role="alert" class="error">Cada campo de destino puede usarse una sola vez.</p>
       }
       <div class="wizard-footer">
-        <button (click)="visit(1)">Atrás</button
+        <button (click)="visit(2)">Atrás</button
         ><p-button
-          label="Revisar normalización"
-          [disabled]="!canVisit(3)"
-          (onClick)="visit(3)"
+          label="Validar localmente"
+          [disabled]="!mappingValid() || busy()"
+          (onClick)="validate()"
         />
       </div>
     }
-    @case (3) {
-      <h3>Normalice solo con su aprobación</h3>
-      <p>
-        Estas opciones afectan únicamente una copia de trabajo para la validación. Los valores
-        originales y el archivo no se modifican.
-      </p>
-      <div class="checks">
-        <label
-          ><input type="checkbox" [formField]="optionForm.trim" />Eliminar espacios al inicio y al
-          final</label
-        >
-        <label
-          ><input type="checkbox" [formField]="optionForm.emptyMarkers" />Tratar NULL y N/A como
-          vacíos (sin distinguir mayúsculas)</label
-        >
-      </div>
-      <h4>Vista previa de cambios en los primeros 20 registros</h4>
-      <p-table [value]="preview()" [paginator]="true" [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50, 100]" [showCurrentPageReport]="true"
-        currentPageReportTemplate="{first}–{last} de {totalRecords} cambios">
-        <ng-template #header
-          ><tr>
-            <th>Fila de origen</th>
-            <th>Campo</th>
-            <th>Original</th>
-            <th>Valor de trabajo</th>
-          </tr></ng-template
-        >
-        <ng-template #body let-change
-          ><tr>
-            <td>{{ change.row }}</td>
-            <td>{{ change.field }}</td>
-            <td class="literal">{{ change.before }}</td>
-            <td class="literal">{{ change.after || '(vacío)' }}</td>
-          </tr></ng-template
-        >
-        <ng-template #emptymessage
-          ><tr>
-            <td colspan="4">No hay cambios en esta vista previa.</td>
-          </tr></ng-template
-        >
-      </p-table>
-      <div class="wizard-footer">
-        <button (click)="visit(2)">Atrás</button
-        ><p-button label="Confirmar opciones y continuar" (onClick)="visit(4)" />
-      </div>
-    }
     @case (4) {
-      <h3>Declare el contexto de los registros</h3>
-      <p>
-        Active solo los contextos que correspondan a este archivo. Las reglas condicionales no
-        deducen el contexto a partir de los valores de las celdas.
-      </p>
-      <app-record-context [context]="context()" [other]="otherContext()"
-        (contextChanged)="setContext($event)" (otherChanged)="setOtherContext($event)" />
-      <p>
-        Las reglas con la condición «Permiso y depósito en colección» se aplican solo cuando ambos
-        contextos están activos. Las fechas y coordenadas siempre se verifican cuando tienen valor.
-        Este diagnóstico no constituye una certificación del SiB.
-      </p>
-      <div class="wizard-footer">
-        <button (click)="visit(3)">Atrás</button
-        ><p-button label="Validar localmente" [disabled]="busy()" (onClick)="validate()" />
-      </div>
-    }
-    @case (5) {
       @if (issues() !== undefined) {
         <div class="section-heading">
           <div>
@@ -190,6 +159,73 @@
             <button (click)="download('json')">Descargar JSON</button
             ><button (click)="download('csv')">Descargar CSV</button>
           </div>
+        </div>
+        <section class="missing-summary" aria-labelledby="missing-summary-title">
+          <h4 id="missing-summary-title">Resumen de campos obligatorios sin datos</h4>
+          <details class="workbench-help">
+            <summary>Cómo leer los resultados y las descargas</summary>
+            <p>Cada registro se cuenta una sola vez por campo, aunque lo exijan varios perfiles.
+              Una columna ausente afecta a todos los registros. Las reglas que solo exigen la columna no exigen valores.</p>
+            <p>Las columnas y filas corresponden al archivo original. (vacío) indica un valor sin datos;
+              los originales se conservan. El valor de trabajo se muestra solo si cambió; — indica sin cambios.</p>
+            <p>Las descargas incluyen todas las incidencias del diagnóstico, sin depender de los filtros activos.</p>
+          </details>
+          <p-table [value]="missingSummary()" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
+            [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} campos">
+            <ng-template #header><tr><th>Campo obligatorio</th><th>Registros sin datos</th><th>Situación</th></tr></ng-template>
+            <ng-template #body let-item><tr>
+              <th scope="row">{{ item.field }}</th>
+              <td>
+                @if (!item.columnAbsent && item.missing > 0) {
+                  <button pButton type="button" [attr.aria-label]="'Ver valores vacíos de ' + item.field"
+                    [attr.aria-expanded]="missingField() === item.field" aria-controls="missing-cell-detail"
+                    (click)="openMissing(item.field, $event)">
+                    {{ item.missing }} de {{ item.total }}
+                  </button>
+                } @else {
+                  {{ item.missing }} de {{ item.total }}
+                }
+              </td>
+              <td>{{ item.columnAbsent ? 'Columna ausente' : 'Valores vacíos' }}</td>
+            </tr></ng-template>
+            <ng-template #emptymessage><tr><td colspan="3">No faltan campos ni valores obligatorios.</td></tr></ng-template>
+          </p-table>
+        </section>
+        <div class="diagnosis-actions">
+          <button type="button" [attr.aria-expanded]="showAllIssues()" aria-controls="all-issues-detail"
+            (click)="openAllIssues($event)">Ver todas las incidencias</button>
+        </div>
+        @if (missingField(); as field) {
+          <section id="missing-cell-detail" role="region" aria-labelledby="missing-cell-title">
+            <div class="section-heading">
+              <h4 id="missing-cell-title" tabindex="-1">{{ field }} · {{ missingDetail().length }} registros sin datos</h4>
+              <p-button label="Cerrar detalle de valores vacíos" (onClick)="closeDetail()" />
+            </div>
+            @if (missingDetail()[0]; as source) {
+              <p class="missing-source">Columna {{ source.column }}
+                @if (source.header !== field) { · Encabezado: <span class="literal">{{ source.header }}</span> }
+              </p>
+            }
+            <p-table [value]="missingDetail()" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
+              [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} registros">
+              <ng-template #header><tr>
+                <th>Fila de origen</th><th>Valor original</th>
+                @if (detailHasChanges()) { <th>Valor de trabajo (solo cambios)</th> }
+              </tr></ng-template>
+              <ng-template #body let-cell><tr>
+                <td>{{ cell.row }}</td><td class="literal">{{ cell.before || '(vacío)' }}</td>
+                @if (detailHasChanges()) {
+                  <td class="literal">{{ cell.before === cell.after ? '—' : (cell.after || '(vacío)') }}</td>
+                }
+              </tr></ng-template>
+            </p-table>
+          </section>
+        }
+        @if (showAllIssues()) {
+        <section id="all-issues-detail" role="region" aria-labelledby="all-issues-title">
+        <div class="section-heading">
+          <h4 id="all-issues-title" tabindex="-1">Detalle de incidencias</h4>
+          <p-button label="Cerrar incidencias" (onClick)="closeDetail()" />
         </div>
         <div class="toolbar">
           <label
@@ -217,6 +253,7 @@
         <p-table
           [value]="filtered()"
           [paginator]="true"
+          [alwaysShowPaginator]="false"
           [rows]="20"
           [rowsPerPageOptions]="[20, 50, 100]"
           [tableStyle]="{ 'min-width': '48rem' }"
@@ -258,10 +295,8 @@
             </tr></ng-template
           >
         </p-table>
-        <p>
-          Las descargas incluyen todas las incidencias del diagnóstico, sin depender de los filtros
-          activos. Los números de fila corresponden al archivo original.
-        </p>
+        </section>
+        }
       } @else {
         <p role="status">
           Las entradas cambiaron; el diagnóstico anterior ya no es válido. Ejecute la validación de
@@ -269,11 +304,63 @@
         </p>
       }
       <div class="wizard-footer">
-        <button (click)="visit(1)">Cambiar perfiles</button
-        ><button (click)="visit(2)">Cambiar mapeo</button
-        ><button (click)="visit(3)">Cambiar normalización</button
-        ><p-button label="Revisar contexto / ejecutar de nuevo" (onClick)="visit(4)" />
+        <button (click)="visit(1)">Cambiar contexto</button>
+        <button (click)="visit(2)">Cambiar perfiles</button>
+        <button (click)="visit(3)">Cambiar mapeo</button>
+        <p-button label="Normalizar" [disabled]="!canVisit(5)" (onClick)="visit(5)" />
       </div>
+    }
+    @case (5) {
+      <h3>Normalice solo con su aprobación</h3>
+      <details class="workbench-help">
+        <summary>Qué cambia al normalizar</summary>
+        <p>Estas opciones afectan únicamente una copia de trabajo. Al aplicarlas se actualiza el diagnóstico.
+          Los valores originales y el archivo no se modifican.</p>
+      </details>
+      <div class="checks">
+        <label
+          ><input type="checkbox" [formField]="optionForm.trim" />Eliminar espacios al inicio y al
+          final</label
+        >
+        <label
+          ><input type="checkbox" [formField]="optionForm.emptyMarkers" />Tratar NULL y N/A como
+          vacíos (sin distinguir mayúsculas)</label
+        >
+      </div>
+      <h4>Vista previa de cambios en los primeros 20 registros</h4>
+      <p-table [value]="preview()" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50, 100]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="{first}–{last} de {totalRecords} cambios">
+        <ng-template #header
+          ><tr>
+            <th>Fila de origen</th>
+            <th>Campo</th>
+            <th>Original</th>
+            <th>Valor de trabajo</th>
+          </tr></ng-template
+        >
+        <ng-template #body let-change
+          ><tr>
+            <td>{{ change.row }}</td>
+            <td>{{ change.field }}</td>
+            <td class="literal">{{ change.before }}</td>
+            <td class="literal">{{ change.after || '(vacío)' }}</td>
+          </tr></ng-template
+        >
+        <ng-template #emptymessage
+          ><tr>
+            <td colspan="4">No hay cambios en esta vista previa.</td>
+          </tr></ng-template
+        >
+      </p-table>
+      <div class="wizard-footer">
+        <button [disabled]="!canVisit(4)" (click)="visit(4)">Ver diagnóstico</button>
+        <p-button label="Aplicar normalización y validar" [disabled]="busy()" (onClick)="validate(true)" />
+        <p-button label="Finalizar" [disabled]="!canVisit(6) || busy()" (onClick)="visit(6)" />
+      </div>
+    }
+    @case (6) {
+      <section class="wizard-final" aria-label="Finalizar"></section>
     }
   }
 }

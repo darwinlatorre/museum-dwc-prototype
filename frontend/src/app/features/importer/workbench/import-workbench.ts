@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, OnDestroy, signal } from '@angular/core';
+import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, OnDestroy, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -10,6 +10,7 @@ import type { Profile } from '../../profiles/models/profile';
 import type { Term } from '../../catalog/models/catalog-term';
 import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
 import { normalize } from '../engine/normalizer';
+import { missingCells, missingFields, requiredFields } from '../engine/required-fields';
 import { ColumnMapping } from '../components/column-mapping/column-mapping';
 import { RecordContext } from '../components/record-context/record-context';
 import { csvReport, jsonReport } from '../engine/export';
@@ -19,6 +20,7 @@ import { label, profileDescription } from '../../../core/i18n/localization';
   selector: 'app-import',
   imports: [FormField, TableModule, ButtonModule, ColumnMapping, RecordContext],
   templateUrl: './import-workbench.html',
+  host: { '(window:resize)': 'scrollActiveStep()' },
 })
 export class ImportWorkbench implements OnDestroy {
   label = label;
@@ -28,11 +30,12 @@ export class ImportWorkbench implements OnDestroy {
   published = computed(() => this.profiles().filter((p) => p.status === 'PUBLISHED'));
   stages = [
     'Seleccionar archivo',
+    'Contexto y validación',
     'Elegir perfiles',
     'Mapear columnas',
-    'Normalizar',
-    'Contexto y validación',
     'Diagnóstico',
+    'Normalizar',
+    'Finalizar',
   ];
   step = signal(0);
   file = signal<File | undefined>(undefined);
@@ -59,6 +62,7 @@ export class ImportWorkbench implements OnDestroy {
   error = signal('');
   issues = signal<Issue[] | undefined>(undefined);
   changes = signal<Change[]>([]);
+  private diagnosticOptions = signal({ trim: false, emptyMarkers: false });
   filter = signal({ text: '', severity: '', profile: '' });
   filterForm = form(this.filter);
   filtered = computed(() =>
@@ -84,16 +88,59 @@ export class ImportWorkbench implements OnDestroy {
   });
   mappedHeaders = computed(() => this.data()?.headers.map((h) => this.mapping()[h] || h) ?? []);
   mappingValid = computed(() => new Set(this.mappedHeaders()).size === this.mappedHeaders().length);
-  hasProfiles = computed(() => this.published().some((p) => this.selected().includes(p.id)));
+  selectedProfiles = computed(() => this.published().filter(p => this.selected().includes(p.id)));
+  hasProfiles = computed(() => this.selectedProfiles().length > 0);
+  missingHeaders = computed(() => requiredFields(this.selectedProfiles(), this.context(), true)
+    .filter(field => !this.data()?.headers.includes(field)));
+  missingSummary = computed(() => {
+    const data = this.data();
+    return data ? missingFields(data, this.mapping(), this.selectedProfiles(), this.context(), this.diagnosticOptions()) : [];
+  });
+  missingField = signal<string | undefined>(undefined);
+  missingDetail = computed(() => {
+    const data = this.data();
+    const field = this.missingField();
+    return data && field && this.issues() !== undefined &&
+      this.missingSummary().some(item => item.field === field && !item.columnAbsent)
+      ? missingCells(data, this.mapping(), field, this.diagnosticOptions()) : [];
+  });
+  showAllIssues = signal(false);
+  detailHasChanges = computed(() => this.missingDetail().some(cell => cell.before !== cell.after));
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private detailOpener?: HTMLButtonElement;
+  private focusDetail = signal(false);
+  openMissing(field: string, event: Event) {
+    if (this.missingField() === field) {
+      this.closeDetail();
+      return;
+    }
+    this.detailOpener = event.currentTarget as HTMLButtonElement;
+    this.showAllIssues.set(false);
+    this.missingField.set(field);
+    this.focusDetail.set(true);
+  }
+  openAllIssues(event: Event) {
+    this.detailOpener = event.currentTarget as HTMLButtonElement;
+    this.missingField.set(undefined);
+    this.showAllIssues.set(true);
+    this.focusDetail.set(true);
+  }
+  closeDetail() {
+    this.missingField.set(undefined);
+    this.showAllIssues.set(false);
+    this.focusDetail.set(false);
+    this.detailOpener?.focus({ preventScroll: true });
+  }
+  private resultStep = 4;
   canVisit(index: number) {
     if (index < 0 || index >= this.stages.length) return false;
     if (index === 0) return true;
     if (!this.data()) return false;
-    if (index === 1) return true;
-    if (!this.hasProfiles()) return false;
-    if (index === 2) return true;
+    if (index <= 2) return true;
+    if (!this.hasProfiles() || this.missingHeaders().length) return false;
+    if (index === 3) return true;
     if (!this.mappingValid()) return false;
-    return index !== 5 || this.issues() !== undefined;
+    return this.issues() !== undefined;
   }
   visit(index: number) {
     if (this.canVisit(index)) this.step.set(index);
@@ -108,6 +155,36 @@ export class ImportWorkbench implements OnDestroy {
       this.terms();
       this.invalidate();
     });
+    effect(() => {
+      this.data();
+      this.selected();
+      this.mapping();
+      this.missingField.set(undefined);
+      this.showAllIssues.set(false);
+    });
+    afterRenderEffect(() => this.scrollActiveStep());
+    afterRenderEffect(() => {
+      const focus = this.focusDetail();
+      const field = this.missingField();
+      const all = this.showAllIssues();
+      if (focus && this.step() === 4 && (field || all)) {
+        this.host.nativeElement.querySelector<HTMLElement>(all ? '#all-issues-title' : '#missing-cell-title')
+          ?.focus({ preventScroll: true });
+      }
+    });
+  }
+  protected scrollActiveStep() {
+    const index = this.step();
+    const strip = this.host.nativeElement.querySelector<HTMLElement>('.steps');
+    const active = strip?.children[index] as HTMLElement | undefined;
+    if (strip && active) {
+      const bounds = strip.getBoundingClientRect();
+      const item = active.getBoundingClientRect();
+      const delta = item.left < bounds.left ? item.left - bounds.left
+        : item.right > bounds.right ? item.right - bounds.right : 0;
+      // Move only the horizontal strip, never the document or its vertical position.
+      strip.scrollTo?.({ left: strip.scrollLeft + delta, behavior: 'instant' });
+    }
   }
   ngOnDestroy() {
     this.worker?.terminate();
@@ -119,6 +196,10 @@ export class ImportWorkbench implements OnDestroy {
     this.busy.set(false);
     this.issues.set(undefined);
     this.changes.set([]);
+    this.missingField.set(undefined);
+    this.showAllIssues.set(false);
+    this.focusDetail.set(false);
+    this.detailOpener = undefined;
   }
   cancel() {
     this.invalidate();
@@ -147,7 +228,7 @@ export class ImportWorkbench implements OnDestroy {
       } else {
         this.issues.set(data.issues);
         this.changes.set(data.changes);
-        this.step.set(5);
+        this.step.set(this.resultStep);
       }
     };
     worker.onerror = () => {
@@ -180,8 +261,10 @@ export class ImportWorkbench implements OnDestroy {
   }
   loadSheet() {
     const file = this.file();
-    if (file)
+    if (file) {
+      this.invalidate();
       this.dispatch({ id: ++this.generation, kind: 'parse', file, sheet: this.sheet().name });
+    }
   }
   toggleProfile(id: string, checked: boolean) {
     this.invalidate();
@@ -196,10 +279,15 @@ export class ImportWorkbench implements OnDestroy {
   checked(event: Event) {
     return (event.target as HTMLInputElement).checked;
   }
-  validate() {
+  validate(normalizing = false) {
     const data = this.data();
-    const profiles = this.published().filter((p) => this.selected().includes(p.id));
-    if (!data || !profiles.length || !this.mappingValid()) return;
+    const profiles = this.selectedProfiles();
+    if (!data || !profiles.length || this.missingHeaders().length || !this.mappingValid()) return;
+    this.missingField.set(undefined);
+    this.showAllIssues.set(false);
+    this.focusDetail.set(false);
+    this.resultStep = normalizing ? 5 : 4;
+    this.diagnosticOptions.set(normalizing ? { ...this.options() } : { trim: false, emptyMarkers: false });
     this.dispatch({
       id: ++this.generation,
       kind: 'validate',
@@ -208,7 +296,7 @@ export class ImportWorkbench implements OnDestroy {
       profiles,
       terms: this.terms(),
       context: this.context(),
-      options: this.options(),
+      options: this.diagnosticOptions(),
     });
   }
   download(kind: 'json' | 'csv') {

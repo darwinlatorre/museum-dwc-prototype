@@ -16,7 +16,7 @@ const terms: Term[] = [
 ];
 const profile: Profile = {
   id: 'isolated', name: 'Texto original English', version: '1', status: 'PUBLISHED', revision: 1,
-  description: 'Keep user prose exactly', rules: [{ field: 'catalogNumber', kind: 'required', severity: 'ERROR', condition: 'always', message: 'Original user message', source: 'Original source' }],
+  description: 'Keep user prose exactly', rules: [{ field: 'eventDate', kind: 'required', severity: 'ERROR', condition: 'always', message: 'Original user message', source: 'Original source' }],
 };
 let requests: WorkerRequest[];
 class LocalWorker {
@@ -26,7 +26,7 @@ class LocalWorker {
   postMessage(request: WorkerRequest) {
     requests.push(request);
     queueMicrotask(() => this.onmessage?.({ data: request.kind === 'parse'
-      ? { id: request.id, kind: 'parsed', data: { headers: ['catalog', 'raw'], rows: [{ row: 2, values: ['  original  ', 'N/A'] }] } }
+      ? { id: request.id, kind: 'parsed', data: { headers: ['catalog', 'raw', 'eventDate'], rows: [{ row: 2, values: ['  original  ', 'N/A', ''] }] } }
       : { id: request.id, kind: 'result', changes: [], issues: [
         { field: 'catalogNumber', row: 2, description: 'Original error', severity: 'ERROR', profile: profile.name, version: '1' },
         { field: 'raw', row: null, description: 'Original warning', severity: 'WARNING', profile: profile.name, version: '1' },
@@ -66,14 +66,15 @@ async function workbench() {
   Object.defineProperty(input, 'files', { value: [new File(['catalog,raw\n  original  ,N/A'], 'isolated.csv')] });
   input.dispatchEvent(new Event('change'));
   await f.whenStable();
-  (f.nativeElement.querySelector('input[type=checkbox]') as HTMLInputElement).click();
+  await click(f, 'Elegir perfiles');
+  (f.nativeElement.querySelector('.profile-options input') as HTMLInputElement).click();
   await f.whenStable();
   await click(f, 'Mapear columnas');
   return f;
 }
 async function context(f: ComponentFixture<unknown>) {
-  await click(f, 'Revisar normalización');
-  await click(f, 'Confirmar opciones y continuar');
+  await click(f, 'Atrás');
+  await click(f, 'Atrás');
 }
 
 describe('Evolución de los controles públicos', () => {
@@ -96,14 +97,14 @@ describe('Evolución de los controles públicos', () => {
     vi.unstubAllGlobals();
   });
 
-  it('permite escoger cantidad en normalización y diagnóstico sin cambiar el resultado completo', async () => {
+  it('oculta paginadores innecesarios en normalización y diagnóstico sin cambiar el resultado completo', async () => {
     const f = await workbench();
-    await click(f, 'Revisar normalización');
-    expect(f.nativeElement.querySelector('.p-paginator-rpp-dropdown')).toBeTruthy();
-    await click(f, 'Confirmar opciones y continuar');
     await click(f, 'Validar localmente');
-    await f.whenStable();
-    expect(f.nativeElement.querySelector('.p-paginator-rpp-dropdown')).toBeTruthy();
+    await click(f, 'Normalizar');
+    expect(getComputedStyle(f.nativeElement.querySelector('.p-paginator')).display).toBe('none');
+    await click(f, 'Ver diagnóstico');
+    await click(f, 'Ver todas las incidencias');
+    expect(getComputedStyle(f.nativeElement.querySelector('#all-issues-detail .p-paginator')).display).toBe('none');
     expect(f.componentInstance.issues()?.length).toBe(2);
   });
 
@@ -125,11 +126,13 @@ describe('Evolución de los controles públicos', () => {
     field(root, labels[4]).click();
     await f.whenStable();
     expect(labels.slice(0, 4).every((n) => !field(root, n).checked)).toBe(true);
+    await click(f, 'Elegir perfiles');
+    await click(f, 'Mapear columnas');
     await click(f, 'Validar localmente');
     expect(requests.at(-1)).toMatchObject({ kind: 'validate', context: { collection: false, permit: false, sampling: false, marine: false }, options: { trim: false, emptyMarkers: false } });
     expect(Object.keys((requests.at(-1) as Extract<WorkerRequest, { kind: 'validate' }>).context).sort()).toEqual(['collection', 'marine', 'permit', 'sampling']);
-    expect(requests.at(-1)).toMatchObject({ data: { rows: [{ row: 2, values: ['  original  ', 'N/A'] }] } });
-    await click(f, 'Revisar contexto / ejecutar de nuevo');
+    expect(requests.at(-1)).toMatchObject({ data: { rows: [{ row: 2, values: ['  original  ', 'N/A', ''] }] } });
+    await click(f, 'Cambiar contexto');
     expect(field(root, labels[4]).checked).toBe(true);
     field(root, labels[1]).click();
     await f.whenStable();
@@ -164,43 +167,46 @@ describe('Evolución de los controles públicos', () => {
     const raw = root.querySelector('input[aria-label="Mapear raw"]') as HTMLInputElement;
     await change(f, raw, 'catalogNumber');
     expect(root.textContent).toContain('Cada campo de destino puede usarse una sola vez.');
-    expect(button(root, 'Revisar normalización').disabled).toBe(true);
+    expect(button(root, 'Validar localmente').disabled).toBe(true);
     await click(f, 'Limpiar Mapear raw');
-    expect(button(root, 'Revisar normalización').disabled).toBe(false);
+    expect(button(root, 'Validar localmente').disabled).toBe(false);
   });
 
   it('permite volver por el progreso sin perder archivo, mapeo, contexto ni diagnóstico', async () => {
     const f = await workbench();
     const root = f.nativeElement as HTMLElement;
     const step = (i: number) => root.querySelectorAll<HTMLButtonElement>('.steps button')[i];
-    expect(root.querySelectorAll('.steps button')).toHaveLength(6);
+    expect(root.querySelectorAll('.steps button')).toHaveLength(7);
     expect(step(5).disabled).toBe(true);
     await click(f, 'catalogNumber');
     await context(f);
     field(root, 'Colección biológica.').click();
     await f.whenStable();
+    await click(f, 'Elegir perfiles');
+    await click(f, 'Mapear columnas');
     await click(f, 'Validar localmente');
     const count = requests.length;
     step(0).click();
     await f.whenStable();
     expect(root.querySelector('input[type=file]')).toBeTruthy();
-    step(2).click();
+    step(3).click();
     await f.whenStable();
     expect(button(root, 'catalogNumber').getAttribute('aria-pressed')).toBe('true');
-    step(4).click();
-    await f.whenStable();
-    expect(field(root, 'Colección biológica.').checked).toBe(true);
-    step(5).click();
-    await f.whenStable();
-    expect(root.textContent).toContain('Original error');
-    expect(root.textContent).toContain('isolated.csv');
-    expect(step(5).getAttribute('aria-current')).toBe('step');
-    expect(requests).toHaveLength(count);
     step(1).click();
     await f.whenStable();
-    (root.querySelector('input[type=checkbox]') as HTMLInputElement).click();
+    expect(field(root, 'Colección biológica.').checked).toBe(true);
+    step(4).click();
     await f.whenStable();
-    expect(step(2).disabled).toBe(true);
+    await click(f, 'Ver todas las incidencias');
+    expect(root.textContent).toContain('Original error');
+    expect(root.textContent).toContain('isolated.csv');
+    expect(step(4).getAttribute('aria-current')).toBe('step');
+    expect(requests).toHaveLength(count);
+    step(2).click();
+    await f.whenStable();
+    (root.querySelector('.profile-options input') as HTMLInputElement).click();
+    await f.whenStable();
+    expect(step(3).disabled).toBe(true);
     expect(step(4).disabled).toBe(true);
     expect(step(5).disabled).toBe(true);
   });
@@ -211,20 +217,20 @@ describe('Evolución de los controles públicos', () => {
     empty.componentRef.setInput('profiles', [profile]);
     await empty.whenStable();
     const steps = empty.nativeElement.querySelectorAll('.steps button') as NodeListOf<HTMLButtonElement>;
-    expect(steps).toHaveLength(6);
+    expect(steps).toHaveLength(7);
     expect([...steps].slice(1).every((b) => b.disabled)).toBe(true);
     const f = await workbench();
     const root = f.nativeElement as HTMLElement;
     await click(f, 'catalogNumber');
     await change(f, root.querySelector('input[aria-label="Mapear raw"]')!, 'catalogNumber');
-    expect([...root.querySelectorAll<HTMLButtonElement>('.steps button')].slice(3).every((b) => b.disabled)).toBe(true);
+    expect([...root.querySelectorAll<HTMLButtonElement>('.steps button')].slice(4).every((b) => b.disabled)).toBe(true);
   });
 
   it('distingue errores por texto y conserva las descargas completas al filtrar', async () => {
     const f = await workbench();
-    await context(f);
     await click(f, 'Validar localmente');
     const root = f.nativeElement as HTMLElement;
+    await click(f, 'Ver todas las incidencias');
     expect(root.querySelector('tr.issue-error')?.textContent).toContain('Error');
     expect(root.querySelector('tr.issue-error strong')?.textContent).toBe('Original error');
     await change(f, field(root, 'Severidad'), 'WARNING');

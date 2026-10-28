@@ -129,6 +129,14 @@ describe('Compact collection layouts', () => {
     expect(css).toMatch(/\.mapping-table[^{}]*\.dwc-picker[^{}]*>\s*button[^{}]*\{[^}]*width:\s*auto/s);
   });
 
+  it('styles native disclosure and compact diagnosis using existing tokens', async () => {
+    const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
+    expect(css).toMatch(/\.workbench-help[^{}]*\{[^}]*margin[^}]*var\(--museum-space-/s);
+    expect(css).toMatch(/summary[^{}]*:focus-visible[^{}]*\{[^}]*outline:\s*2px solid var\(--pine\)/s);
+    expect(css).toMatch(/\.missing-source[^{}]*\{[^}]*overflow-wrap:\s*anywhere/s);
+  });
+
   it('separates the sheet reading action from its selector', async () => {
     const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
