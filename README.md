@@ -58,7 +58,7 @@ La interfaz, las ayudas y los diagnósticos del sistema se presentan en español
 
 ## Configuración global de validación
 
-En **Configuración de validación** se administran los campos obligatorios de cada contexto. No hay borradores, perfiles seleccionables, duplicación ni publicación. Los cambios se guardan en PostgreSQL y se aplican a los análisis posteriores; una revisión obsoleta se rechaza sin sobrescribir el trabajo de otro editor. Si cambia la configuración durante un análisis abierto, el diagnóstico anterior se invalida y debe ejecutarse de nuevo.
+En **Fuentes de registros biológicos** se administran los campos obligatorios de los cinco tipos de fuente. El administrador muestra selección maestro–detalle, recuentos reales y búsqueda local; agregar campos reutiliza el selector DwC. El análisis conserva el paso **Contexto**. Los cambios locales son un borrador hasta guardar; no hay perfiles seleccionables, duplicación ni ciclos de publicación. Los cambios se guardan en PostgreSQL y se aplican a los análisis posteriores; una revisión obsoleta se rechaza sin sobrescribir el trabajo de otro editor. Si cambia la configuración durante un análisis abierto, el diagnóstico anterior se invalida y debe ejecutarse de nuevo.
 
 La configuración inicial responde al pedido del museo y a la matriz SiB suministrada:
 
@@ -97,7 +97,7 @@ python3 scripts/build_seeds.py
 python3 scripts/test_seeds.py
 ```
 
-Reconstruir los recursos no sobrescribe la configuración ya guardada ni ejecuta por sí mismo el retiro de perfiles en PostgreSQL. Los requisitos activos se modifican desde Configuración de validación con control de revisión.
+Reconstruir los recursos no sobrescribe la configuración ya guardada ni ejecuta por sí mismo el retiro de perfiles en PostgreSQL. Los requisitos activos se modifican desde Fuentes de registros biológicos con control de revisión.
 
 ## Pruebas y compilación
 

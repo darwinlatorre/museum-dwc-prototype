@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { injectQuery } from '@tanstack/angular-query-experimental';
 import { Api } from './core/api/api';
 import { Catalog } from './features/catalog/catalog';
-import { ValidationConfigurationEditor } from './features/validation-configuration/validation-configuration';
+import { ValidationConfigurationEditor } from './features/record-sources/validation-configuration';
 import { ImportWorkbench } from './features/importer/workbench/import-workbench';
 @Component({
   selector: 'app-root',

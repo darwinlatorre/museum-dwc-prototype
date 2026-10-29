@@ -33,10 +33,55 @@ beforeEach(() => vi.stubGlobal('matchMedia', (media: string) => ({ matches: fals
 afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
 describe('Editor global público', () => {
+  it('presenta cinco fuentes seleccionables con recuentos reales y un espacio de campos dedicado', async () => {
+    const { f, root, api } = await setup();
+    expect(root.querySelector('h2')?.textContent).toBe('Fuentes de registros biológicos');
+    const sources = [...root.querySelectorAll<HTMLButtonElement>('.configuration-source')];
+    expect(sources.map(source => source.value)).toEqual([...contextKeys]);
+    for (const source of sources) {
+      source.click(); await f.whenStable();
+      expect(source.getAttribute('aria-pressed')).toBe('true');
+      expect(sources.filter(item => item.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+      expect(source.textContent).toContain('1 campos');
+      expect(root.querySelector('#fields-title')?.textContent).toContain(source.querySelector('strong')!.textContent);
+      expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
+    }
+    expect(api.updateValidationConfiguration).not.toHaveBeenCalled();
+  });
+
+  it('filtra solo la presentación, limpia la búsqueda y guarda todos los campos de las cinco fuentes', async () => {
+    const { f, root, api, original, button, click, type } = await setup();
+    const search = root.querySelector<HTMLInputElement>('input[type=search]');
+    expect(search).toBeTruthy();
+    const filter = async (value: string) => {
+      search!.value = value;
+      search!.dispatchEvent(new Event('input', { bubbles: true }));
+      await f.whenStable();
+    };
+    await type('  hiddenValue  '); await click('Agregar campo');
+    await filter('CUSTOM');
+    expect(root.querySelector('.configuration-fields')?.textContent).toContain('customField');
+    expect(root.querySelector('.configuration-fields')?.textContent).not.toContain('hiddenValue');
+    expect(root.textContent).toContain('1 de 2 campos');
+    await filter('no-match');
+    expect(root.textContent).toContain('Ningún campo coincide con la búsqueda.');
+    expect(button('Guardar configuración').disabled).toBe(false);
+    await click('Limpiar búsqueda');
+    expect(search!.value).toBe('');
+    expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(2);
+    await filter('custom');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));
+    expect(api.updateValidationConfiguration.mock.calls[0][0]).toEqual({ revision: 7,
+      contexts: original.contexts.map(item => item.context === 'collection'
+        ? { ...item, requiredFields: ['customField', '  hiddenValue  '] } : item) });
+    expect(original).toEqual(configurationFixture(['customField']));
+  });
+
   it('usa el selector compartido, preserva texto libre y limpieza sin duplicados y guarda cinco contextos', async () => {
     const { f, root, client, api, original, button, click, type } = await setup();
     const before = JSON.stringify(original);
-    expect([...root.querySelectorAll('select option')].map(option => (option as HTMLOptionElement).value)).toEqual([...contextKeys]);
+    expect([...root.querySelectorAll<HTMLButtonElement>('.configuration-source')].map(button => button.value)).toEqual([...contextKeys]);
     expect(button('Guardar configuración').disabled).toBe(true);
     await type('  freeValue  ');
     await click('Agregar campo');
@@ -91,8 +136,8 @@ describe('Editor global público', () => {
 
   it('edita un contexto sin alterar los otros y admite una lista vacía explícita', async () => {
     const { f, root, api, click, original } = await setup();
-    const select = root.querySelector('select')!;
-    select.value = 'permit'; select.dispatchEvent(new Event('change')); await f.whenStable();
+    root.querySelector<HTMLButtonElement>('.configuration-source[value="permit"]')!.click();
+    await f.whenStable();
     await click('Quitar customField');
     await click('Guardar configuración');
     await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));

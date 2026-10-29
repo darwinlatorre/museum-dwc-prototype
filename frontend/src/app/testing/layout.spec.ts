@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { ValidationConfigurationEditor } from '../features/validation-configuration/validation-configuration';
+import { ValidationConfigurationEditor } from '../features/record-sources/validation-configuration';
 import { configurationFixture } from './validation-fixture';
 import { RecordContext } from '../features/importer/components/record-context/record-context';
 import { Api } from '../core/api/api';

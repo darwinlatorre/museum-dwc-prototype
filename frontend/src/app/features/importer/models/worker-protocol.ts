@@ -1,4 +1,4 @@
-import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
+import type { ValidationConfiguration } from '../../record-sources/models/validation-configuration';
 import type { Term } from '../../catalog/models/catalog-term';
 import type { Dataset } from './dataset';
 import type { Context } from './context';

@@ -6,7 +6,7 @@ import type { Change } from '../models/normalization';
 import type { Context } from '../models/context';
 import { type Dataset, LIMITS } from '../models/dataset';
 import type { Issue } from '../models/analysis-result';
-import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
+import type { ValidationConfiguration } from '../../record-sources/models/validation-configuration';
 import type { Term } from '../../catalog/models/catalog-term';
 import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
 import { normalize } from '../engine/normalizer';

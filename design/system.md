@@ -34,8 +34,8 @@ Fuente de todos los tokens de esta tabla: `frontend/src/app/shared/design-system
 - `frontend/src/app/shared/design-system/museum.preset.ts`: MuseumPreset/Aura referencia los 11 tonos primarios CSS; no segunda copia de colores.
 - `frontend/src/app/shared/design-system/_tables.scss`: cabecera table-heading, texto muted; borde line y radio lg; contenido alineado arriba.
 - `frontend/src/app/shared/ui/dwc-picker/dwc-picker.ts`: selección editable, texto libre sin normalizar, limpieza, deshabilitación, filtrado por nombre y overlay. En los bocetos el input con datalist representa esta capacidad, no sustituye el componente productivo.
-- `frontend/src/app/features/validation-configuration/validation-configuration.scss`: lista con separadores, texto literal envuelto, agregar con picker flexible; apilado a 800px.
-- `frontend/src/app/features/validation-configuration/validation-configuration.ts` y `.html`: máximo 200 caracteres/campo y 500 campos/contexto; no vacío, duplicado exacto rechazado. Cambio de fuente limpia entrada; revisión global, guardado completo explícito, actualización descarta borrador solo tras lectura correcta; errores conservan datos; guardas de salida incluyen entrada pendiente. Sin auto-save, historial ni activación.
+- `frontend/src/app/features/record-sources/validation-configuration.scss`: lista con separadores, texto literal envuelto, agregar con picker flexible; apilado a 800px.
+- `frontend/src/app/features/record-sources/validation-configuration.ts` y `.html`: máximo 200 caracteres/campo y 500 campos/contexto; no vacío, duplicado exacto rechazado. Cambio de fuente limpia entrada; revisión global, guardado completo explícito, actualización descarta borrador solo tras lectura correcta; errores conservan datos; guardas de salida incluyen entrada pendiente. Sin auto-save, historial ni activación.
 - `frontend/src/app/core/i18n/localization.ts`: Colección biológica, Permiso, Muestreo, Marino, Otros. No se cambia Contexto en análisis.
 - `backend/src/main/resources/data/validation-configuration.json`: revisión inicial 0; campos originales 30/22/10/15/8. Todos se muestran sin traducir ni reordenar su significado.
 

@@ -1,4 +1,4 @@
-import type { Context } from '../../validation-configuration/models/validation-configuration';
+import type { Context } from '../../record-sources/models/validation-configuration';
 export interface Issue {
   field: string;
   row: number | null;

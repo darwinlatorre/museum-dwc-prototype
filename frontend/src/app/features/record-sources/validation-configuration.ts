@@ -27,6 +27,13 @@ export class ValidationConfigurationEditor {
   readonly refreshError = signal('');
   readonly refreshing = signal(false);
   readonly fields = computed(() => this.draft()?.contexts.find(item => item.context === this.context())?.requiredFields ?? []);
+  readonly search = signal('');
+  readonly sources = computed(() => this.contexts.map(context => ({ context,
+    count: this.draft()?.contexts.find(item => item.context === context)?.requiredFields.length ?? 0,
+  })));
+  // Filtering is presentation-only: mutations always use the complete draft.
+  readonly visibleFields = computed(() => this.fields().filter(field =>
+    field.toLowerCase().includes(this.search().toLowerCase())));
   readonly fieldError = computed(() => {
     const value = this.field();
     if (!value.trim()) return 'Escriba un campo no vacío.';
@@ -58,8 +65,9 @@ export class ValidationConfigurationEditor {
     });
   }
   chooseContext(event: Event) {
-    this.context.set((event.target as HTMLSelectElement).value as Context);
+    this.context.set((event.currentTarget as HTMLButtonElement).value as Context);
     this.field.set('');
+    this.search.set('');
   }
   add() {
     if (this.fieldError() || this.mutation.isPending() || this.refreshing()) return;

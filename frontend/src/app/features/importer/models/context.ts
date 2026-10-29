@@ -1,1 +1,1 @@
-export type { Context } from '../../validation-configuration/models/validation-configuration';
+export type { Context } from '../../record-sources/models/validation-configuration';

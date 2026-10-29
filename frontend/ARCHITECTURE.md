@@ -1,7 +1,7 @@
 # Frontend organizado por funcionalidad
 
 El árbol de `src/app` expresa los tres dominios visibles: catálogo Darwin Core,
-configuración global de validación y análisis local de colecciones. El contexto es
+fuentes de registros biológicos y análisis local de colecciones. El contexto es
 único por archivo; las revisiones son control de concurrencia, no un ciclo de publicación.
 
 ## Comprobación rápida
@@ -22,7 +22,7 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 | Ubicación | Responsabilidad |
 | --- | --- |
 | `features/catalog` | `Catalog`, su HTML y el contrato `Term` en `models/catalog-term.ts`. |
-| `features/validation-configuration` | Editor global, HTML/SCSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
+| `features/record-sources` | Administrador de fuentes, HTML/SCSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
 | `features/importer/workbench` | Orquestación del análisis y HTML; conserva `map`, invalidación, cancelación y guardas de generación/navegación. |
 | `features/importer/components` | Componentes existentes `column-mapping` y `record-context`, cada uno en su carpeta; sin envoltorios nuevos. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
@@ -48,7 +48,9 @@ El motor no importa transporte ni vistas: el archivo y sus celdas permanecen en 
   como módulo independiente. El worker conserva sus imports locales del motor.
 - Los HTML grandes están junto a `catalog.ts`, `validation-configuration.ts` y al workbench;
   las plantillas pequeñas de los auxiliares siguen inline.
-- El editor guarda cinco contextos con revisión, sin enviar datos del archivo. Query actualiza
+- El administrador maestro-detalle deriva recuentos y búsqueda del borrador completo;
+  filtrar la lista no modifica datos guardados. El nombre Contexto del análisis permanece intacto.
+  El editor guarda cinco contextos con revisión, sin enviar datos del archivo. Query actualiza
   el snapshot global y el importador invalida su generación cuando cambia. Los errores
   conservan las entradas locales; el shell protege la salida con cambios sin guardar.
 - Cada funcionalidad posee su hoja SCSS. `src/styles.scss` las carga después de

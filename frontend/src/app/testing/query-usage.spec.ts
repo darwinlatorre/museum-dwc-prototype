@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 import { App } from '../app';
 import { Api } from '../core/api/api';
 import { Catalog } from '../features/catalog/catalog';
-import { ValidationConfigurationEditor } from '../features/validation-configuration/validation-configuration';
+import { ValidationConfigurationEditor } from '../features/record-sources/validation-configuration';
 import { configurationFixture } from './validation-fixture';
 
 async function setup() {

@@ -13,9 +13,9 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
 const required = [
   'features/catalog/catalog.ts', 'features/catalog/catalog.html',
   'features/catalog/models/catalog-term.ts',
-  'features/validation-configuration/validation-configuration.ts',
-  'features/validation-configuration/validation-configuration.html',
-  'features/validation-configuration/models/validation-configuration.ts',
+  'features/record-sources/validation-configuration.ts',
+  'features/record-sources/validation-configuration.html',
+  'features/record-sources/models/validation-configuration.ts',
   'features/importer/workbench/import-workbench.ts',
   'features/importer/workbench/import-workbench.html',
   'features/importer/components/column-mapping/column-mapping.ts',
@@ -32,7 +32,8 @@ for (const path of required) assert.ok(existsSync(join(app, path)), `Falta ${pat
 for (const path of ['catalog.ts', 'profiles.ts', 'api.ts', 'localization.ts',
   'import-workbench.ts', 'import-workbench.html', 'shared/dwc-picker.ts',
   'analysis/model.ts', 'analysis/parser.ts', 'analysis/analysis.worker.ts',
-  'import/column-mapping.ts', 'import/record-context.ts', 'shared/models']) {
+  'import/column-mapping.ts', 'import/record-context.ts', 'shared/models',
+  'features/validation-configuration']) {
   assert.ok(!existsSync(join(app, path)), `Ruta antigua o genérica: ${path}`);
 }
 

@@ -85,6 +85,7 @@ describe('Collection workspace', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('h1')?.textContent).toContain('Calidad de los datos de colecciones');
     expect(root.querySelector('nav')?.getAttribute('aria-label')).toBe('Navegación principal');
+    expect(root.querySelectorAll('nav button')[1].textContent).toContain('Fuentes de registros biológicos');
     expect(root.textContent).toContain('El archivo permanece en este dispositivo');
     expect(root.querySelector('input[type=file]')?.getAttribute('accept')).toBe('.csv,.xlsx');
     const mounted = root.querySelector('app-import');

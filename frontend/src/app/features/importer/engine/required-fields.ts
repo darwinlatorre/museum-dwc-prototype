@@ -1,4 +1,4 @@
-import type { ValidationConfiguration } from '../../validation-configuration/models/validation-configuration';
+import type { ValidationConfiguration } from '../../record-sources/models/validation-configuration';
 import type { Context } from '../models/context';
 import type { Dataset } from '../models/dataset';
 import type { Normalization } from '../models/normalization';

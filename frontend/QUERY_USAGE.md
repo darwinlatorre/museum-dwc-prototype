@@ -17,14 +17,14 @@ Las query functions devuelven promesas y propagan `AbortSignal` hasta `fetch`. U
 
 ## Escrituras y recuperación
 
-El editor de `features/validation-configuration` usa `injectMutation` para enviar `{revision, contexts}` completo. Solo tras éxito:
+El administrador de Fuentes de registros biológicos en `features/record-sources` usa `injectMutation` para enviar `{revision, contexts}` completo. Solo tras éxito:
 
 1. Cancela consultas anteriores de configuración para que no pisen la respuesta guardada.
 2. Actualiza `['validation-configuration']` con el snapshot devuelto.
 3. Limpia el estado pendiente local y anuncia guardado confirmado.
 4. Invalida esa misma clave y espera su refresco; catálogo queda intacto.
 
-La revisión nueva llega al workbench montado e invalida diagnóstico/generación; las respuestas del worker anterior se ignoran. No hay actualizaciones optimistas. Los errores conservan el contenido y revisión del editor; una revisión entrante tampoco pisa cambios pendientes. La actualización explícita cancela consultas anteriores y fuerza una lectura con frescura cero. Solo una lectura correcta descarta los cambios; su error mantiene entradas y se muestra separadamente.
+La revisión nueva llega al workbench montado e invalida diagnóstico/generación; las respuestas del worker anterior se ignoran. No hay actualizaciones optimistas. La selección lateral y los filtros son presentación local: no alteran claves, consultas ni el payload completo de las cinco fuentes. Los errores conservan el contenido y revisión del editor; una revisión entrante tampoco pisa cambios pendientes. La actualización explícita cancela consultas anteriores y fuerza una lectura con frescura cero. Solo una lectura correcta descarta los cambios; su error mantiene entradas y se muestra separadamente.
 
 La sincronización TDWG conserva `injectMutation`, invalida `['catalog']` en `onSettled` incluso ante fallo de transporte y distingue `SUCCESS`, `FAILED` y `SUPERSEDED`. No cambia configuración. Las escrituras no se reintentan automáticamente; los controles bloquean envíos pendientes y muestran errores reales.
 

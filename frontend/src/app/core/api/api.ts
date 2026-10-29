@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { ValidationConfiguration } from '../../features/validation-configuration/models/validation-configuration';
+import type { ValidationConfiguration } from '../../features/record-sources/models/validation-configuration';
 import type { Term } from '../../features/catalog/models/catalog-term';
 
 export interface CatalogSyncResult {

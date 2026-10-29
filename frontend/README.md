@@ -57,9 +57,9 @@ Independientemente de los campos obligatorios, siempre se verifican los valores 
 
 Los valores opcionales vacíos se permiten. Columnas desconocidas generan advertencias del sistema y posibles equivalencias. El diagnóstico **no certifica una publicación SiB**; no se validan extensiones GGBN.
 
-## Configuración de validación
+## Fuentes de registros biológicos
 
-Seleccionar un contexto y agregar/quitar campos obligatorios mediante el mismo selector DwC del mapeo. No se duplican campos dentro del contexto. Se permiten listas vacías explícitas, hasta 500 campos por contexto y 200 caracteres por campo; no se permiten campos vacíos. Los espacios de textos válidos se preservan, sin recorte implícito.
+El administrador maestro-detalle muestra los cinco tipos de fuente con sus recuentos reales. Seleccionar una fuente abre su espacio de campos; agregar/quitar campos obligatorios utiliza el mismo selector DwC del mapeo. La búsqueda filtra solo la presentación, permite limpiar o mostrar un estado sin coincidencias y nunca limita el guardado completo. Cambiar de fuente limpia la búsqueda y la entrada sin agregar, conservando los cambios ya agregados al borrador. El paso **Contexto** del análisis mantiene su nombre y funcionamiento. No se duplican campos dentro del contexto. Se permiten listas vacías explícitas, hasta 500 campos por contexto y 200 caracteres por campo; no se permiten campos vacíos. Los espacios de textos válidos se preservan, sin recorte implícito.
 
 **Guardar configuración** envía los cinco contextos completos con la revisión vigente. Un éxito confirmado actualiza la caché raíz e invalida el análisis. Un fallo HTTP 400, conflicto 409 o fallo de conexión conserva entradas y revisión locales y muestra el error real. **Actualizar del servidor y descartar cambios locales** sustituye el contenido únicamente tras una consulta correcta; si falla, conserva las entradas. Una revisión entrante no pisa cambios pendientes. Navegar fuera pide confirmación y cerrar la ventana activa la protección nativa de cambios sin guardar.
 
@@ -95,7 +95,7 @@ Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNIN
 | Módulo | Responsabilidad |
 |---|---|
 | `features/catalog` | Catálogo y contrato `Term` |
-| `features/validation-configuration` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
+| `features/record-sources` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
 | `features/importer/workbench` | Navegación, generaciones, cancelación y worker |
 | `features/importer/components` | Mapeo y contexto |
 | `features/importer/engine` | Parser, normalizador, validador y exportación locales |

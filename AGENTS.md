@@ -12,7 +12,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - `backend/RECORD_SOURCES_ARCHITECTURE.md` y `backend/CATALOG_ARCHITECTURE.md`: puertos, composición y fronteras transaccionales hexagonales.
 - `sources/README.md`: fuentes oficiales y atribuciones.
 - `VERIFICATION.md`: evidencia observada, historial y limitaciones.
-- `odd/tasks/`: especificaciones, decisiones y tareas. La evolución `museum-evolution.md` tiene T1–T5 completadas; el refinamiento Java/UX está en `museum-refinement.md`. El reemplazo activo de perfiles por configuración global está en `global-validation.md`. No reabrir trabajo anterior sin una nueva necesidad.
+- `odd/tasks/`: especificaciones, decisiones y tareas. La evolución `museum-evolution.md` tiene T1–T5 completadas; el refinamiento Java/UX está en `museum-refinement.md`. El reemplazo de perfiles por configuración global está cerrado en `global-validation.md`; el administrador visual y la alineación de módulos se registran en `record-sources-admin.md`. No reabrir trabajo anterior sin una nueva necesidad.
 
 ## Invariantes
 
@@ -28,7 +28,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Separar DTO de entrada/salida en `<feature>/infrastructure/adapter/in/web/dto/req` y `res`; mappers HTTP y de persistencia separados. Enumerados JSON estrictos y Bean Validation en adaptadores, invariantes también en dominio. Usar getters JavaBean en entidades y errores propios, traducidos exclusivamente en HTTP.
 - La transacción de configuración global envuelve el caso de uso completo (lock→revisión→validación→save/flush), incluido bootstrap idempotente; no liberar el bloqueo entre llamadas de repositorio. Catálogo: inicio/activación/fallo son atómicos, descarga/análisis fuera de transacción, política ejecutada contra snapshot bloqueado. No agregar dependencias productivas entre configuración y catálogo.
 - Mantener pruebas de configuración en su paquete `recordsources`, con JPA/EntityManager y PostgreSQL desechable. Conservar cobertura de concurrencia, bootstrap, rechazo sin efectos y migración de retiro acotada: los perfiles/trigger/función legados desaparecen y catálogo/configuración/Flyway permanecen; no sustituirla por mocks. Las rutas activas de perfiles se retiran por pedido explícito.
-- Frontend por funcionalidad: `features/catalog`, `features/validation-configuration`, `features/importer`. Modelos con su propietario; `core/api` solo metadatos y `core/i18n` presentación. No agregar componentes regados en la raíz ni un cajón `shared/models`.
+- Frontend por funcionalidad: `features/catalog`, `features/record-sources`, `features/importer`. Modelos con su propietario; `core/api` solo metadatos y `core/i18n` presentación. No agregar componentes regados en la raíz ni un cajón `shared/models`.
 - Contratos entre funcionalidades con `import type`, no vistas desde `core`/`shared`. Mantener el motor independiente de transporte/vistas y la URL de módulo del worker relativa a su workbench.
 - Reutilizar `shared/design-system`: una paleta CSS, `MuseumPreset` conectado en `app.config.ts`, tokens de espacios/radios y primitivas comunes. Estilos de feature globales importados desde `src/styles.scss` para conservar overlays; no duplicar colores o reglas para cada control. No cambiar el comportamiento nativo de selects sin una necesidad explícita.
 - Reutilizar el selector DwC de `shared/ui/dwc-picker` y sus contratos de valor libre, limpieza y deshabilitación; preservar el workbench montado y las guardas de navegación/generación.

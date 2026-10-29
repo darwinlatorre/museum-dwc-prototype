@@ -10,8 +10,8 @@ Rama: `feat/normalization-data-treatment`. Entrega single-pr ya elegida para est
 
 ## Tasks
 
-- **T1 [S1,S2,S3]** — in_progress — unidades disjuntas completadas por workers y contrastadas: backend `40941aefd0c9da48022b2ef242cb876654a706f3` (96Java/16arquitectura/3codegen/packagePASS); diseño sincronizado/3artboards/01elegido, commit diseño pendiente. Trigger: backstop y unidades independientes. Risk:item3checkercompartido, independiente enT3.
-- **T2 [S1,S2,S3]** — pending — worker frontend implementa el artboard elegido, mueve propietario a `record-sources`, actualiza consumidores/pruebas/docs y comprueba UI funcional. Depende del diseño T1. Commit pendiente.
+- **T1 [S1,S2,S3]** — done — backend `40941aefd0c9da48022b2ef242cb876654a706f3` (96Java/16arquitectura/3codegen/packagePASS,89hashes+45preservados contrastados); diseño `6d115e6c272dfcbb60cd44be0f01dc73cdaea9a5` (49tokens/9alias,3artboards/estructuralPASS,01elegido). Trigger: backstop/unidadesdisjuntas. Risk:item3checker, aceptaciónindependienteenT3.
+- **T2 [S1,S2,S3]** — in_progress — worker frontend implementa01-master-detail en `record-sources`, actualiza consumidores/pruebas/docs y comprueba UI funcional. T1preparacióncompleta; 136frontend/checker/buildfinalPASS ybrowserwriter+contrastepadrePASS; corte de código listo, commit pendiente.
 - **T3 [S1,S2,S3]** — pending — padre integra, contrasta evidencia UX/UI/sistema de diseño en escritorio/móvil y contratos preservados; actualiza documentación raíz, espejo y cierre. Commit pendiente.
 
 ## Log
@@ -45,3 +45,15 @@ RED estructural padreexit1:carpetasrecordsources/record-sourcesausentes. Padre m
 Backendworker `mvt5mswe-1-10jq`: S3implementado, S2preservado; REDestructura16tests/15fallos, GREEN16/16; codegen3, arquitectura16/checker, Java96/0fallos/errores/omitidas ypackageofflinePASS. Padre contrastó89/89hashescheckout/copia y45/45recursosHEADintactos,5exit0 yXMLsummary96/0/0/0. Java24archivos+handler equivalentes normalizando solo namespace. Commit `40941aefd0c9da48022b2ef242cb876654a706f3`:309líneasdiff, módulo/checkers/docsbackend/AGENTSref. Risk:item3 porque checkercompartido ahora detecta namespace/directorio, requiere verificadorindependienteT3; ASSESSunassessableporuntracked conplanindependiente, sinreviewDue/continuación/aprobación. No API/esquema/seed/migración/catálogo cambiados.
 
 Diseñoworker `mvt5mswk-2-2qum`: sincronizó `design/system.md`/system.html (49tokensmuseum+9alias;11primarios/4texto/7superficies/8nav/4error/1fuente/8espacios/5radios/1altura). Fuentesdocumentadas reales, sincolores/fonts inventados. Tresartboardsen `design/record-sources-admin/`:01-master-detail.html,02-source-deck.html,03-inline-register.html; HTML/JS/manifest/paleta/semillas estructuralPASS ycontrastecalculadomínimo5.44. No REDconductual parapropuestasestáticas; nobrowser aún. Canvas disponible127.0.0.1:46615, autoabrirventanafallóxdg-openausente(no productobug). Padre seleccionó01maestro-detalle mediantegentle_design implement; otros2sonalternativas. Handoff: implementarstackreal/componentes/token rules, nocopiarHTMLliteral, informarhandoffin_progress/implementedconpreviewURL. Diseño/cambiospropiossinpublicar, no editarContextodeanálisis.
+
+### L5 — Corte de diseño y comienzo frontend
+
+Diseño+spec commit `6d115e6c272dfcbb60cd44be0f01dc73cdaea9a5`,609adiciones: tresHTMLautónomos claramente distintos, lámina/sistema ymanifest/handoff, sin minificar ni omitir requisitos para400. Se conserva single-pr elegido, no publicación. T1done porpreparación/namespace/propiaspruebas; navegadorproductivo e independientechecker siguenenT3, no se consideranaprobadosporunboceto. T2in_progress; padre realizará movimiento frontend y estado handoff, writer debe conservarhelpersoriginales y observarREDconductualconcompilaciónválida antesdelrediseño.
+
+### L6 — Frontend implementado y candidato contrastado
+
+Padre movió solo la carpeta frontend y marcó handoffin_progress,preview4200. Worker `mvt6ap0u-3-sli9` implementóT2/S1–S3 conhelpersexistentes yderivadosvisualesenrecord-sources. REDDOM5fallos(compilaciónválida)→GREEN13/13; primera suite135/1porselectorCSSagrupado, separadoselectoressinretiraraserciones→136/136. BuildPASS(645.13kB/500aviso);últimorótuloHTML tuvo13focalizadasfinales. Padre ejecutójob5delcandidatofinal:checker+136/136+buildexit0. No reusar134históricas ni sumar ejecuciones.
+
+Padre leyó editor/evidence y abrió3capturasdesktop/mobile/campolargo; contrastó7consumidores API/importer con SOLO importpaths ymodelosidénticos, GETconfig/catálogo before/after/actualbyteidénticos. Saveclona borradorcompleto,nofiltro. Browserwriter observó5fuentes/recuentos,búsquedamayúsculas/vacío/limpiar,pickerteclado/Escape/foco,borradoradd/remove/guardcancel/refreshGET200; documentos1440/390sin overflow, textolargoenvuelto. SinGuardar/PUT/POST/sincronización/biología; sesióncerrada. IncidentesacciónCLI/localizadorambiguo/clicfuera deviewport+espera25sagotada registrados, noreinterpretadoscomoéxito: recorridocorregidoconscroll/control exacto ycapturasfinales, sin aumentar límites. VERIFICATION recogeincidenteylímite; no navegadoractualdelpadre todavía.
+
+README/AGENTS/currentfrontenddocs yfuentesendesign/system.mdalineados. T2todavíain_progresshastaelcommit; independienteitem3enT3pendiente para checkerscompartidos, sinaprobaciónnativa.
