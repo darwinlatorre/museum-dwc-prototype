@@ -3,6 +3,7 @@ import type { Context } from '../models/context';
 import type { Dataset } from '../models/dataset';
 import type { Normalization } from '../models/normalization';
 import { normalize } from './normalizer';
+import { effectiveField } from './normalization-rules';
 
 /** No defaults: only the selected context of the server snapshot is authoritative. */
 export function requiredFields(configuration: ValidationConfiguration, context: Context): string[] {
@@ -29,10 +30,10 @@ export interface MissingCell {
 
 /** Locate against source indices, never the presentation order of mapped columns. */
 export function missingCells(data: Dataset, mapping: Record<string, string>, field: string, options: Normalization): MissingCell[] {
-  const index = data.headers.findIndex(header => (mapping[header] || header) === field);
+  const index = data.headers.findIndex(header => effectiveField(header, mapping) === field);
   if (index < 0) return [];
   const source = { headers: [data.headers[index]], rows: data.rows.map(row => ({ row: row.row, values: [row.values[index] ?? ''] })) };
-  const working = normalize(source, options).data;
+  const working = normalize(source, options, { [data.headers[index]]: field }).data;
   return working.rows.flatMap((row, position) => !row.values[0].trim() ? [{
     header: data.headers[index], column: index + 1, field, row: row.row,
     before: source.rows[position].values[0], after: row.values[0],
@@ -41,7 +42,7 @@ export function missingCells(data: Dataset, mapping: Record<string, string>, fie
 
 /** Count each source record once per configured field. */
 export function missingFields(data: Dataset, mapping: Record<string, string>, configuration: ValidationConfiguration, context: Context, options: Normalization): MissingField[] {
-  const headers = data.headers.map(header => mapping[header] || header);
+  const headers = data.headers.map(header => effectiveField(header, mapping));
   const summaries = requiredFields(configuration, context).map(field => ({
     field,
     missing: headers.includes(field) ? missingCells(data, mapping, field, options).length : data.rows.length,

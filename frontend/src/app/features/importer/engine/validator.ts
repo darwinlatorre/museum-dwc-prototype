@@ -4,6 +4,8 @@ import { type Dataset, LIMITS } from '../models/dataset';
 import type { Issue } from '../models/analysis-result';
 import type { Term } from '../../catalog/models/catalog-term';
 import { requiredFields } from './required-fields';
+import { calendar, isoComponents, validIsoDate } from './normalization-dates';
+import { effectiveField } from './normalization-rules';
 const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 export function suggestions(header: string, terms: Term[]): string[] {
   const needle = key(header);
@@ -15,25 +17,6 @@ export function suggestions(header: string, terms: Term[]): string[] {
     )
     .slice(0, 3)
     .map((t) => t.name);
-}
-function calendar(y: number, m: number, d: number): boolean {
-  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
-  return (
-    Number.isInteger(y) &&
-    y >= 1 &&
-    y <= 9999 &&
-    Number.isInteger(m) &&
-    m >= 1 &&
-    m <= 12 &&
-    Number.isInteger(d) &&
-    d >= 1 &&
-    d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
-  );
-}
-function date(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [y, m, d] = value.split('-').map(Number);
-  return calendar(y, m, d);
 }
 function coordinate(value: string, limit: number): boolean {
   return (
@@ -49,7 +32,7 @@ export function validate(
   terms: Term[],
   context: Context,
 ): Issue[] {
-  const headers = data.headers.map((h) => mapping[h] || h);
+  const headers = data.headers.map((h) => effectiveField(h, mapping));
   if (new Set(headers).size !== headers.length)
     throw new Error('Dos columnas de origen no pueden asignarse al mismo campo.');
   const issues: Issue[] = [];
@@ -92,7 +75,7 @@ export function validate(
       if (!value.trim()) continue;
       const valid =
         field === 'eventDate'
-          ? date(value)
+          ? validIsoDate(value)
           : coordinate(value, field === 'decimalLatitude' ? 90 : 180);
       if (!valid)
         base(
@@ -119,10 +102,10 @@ export function validate(
     else if (m && d && !calendar(y ? Number(y) : 2000, Number(m), Number(d)))
       base('day', row.row, 'El día no es válido para el mes seleccionado.');
     const event = get('eventDate');
-    if (event && date(event)) {
-      const parts = event.split('-').map(Number);
+    const parts = isoComponents(event);
+    if (parts) {
       [y, m, d].forEach((v, i) => {
-        if (v.trim() && Number(v) !== parts[i])
+        if (parts[i] !== undefined && v.trim() && Number(v) !== parts[i])
           base(
             ['year', 'month', 'day'][i],
             row.row,
