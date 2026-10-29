@@ -1,6 +1,6 @@
 # Gestión y validación de registros biológicos del museo
 
-Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Permite analizar archivos CSV/XLSX **en el navegador**, contrastarlos con perfiles independientes de SiB y del museo, descargar diagnósticos y administrar borradores sin modificar el código.
+Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Permite analizar archivos CSV/XLSX **en el navegador**, validarlos según una configuración global editable por contexto y descargar diagnósticos sin enviar registros biológicos al servidor.
 
 **MVP de desarrollo, no despliegue de producción.** La autenticación y la importación de registros al servidor no están habilitadas. Ambos servidores deben permanecer en la interfaz local. La aplicación no certifica la publicación ante SiB, la taxonomía, los permisos ni las extensiones GGBN.
 
@@ -19,7 +19,7 @@ Requisitos del host: Bash, Node.js **24**, npm, Java **21** y Docker con Compose
    ./start.sh
    ```
 
-3. Abrir http://localhost:4200. Nginx sirve Angular y dirige `/api/` al backend conservando el prefijo. Flyway crea el esquema; la primera ejecución carga el catálogo y los perfiles publicados `SiB Registros Biológicos 4.1`, `Museo 1.0` y `Museo + SiB 1.0`.
+3. Abrir http://localhost:4200. Nginx sirve Angular y dirige `/api/` al backend conservando el prefijo. Flyway crea el esquema; la primera ejecución carga el catálogo y la configuración global de los cinco contextos. Los reinicios no sobrescriben ajustes guardados.
 
 `./start.sh --help` muestra el uso sin ejecutar comandos; otros argumentos se rechazan con código 2. El script comprueba herramientas y presencia del `.env`, valida el modelo con `docker compose --env-file ... -f ... config --quiet`, ejecuta `npm ci --no-audit --no-fund` y `npm run build` en `frontend`, luego `bash ./mvnw package -DskipTests` en `backend` y finalmente `docker compose up --build -d --wait --wait-timeout 180`. Usa rutas explícitas y Compose como intérprete dotenv: no ejecuta `source`, `eval` ni un parser casero. Las variables ya exportadas en la terminal tienen la precedencia normal de Compose; evitar valores antiguos exportados.
 
@@ -44,40 +44,49 @@ No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Las imág
 ## Análisis de un archivo
 
 1. Seleccionar un CSV o XLSX y, cuando corresponda, su hoja. La primera fila contiene los encabezados y las siguientes los registros. Hay ejemplos en `examples/`.
-2. En **Contexto y validación**, indicar los contextos aplicables: asociados a un permiso de recolección o acceso a recursos genéticos, colección biológica, eventos de muestreo y marinos. Los cuatro son combinables. «Otros: observaciones en campo, registros fortuitos u otros orígenes no contemplados» desmarca los cuatro; seleccionar cualquiera de ellos desmarca «Otros». Las condiciones corresponden al lote analizado; separar los lotes con contextos distintos.
-3. Elegir uno o varios perfiles **publicados**. Se comprueban los encabezados obligatorios de severidad error aplicables al contexto: si falta alguno, se informa cuál y se bloquea el avance hasta cambiar archivo, perfiles o contexto. Se exigen sus nombres oficiales, no equivalencias sugeridas. Las reglas de advertencia no bloquean; los valores vacíos se revisan después. Los borradores no se utilizan para diagnósticos reproducibles.
-4. Confirmar el mapeo de columnas: primero aparecen las que contienen datos y luego las vacías bajo «Campos sin datos». Las sugerencias Darwin Core no se aplican automáticamente. Ejecutar **Validar localmente**.
-5. Revisar el **Diagnóstico**: primero aparece un resumen compacto de campos obligatorios sin datos, sin duplicar registros entre perfiles. Abrir un conteo muestra sus filas originales y valores; el campo y la columna de origen se indican una sola vez en el encabezado, incluso con columnas mapeadas. **Ver todas las incidencias** permite consultar el detalle completo filtrable, en lugar de mostrar ambas vistas a la vez. Las descargas incluyen todo el diagnóstico. La ausencia de una columna se informa como tal, sin inventar celdas; los errores de registros indican la fila original, a partir de la fila 2.
-6. En **Normalizar**, elegir opciones, revisar la vista previa y pulsar **Aplicar normalización y validar** para actualizar el diagnóstico de una copia de trabajo. El primer diagnóstico usa los valores originales. El archivo original no cambia.
-7. **Finalizar** queda vacío por ahora; no guarda ni envía registros.
+2. En **Contexto**, elegir una sola opción: colección biológica, permiso de recolección o acceso a recursos genéticos, eventos de muestreo, marinos u otros. Separar archivos cuyos registros necesiten contextos distintos. No hay selección de perfiles.
+3. Confirmar el mapeo de columnas: primero las que contienen datos y después las totalmente vacías bajo «Campos sin datos». Las sugerencias Darwin Core no se aplican automáticamente. Se permite llegar al mapeo aunque falten encabezados, para poder reconocer equivalencias antes del diagnóstico. Pulsar **Validar localmente**.
+4. Revisar el **Diagnóstico**: resumen compacto de campos obligatorios sin datos. Abrir un conteo muestra filas originales y valores; campo y columna de origen se indican una sola vez. **Ver todas las incidencias** permite consultar el detalle completo filtrable, sin añadir otro detalle simultáneo. Las descargas incluyen todo el diagnóstico y la revisión de configuración utilizada. La ausencia de una columna se informa como tal, sin inventar celdas; las filas conservan sus números originales.
+5. En **Normalizar**, elegir opciones, revisar la vista previa y pulsar **Aplicar normalización y validar** para actualizar una copia de trabajo. El primer diagnóstico usa los originales; el archivo no cambia.
+6. **Finalizar** queda vacío por ahora; no guarda ni envía registros.
 
-El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de perfiles y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
+El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de configuración y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
 
 ### Idioma y conservación de datos
 
-La interfaz, las ayudas y los diagnósticos del sistema se presentan en español. Los nombres oficiales Darwin Core, las URI, los identificadores técnicos, las claves y los valores de contratos de API permanecen sin cambios. Los datos de los archivos y los textos escritos por usuarios no se traducen ni modifican automáticamente. Las definiciones oficiales del catálogo se conservan como citas de la fuente original, con su idioma indicado. La traducción de los mensajes predeterminados no debe reescribir versiones publicadas.
+La interfaz, las ayudas y los diagnósticos del sistema se presentan en español. Los nombres oficiales Darwin Core, las URI, los identificadores técnicos, las claves y los valores de contratos de API permanecen sin cambios. Los datos de los archivos y los textos escritos por usuarios no se traducen ni modifican automáticamente. Las definiciones oficiales del catálogo se conservan como citas de la fuente original, con su idioma indicado. El retiro definitivo de perfiles se aplica mediante la migración autorizada descrita abajo; no modifica los archivos originales ni traduce contenido del usuario.
 
-## Administración de perfiles
+## Configuración global de validación
 
-La sección de perfiles abre un diálogo para crear o revisar una versión, con datos del perfil y reglas agrupadas. El selector Darwin Core es el mismo control PrimeNG con búsqueda utilizado al mapear columnas. Se puede crear un borrador, agregar reglas, guardar cambios, duplicar una versión y publicarla. El nombre y la versión identifican una combinación única. Una versión publicada es inmutable: para cambiar sus reglas se crea otra versión. Las ediciones de borradores desactualizados se rechazan, sin sobrescribir cambios de otro editor.
+En **Configuración de validación** se administran los campos obligatorios de cada contexto. No hay borradores, perfiles seleccionables, duplicación ni publicación. Los cambios se guardan en PostgreSQL y se aplican a los análisis posteriores; una revisión obsoleta se rechaza sin sobrescribir el trabajo de otro editor. Si cambia la configuración durante un análisis abierto, el diagnóstico anterior se invalida y debe ejecutarse de nuevo.
 
-El perfil **Museo + SiB 1.0** reúne los requisitos de ambos: 56 reglas distintas y 28 campos obligatorios siempre, conservando las condiciones y advertencias SiB. Se puede elegir solo ese perfil para comprobar ambos conjuntos; no hace falta seleccionar además sus dos originales. Es una composición local, no un perfil oficial ni una certificación SiB. Las versiones originales permanecen intactas.
+La configuración inicial responde al pedido del museo y a la matriz SiB suministrada:
 
-Las reglas son declarativas y limitadas, no código JavaScript ejecutable. Cada una indica campo, comprobación, severidad, condición de contexto, mensaje y fuente. Más información: [API del backend](backend/README.md) y [arquitectura del frontend](frontend/README.md).
+| Contexto | Campos obligatorios iniciales |
+|---|---:|
+| Colección biológica | 30 |
+| Permiso de recolección o acceso a recursos genéticos | 22 |
+| Eventos de muestreo | 10 |
+| Marinos | 15 |
+| Otros | 8 |
+
+`disposition` empieza opcional en colección y obligatorio en permisos. En permisos se siguen literalmente las marcas de la matriz para `individualCount`, `organismQuantity` y `organismQuantityType`; no se convierten en una alternativa ni se arrastran advertencias de perfiles anteriores. Las comprobaciones básicas de fechas y coordenadas siguen verificando los valores no vacíos. Esta configuración local no es una certificación SiB.
+
+Los endpoints activos son `GET /api/validation-configuration` y `PUT /api/validation-configuration`. La escritura incluye la revisión vigente y la configuración de los cinco contextos. Las rutas `/api/profiles` se retiran. Las migraciones V1/V2 ya aplicadas no se reescriben; V4 elimina de forma irreversible la tabla de perfiles antiguos, su trigger y su función dedicada, por decisión expresa del usuario. Se conservan el catálogo, la configuración global y el historial de Flyway. El borrado se aplica a cada base que ejecute esa migración, no mediante una limpieza manual ni eliminando volúmenes. No se envían archivos ni celdas al guardar ajustes. Más información: [API del backend](backend/README.md) y [arquitectura del frontend](frontend/README.md).
 
 ## Catálogo y evidencia SiB
 
-La copia inicial contiene **414 entradas TDWG**, incluidos términos Dublin Core e históricos u obsoletos. La fuente oficial es https://dwc.tdwg.org/terms/ y los CSV mantenidos por TDWG. Cada entrada conserva nombre, URI canónica, definición y categoría oficiales; `current`/`deprecated` proyecta la marca oficial de obsolescencia. Las categorías ausentes permanecen vacías, sin inferirlas del tipo RDF. **Pertenecer al vocabulario no implica obligatoriedad:** los campos obligatorios dependen de cada perfil.
+La copia inicial contiene **414 entradas TDWG**, incluidos términos Dublin Core e históricos u obsoletos. La fuente oficial es https://dwc.tdwg.org/terms/ y los CSV mantenidos por TDWG. Cada entrada conserva nombre, URI canónica, definición y categoría oficiales; `current`/`deprecated` proyecta la marca oficial de obsolescencia. Las categorías ausentes permanecen vacías, sin inferirlas del tipo RDF. **Pertenecer al vocabulario no implica obligatoriedad:** los campos obligatorios dependen de la configuración global del contexto elegido.
 
 El backend intenta sincronizar el catálogo automáticamente cada día, con una primera ejecución 60 segundos después del arranque. Descarga las tres fuentes fijadas al mismo commit y activa una instantánea completa en PostgreSQL solo después de validarla. Si falla la descarga o validación, conserva la última versión válida, también tras reiniciar. No marca como obsoleto un término solo porque desaparezca: rechaza ese candidato incompleto. `GET /api/catalog/status` permite consultar revisión, fecha, conteos y último fallo; la configuración y los límites se describen en [backend/README.md](backend/README.md).
 
-En Catálogo, **«Sincronizar con TDWG»** dispara una actualización manual mediante `POST /api/catalog/sync`, sin cuerpo. Muestra actividad mientras espera y distingue éxito confirmado, fallo conservando la última versión válida e intento reemplazado por uno posterior. Al terminar actualiza la caché compartida; no envía archivos ni modifica perfiles. La sincronización diaria sigue habilitada.
+En Catálogo, **«Sincronizar con TDWG»** dispara una actualización manual mediante `POST /api/catalog/sync`, sin cuerpo. Muestra actividad mientras espera y distingue éxito confirmado, fallo conservando la última versión válida e intento reemplazado por uno posterior. Al terminar actualiza la caché compartida; no envía archivos ni modifica la configuración de validación. La sincronización diaria sigue habilitada.
 
-Las reglas SiB se contrastaron con la matriz de instrucciones del Excel oficial 4.1, no solo con los doce campos candidatos. Los 22 campos obligatorios del perfil Museo 1.0 corresponden al requerimiento independiente del museo.
+La evidencia SiB conserva la matriz del Excel oficial 4.1. La configuración activa usa los campos y la obligatoriedad del pedido actual, incluida la ampliación local a 30 campos mínimos de colección; no se atribuye esa política a TDWG.
 
 Limitaciones importantes:
 
-- `disposition` e `individualCount` presentan discrepancias entre instrucciones, definiciones e historial. Están documentadas y producen advertencias cuando un rechazo incondicional no estaría justificado.
+- `disposition` e `individualCount` tienen discrepancias documentadas entre fuentes históricas SiB. Los valores iniciales actuales siguen la política expresamente solicitada, descrita arriba; no se presentan como resolución científica de esas discrepancias.
 - El contexto de permiso también requiere una extensión GGBN. Este MVP valida la hoja principal y no reemplaza la revisión de esa extensión.
 - Un `country` desconocido genera un diagnóstico, no una autorización para inventar el país.
 
@@ -88,7 +97,7 @@ python3 scripts/build_seeds.py
 python3 scripts/test_seeds.py
 ```
 
-Reconstruir los recursos no modifica las versiones publicadas en PostgreSQL. Un cambio de requisitos debe publicarse como una nueva versión.
+Reconstruir los recursos no sobrescribe la configuración ya guardada ni ejecuta por sí mismo el retiro de perfiles en PostgreSQL. Los requisitos activos se modifican desde Configuración de validación con control de revisión.
 
 ## Pruebas y compilación
 
@@ -105,24 +114,24 @@ cd ../backend
 
 La auditoría de dependencias es una comprobación separada: `npm audit`. Los dos intentos descritos agotaron sus límites; no se ejecutan nuevos intentos automáticamente.
 
-Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. Los registros `odd/tasks/museum-dwc.md`, `odd/tasks/museum-evolution.md`, `odd/tasks/museum-refinement.md`, `odd/tasks/frontend-architecture.md` y `odd/tasks/backend-hexagonal.md` conservan las tareas, decisiones y evidencias del módulo inicial y de sus mejoras; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
+Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. El reemplazo actual se especifica en `odd/tasks/global-validation.md`. Los registros históricos `odd/tasks/museum-dwc.md`, `odd/tasks/museum-evolution.md`, `odd/tasks/museum-refinement.md`, `odd/tasks/frontend-architecture.md` y `odd/tasks/backend-hexagonal.md` conservan las tareas, decisiones y evidencias del módulo inicial y de sus mejoras; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
 
 ## Arquitectura y siguiente integración
 
 ```text
 Aplicación de gestión Angular / PrimeNG
- ├─ TanStack Query → metadatos REST de perfiles y catálogo
+ ├─ TanStack Query → metadatos REST de configuración global y catálogo
  └─ archivo local → Web Worker → parser → normalizador optativo → motor de validación
                                                           └─ diagnóstico → descarga local
-Spring Boot REST → servicio transaccional → repositorio JPA / entidad de perfil → PostgreSQL
-                                    Flyway + protección de versiones publicadas
+Spring Boot REST → configuración global transaccional → repositorio JPA → PostgreSQL
+                                    revisión + bloqueo + migraciones aditivas
 ```
 
 Keycloak queda como una integración posterior, no como una pantalla de acceso simulada. Antes de exponer el sistema en una red:
 
-- Incorporar Spring Security OAuth2 Resource Server con validación de emisor, audiencia y JWT, y autorización para lectura, edición y publicación. No confiar solo en las guardas de Angular.
+- Incorporar Spring Security OAuth2 Resource Server con validación de emisor, audiencia y JWT, y autorización para lectura y edición de la configuración. No confiar solo en las guardas de Angular.
 - Incorporar OIDC Authorization Code con PKCE en Angular y un único límite para agregar autorización a las solicitudes de metadatos. No guardar tokens en archivos ni diagnósticos.
 - Incorporar identidad de auditoría y revisar CORS, estrategia CSRF, TLS, límites y control de frecuencia para el despliegue elegido.
-- Implementar la importación en un endpoint autenticado independiente: límites de archivo, tratamiento de contenido no confiable, perfiles fijados, validación autoritativa en backend y persistencia transaccional. Un diagnóstico del navegador nunca debe autorizar escrituras en la base.
+- Implementar la importación en un endpoint autenticado independiente: límites de archivo, tratamiento de contenido no confiable, configuración y contexto fijados, validación autoritativa en backend y persistencia transaccional. Un diagnóstico del navegador nunca debe autorizar escrituras en la base.
 
-El MVP no ofrece carga de archivos ni almacena registros biológicos. La administración de perfiles no tiene autenticación y debe utilizarse **solo en localhost** hasta integrar Keycloak.
+El MVP no ofrece carga de archivos ni almacena registros biológicos. La edición de la configuración global no tiene autenticación y debe utilizarse **solo en localhost** hasta integrar Keycloak.
