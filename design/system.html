@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de diseño del museo</title>
+<style>
+:root { font-family:'Segoe UI',Frutiger,'Helvetica Neue',sans-serif; font-size:14px; color:#203a34; background:#f3f6f5; }
+* { box-sizing:border-box; }
+body { margin:0; }
+main { max-width:1440px; margin:auto; padding:2.5rem; }
+h1,h2,h3 { color:#1b3930; }
+h2 { font-size:1.75rem; letter-spacing:-.04em; }
+h3 { font-size:1.35rem; }
+h4 { font-size:1.05rem; }
+p { color:#526960; line-height:1.6; max-width:80ch; }
+section { margin:1.5rem 0; background:white; border:1px solid #dce5e0; border-radius:8px; padding:1.5rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; }
+.swatch { height:64px; border:1px solid #526960; border-radius:4px; }
+code { font:inherit; overflow-wrap:anywhere; }
+label { display:block; font-weight:600; }
+button,input { font:inherit; border:1px solid #194c3a; border-radius:5px; min-height:44px; padding:.6rem .7rem; color:#203a34; background:white; }
+button { cursor:pointer; color:#194c3a; }
+button:hover { background:#edf6f2; }
+:focus-visible { outline:2px solid #194c3a; outline-offset:3px; }
+.notice { background:#edf6f2; border-left:4px solid #30785c; padding:1rem; }
+.error { background:#fff1ed; border-left:4px solid #ae4030; padding:1rem; color:#732b22; }
+.measure { background:#d3e8de; height:16px; margin:.5rem 0; }
+@media(max-width:800px) { main { padding:1rem; } }
+@media(prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+</style>
+</head>
+<body>
+<main>
+<header><p>Museo de Historia Natural · Universidad del Cauca</p><h1>Sistema de diseño existente</h1><p>Sincronizado desde las fuentes Angular. No es una propuesta de nueva identidad. Referencias y reglas completas en design/system.md.</p></header>
+<section aria-labelledby="palette"><h2 id="palette">Colores de origen</h2><div class="grid" id="colors"></div></section>
+<section><h2>Tipografía del sistema</h2><p>Segoe UI, Frutiger, Helvetica Neue, sans-serif · raíz 14px · párrafo 1.6</p><h2>Encabezado 1.75rem</h2><h3>Subencabezado 1.35rem</h3><h4>Detalle 1.05rem</h4><p>Campos obligatorios por fuente. Los identificadores DwC y el texto del usuario se conservan literalmente.</p></section>
+<section><h2>Espaciado</h2><div id="spaces"></div></section>
+<section><h2>Radios y elevación</h2><div class="grid" id="radii"></div><p>Control: radio 5px y altura 3.15rem. Sin escala de sombras: los controles existentes usan none.</p></section>
+<section><h2>Primitivas</h2><label for="term">Agregar campo obligatorio</label><p><input id="term" value="occurrenceID"> <button type="button" onclick="document.getElementById('term').value='';document.getElementById('term').focus()">Limpiar</button></p><p class="notice">Revisión 0 · Sin cambios pendientes. El guardado es explícito y global.</p><p class="error">Este campo ya es obligatorio en el contexto.</p><details><summary>Reglas del editor</summary><p>Máximo 200 caracteres por campo y 500 campos por contexto. La actualización descarta cambios únicamente tras una lectura correcta. El picker productivo sigue siendo el compartido de DwC.</p></details></section>
+</main>
+<script>
+const groups = {
+'primary': [['50','#edf6f2'],['100','#d3e8de'],['200','#a9d0bd'],['300','#7ab497'],['400','#509578'],['500','#30785c'],['600','#235f48'],['700','#194c3a'],['800','#163e31'],['900','#143329'],['950','#0b211a']],
+'semantic': [['text','#203a34'],['text-muted','#526960'],['heading','#1b3930'],['link','#23634d'],['page','#f3f6f5'],['surface','white'],['line','#dce5e0'],['control-border','#aebfb6'],['button-border','#b8cbc0'],['workspace-border','#e0e8e3'],['table-heading','#f1f5f2'],['nav-surface','#163e31'],['nav-text','#e8f1eb'],['nav-muted','#b3cdbf'],['nav-accent','#b6d7bf'],['nav-link','#d9e8de'],['nav-active','#2b5744'],['nav-divider','#426653'],['footer-text','#647a6e'],['error-surface','#fff1ed'],['error-border','#ae4030'],['error-text','#732b22'],['error-line','#edc7bb']],
+'local': [['toolbar','#edf2ef'],['badge','#edf0eb'],['badge-border','#d7ded5'],['published','#e6f3ec'],['published-border','#bfdccd'],['danger','#913727'],['danger-surface','#fff0eb'],['notice','#e9f3ed'],['option-focus','#edf4ef'],['option-selected','#e2eee6']]
+};
+for (const [group, entries] of Object.entries(groups)) {
+  for (const [name, color] of entries) {
+    const tile=document.createElement('div');
+    const swatch=document.createElement('div'); swatch.className='swatch'; swatch.style.background=color;
+    const caption=document.createElement('p'); caption.textContent=`${group}: ${name} · ${color}`;
+    tile.append(swatch,caption); document.getElementById('colors').append(tile);
+  }
+}
+for (const [name,size] of [[1,'.25rem'],[2,'.5rem'],[3,'.75rem'],[4,'1rem'],[5,'1.25rem'],[6,'1.5rem'],[8,'2rem'],[10,'2.5rem']]) {
+  const row=document.createElement('div'); row.textContent=`space-${name} · ${size}`;
+  const bar=document.createElement('div'); bar.className='measure'; bar.style.width=size; row.append(bar); document.getElementById('spaces').append(row);
+}
+for (const [name,size] of [['sm','4px'],['md','5px'],['lg','6px'],['panel','8px']]) {
+  const tile=document.createElement('div'); tile.className='notice'; tile.style.borderRadius=size; tile.textContent=`radius-${name} · ${size}`; document.getElementById('radii').append(tile);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuentes de registros biológicos · Registro desplegable</title>
+<style>
+:root {
+  --pine:#194c3a; --ink:#203a34; --muted:#526960; --heading:#1b3930;
+  --page:#f3f6f5; --surface:white; --line:#dce5e0; --soft:#edf6f2;
+  font-family:'Segoe UI',Frutiger,'Helvetica Neue',sans-serif; font-size:14px;
+  color:var(--ink); background:var(--page);
+}
+* { box-sizing:border-box; }
+body { margin:0; }
+header { border-bottom:1px solid var(--line); background:var(--surface); padding:1.5rem 2.5rem; }
+main { max-width:1440px; margin:auto; padding:2.5rem; }
+h1,h2,h3 { color:var(--heading); }
+h1 { font-size:1.75rem; letter-spacing:-.04em; margin:0 0 .75rem; }
+h2 { font-size:1.35rem; }
+h3 { font-size:1.05rem; }
+p { line-height:1.6; color:var(--muted); max-width:80ch; }
+button,input { font:inherit; border:1px solid var(--pine); border-radius:5px; min-height:44px; padding:.6rem .7rem; background:var(--surface); color:var(--ink); }
+button { cursor:pointer; color:var(--pine); }
+button:hover:not(:disabled) { background:var(--soft); }
+button:disabled { opacity:.5; cursor:not-allowed; }
+:focus-visible { outline:2px solid var(--pine); outline-offset:3px; }
+input { width:100%; min-height:3.15rem; }
+label { display:block; font-weight:600; margin-bottom:.5rem; }
+.topline { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; }
+.status { display:inline-block; color:var(--pine); background:var(--soft); border:1px solid var(--pine); border-radius:4px; padding:.5rem .75rem; }
+.register { margin:1.5rem 0; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+.source { border-bottom:1px solid var(--line); }
+.source:last-child { border-bottom:0; }
+summary { cursor:pointer; color:var(--pine); min-height:44px; font-weight:600; padding:1rem 1.5rem; }
+.source > summary { min-height:80px; }
+.summary-content { display:inline-grid; grid-template-columns:240px 180px auto; gap:1.5rem; width:calc(100% - 2rem); vertical-align:middle; }
+.source[open] > summary { background:var(--soft); border-left:4px solid var(--pine); }
+.source .opened { display:none; }
+.source[open] .opened { display:inline; }
+.source[open] .closed { display:none; }
+.editor { padding:1.5rem; border-top:1px solid var(--line); }
+.edit-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:2rem; align-items:start; }
+.addbox { background:var(--soft); padding:1.5rem; border-radius:6px; }
+.actions { display:flex; gap:.5rem; flex-wrap:wrap; margin:1rem 0; }
+.list { margin:1rem 0 0; padding:0; list-style:none; max-height:420px; overflow:auto; scrollbar-gutter:stable; }
+.list li { display:flex; gap:1rem; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid var(--line); }
+.literal { white-space:pre-wrap; overflow-wrap:anywhere; min-width:0; }
+.primary { background:var(--pine); color:var(--surface); }
+.primary:hover:not(:disabled) { background:#235f48; }
+.savebar { padding:1.5rem; background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.error { background:#fff1ed; color:#732b22; padding:1rem; border-left:4px solid #ae4030; }
+.notice { background:var(--soft); padding:1rem; border-left:4px solid var(--pine); }
+.help summary { padding-left:0; }
+.prototype { font-size:.92rem; }
+.skip { position:absolute; top:-100px; background:var(--surface); color:var(--pine); padding:1rem; }
+.skip:focus { top:0; }
+[hidden] { display:none!important; }
+@media(max-width:800px) { main,header { padding:1rem; } .summary-content { grid-template-columns:1fr; gap:.5rem; } .edit-grid { display:flex; flex-direction:column; gap:1rem; } .edit-grid > * { width:100%; } .addbox { order:-1; padding:1rem; } .editor,.savebar { padding:1rem; } .list { max-height:none; } .source > summary { padding:1rem; } }
+@media(prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header><strong>Museo de Historia Natural · Universidad del Cauca</strong><p>Administración / Fuentes de registros biológicos</p></header>
+<main id="main">
+<div class="topline"><h1>Fuentes de registros biológicos</h1><span class="status" id="state" role="status">Revisión 0 · Sin cambios pendientes</span></div>
+<p>Abra una fuente para editar sus campos en el mismo registro. Los cinco tipos son fijos: no se crean ni eliminan fuentes.</p>
+<section aria-label="Tipos de fuente y campos obligatorios" class="register" id="register"></section>
+<section class="savebar" aria-label="Guardar configuración global"><h2>Un guardado para las cinco fuentes</h2><p>Los cambios se mantienen como borrador hasta guardar la configuración completa. Solo metadatos: nunca archivos ni registros biológicos.</p><div class="actions"><button class="primary" id="save" type="button" disabled>Guardar configuración</button><button id="refresh" type="button">Actualizar del servidor</button></div><p id="notice" role="status" aria-live="polite"></p></section>
+<details open class="help"><summary>Alcance de la configuración</summary><p>Se guarda la configuración completa de los cinco contextos con su revisión vigente. Una revisión obsoleta se rechaza sin sobrescribir cambios ajenos. Actualizar descarta sus cambios únicamente después de una lectura correcta del servidor.</p><p>La obligatoriedad orienta el diagnóstico, no certifica una publicación SiB ni modifica TDWG. Las comprobaciones básicas de fechas y coordenadas siguen activas. El paso Contexto del análisis no cambia.</p></details>
+<details class="help"><summary>Estados previstos y protección del borrador</summary><p>Guardando… / Actualizando… bloquean selección y edición. Un error conserva las entradas y muestra el fallo. Se confirma la salida con cambios o una entrada sin agregar.</p><p class="notice">Hay una revisión más reciente en el servidor. Sus cambios locales se conservan; actualice antes de volver a guardar.</p></details>
+<p class="prototype">Boceto local sin solicitudes; revisión 0 de semillas. Guardar y actualizar no contactan al servidor. Las sugerencias ilustran el selector DwC compartido, no lo reemplazan.</p>
+<datalist id="terms"><option value="occurrenceID"><option value="scientificName"><option value="eventDate"><option value="geodeticDatum"><option value="habitat"></datalist>
+</main>
+<script>
+const seed=[
+  {id:'collection',label:'Colección biológica',fields:['occurrenceID','basisOfRecord','institutionCode','collectionCode','type','catalogNumber','institutionID','collectionID','country','scientificName','taxonRank','recordedBy','eventDate','year','month','day','stateProvince','county','locality','minimumElevationInMeters','decimalLatitude','decimalLongitude','identifiedBy','order','superfamily','family','subfamily','tribe','subtribe','genus']},
+  {id:'permit',label:'Permiso',fields:['occurrenceID','basisOfRecord','institutionCode','type','institutionID','country','scientificName','taxonRank','individualCount','organismQuantity','organismQuantityType','recordedBy','preparations','disposition','eventDate','stateProvince','county','locality','minimumElevationInMeters','decimalLatitude','decimalLongitude','geodeticDatum']},
+  {id:'sampling',label:'Muestreo',fields:['occurrenceID','basisOfRecord','institutionCode','type','institutionID','country','scientificName','taxonRank','eventID','eventDate']},
+  {id:'marine',label:'Marino',fields:['occurrenceID','basisOfRecord','institutionCode','type','institutionID','country','scientificName','taxonRank','occurrenceStatus','eventID','eventDate','locality','decimalLatitude','decimalLongitude','scientificNameID']},
+  {id:'other',label:'Otros',fields:['occurrenceID','basisOfRecord','institutionCode','type','institutionID','country','scientificName','taxonRank']}
+];
+const draft=structuredClone(seed), $=id=>document.getElementById(id);
+let dirty=false;
+function globalState(message) {
+  dirty=true; $('state').textContent='Revisión 0 · Cambios sin guardar'; $('save').disabled=false;
+  $('refresh').textContent='Actualizar del servidor y descartar cambios locales'; $('notice').textContent=message;
+}
+draft.forEach((source,index)=>{
+  const details=document.createElement('details'); details.className='source'; details.name='source'; details.open=index===0;
+  const summary=document.createElement('summary');
+  summary.innerHTML='<span class="summary-content"><span class="name"></span><span class="count"></span><span><span class="closed">Abrir campos</span><span class="opened">Seleccionada · Cerrar campos</span></span></span>';
+  summary.querySelector('.name').textContent=source.label;
+  const editor=document.createElement('div'); editor.className='editor';
+  editor.innerHTML=`<div class="edit-grid"><section><h2>Campos obligatorios</h2><label for="search-${index}">Buscar campo obligatorio</label><input type="search" id="search-${index}" placeholder="Nombre del campo"><p class="matches" role="status"></p><ul class="list" tabindex="0"></ul></section><aside class="addbox"><h3>Agregar a <span class="scope"></span></h3><label for="field-${index}">Agregar campo obligatorio</label><input id="field-${index}" list="terms" aria-describedby="help-${index} error-${index}" autocomplete="off"><div class="actions"><button type="button" class="clear">Limpiar</button><button type="button" class="add" disabled>Agregar campo</button></div><p id="help-${index}">Término DwC o valor libre. Máximo 200 caracteres por campo; 500 campos por fuente.</p><p id="error-${index}" class="error" role="alert" hidden></p><p>Quitar cambia solo la obligatoriedad en esta fuente. No elimina términos del catálogo.</p></aside></div>`;
+  editor.querySelector('.scope').textContent=source.label;
+  const input=editor.querySelector(`#field-${index}`), search=editor.querySelector('input[type=search]'), list=editor.querySelector('.list');
+  const add=editor.querySelector('.add'), clear=editor.querySelector('.clear'), error=editor.querySelector('.error');
+  list.setAttribute('aria-label',`Campos obligatorios de ${source.label}`);
+  function fieldError() {
+    if(!input.value.trim()) return 'Escriba un campo no vacío.';
+    if(input.value.length>200) return 'El campo no puede superar 200 caracteres.';
+    if(source.fields.includes(input.value)) return 'Este campo ya es obligatorio en el contexto.';
+    if(source.fields.length>=500) return 'No se pueden agregar más de 500 campos por contexto.';
+    return '';
+  }
+  function validate() {
+    const message=fieldError(); add.disabled=!!message; clear.disabled=!input.value;
+    error.hidden=!input.value||!message; error.textContent=message;
+    input.setAttribute('aria-invalid',String(!!input.value&&!!message));
+  }
+  function render() {
+    summary.querySelector('.count').textContent=`${source.fields.length} campos obligatorios`;
+    list.replaceChildren();
+    const shown=source.fields.filter(field=>field.toLowerCase().includes(search.value.toLowerCase()));
+    editor.querySelector('.matches').textContent=`${shown.length} de ${source.fields.length} campos`;
+    shown.forEach(field=>{
+      const li=document.createElement('li'), name=document.createElement('span'), remove=document.createElement('button');
+      name.className='literal'; name.textContent=field; remove.type='button'; remove.textContent='Quitar'; remove.setAttribute('aria-label',`Quitar ${field} de ${source.label}`);
+      remove.onclick=()=>{ source.fields=source.fields.filter(value=>value!==field); globalState(`${field}: obligatoriedad quitada de ${source.label}. Cambio sin guardar.`); render(); search.focus(); }; li.append(name,remove); list.append(li);
+    });
+    if(!shown.length) { const li=document.createElement('li'); li.textContent=source.fields.length?'Ningún campo coincide con la búsqueda.':'No hay campos obligatorios configurados para este contexto.'; list.append(li); }
+    validate();
+  }
+  input.oninput=validate; search.oninput=render;
+  clear.onclick=()=>{ input.value=''; validate(); input.focus(); };
+  add.onclick=()=>{ if(fieldError()) return; source.fields.push(input.value); input.value=''; globalState(`Campo agregado al borrador de ${source.label}. Cambio sin guardar.`); render(); input.focus(); };
+  details.addEventListener('toggle',()=>{ if(!details.open) { input.value=''; validate(); } });
+  details.append(summary,editor); $('register').append(details); render();
+});
+$('save').onclick=()=>{ $('notice').textContent='Vista de diseño: aquí se enviaría la configuración completa con revisión 0. No se ha guardado ni enviado nada; el borrador se conserva.'; };
+$('refresh').onclick=()=>{ $('notice').textContent='Vista de diseño: no hay lectura del servidor. El borrador se conserva. En la aplicación, solo una lectura correcta permite descartar cambios locales.'; };
+window.addEventListener('beforeunload',event=>{ if(dirty||[...document.querySelectorAll('input[list]')].some(input=>input.value)) { event.preventDefault(); event.returnValue=''; } });
+</script>
+</body>
+</html>

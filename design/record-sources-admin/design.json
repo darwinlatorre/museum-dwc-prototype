@@ -1,0 +1,28 @@
+{
+  "title": "Fuentes de registros biológicos",
+  "brief": "Administrador visual de campos obligatorios para cinco fuentes fijas. Sistema existente del museo, semillas originales y guardado global explícito con revisión. Contexto del análisis no cambia. Bocetos locales, sin solicitudes ni persistencia.",
+  "feature": "odd/tasks/record-sources-admin.md",
+  "artboards": [
+    {
+      "file": "01-master-detail.html",
+      "title": "Administrador maestro-detalle · Recomendado",
+      "tradeoff": "Selección lateral persistente y área de trabajo delimitada; facilita administrar listas largas. En móvil apila las fuentes antes del editor y requiere más desplazamiento.",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "file": "02-source-deck.html",
+      "title": "Panel de fuentes",
+      "tradeoff": "Cinco tarjetas horizontales y campos en dos columnas con alta visible a la derecha; facilita comparar recuentos, pero ocupa más altura y la lectura de campos cambia a una columna en pantallas menores.",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "file": "03-inline-register.html",
+      "title": "Registro desplegable",
+      "tradeoff": "Edición dentro de cada fuente mediante despliegue nativo y una sola fuente abierta; reduce cambios de contexto, pero abrir listas largas desplaza las siguientes fuentes.",
+      "width": 1440,
+      "height": 1100
+    }
+  ]
+}

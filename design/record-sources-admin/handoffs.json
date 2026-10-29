@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "chosen": "01-master-detail.html",
+  "handoffs": {
+    "01-master-detail.html": {
+      "status": "sent",
+      "queued": false,
+      "sentAt": "2026-10-29T06:29:44.954Z",
+      "startedAt": null,
+      "implementedAt": null,
+      "feature": "odd/tasks/record-sources-admin.md"
+    }
+  }
+}
