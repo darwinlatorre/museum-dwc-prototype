@@ -1,0 +1,10 @@
+{
+  "title": "Normalización interactiva · Copia completa de registros",
+  "brief": "Tres propuestas estáticas con datos sintéticos y reglas ilustrativas. Hoja navegable completa, originales accesibles, consentimiento reversible y dos avisos de duplicados. Contrato técnico congelado por el padre para T2/T3; producción todavía pendiente. Dirección elegida01;02/03 son alternativas.",
+  "feature": "odd/tasks/normalization-live-preview.md",
+  "artboards": [
+    { "file": "01-hoja-ancha.html", "title": "Hoja ancha · recomendada", "tradeoff": "Maximiza columnas visibles con controles compactos; el detalle de reglas es desplegable y el original se consulta en un panel temporal.", "width": 1440, "height": 1000 },
+    { "file": "02-controles-laterales.html", "title": "Mesa con controles laterales", "tradeoff": "Explicaciones junto a cada grupo de controles; sacrifica 268px de hoja y exige más desplazamiento horizontal.", "width": 1440, "height": 1000 },
+    { "file": "03-inspector-de-celda.html", "title": "Hoja con inspector de celda", "tradeoff": "Comparación original/trabajo estable para valores largos; reserva 300px incluso sin selección y requiere apilado móvil.", "width": 1440, "height": 1000 }
+  ]
+}

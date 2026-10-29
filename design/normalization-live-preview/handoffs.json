@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "chosen": "01-hoja-ancha.html",
+  "handoffs": {
+    "01-hoja-ancha.html": {
+      "status": "sent",
+      "queued": false,
+      "sentAt": "2026-10-29T20:37:47.971Z",
+      "startedAt": null,
+      "implementedAt": null,
+      "feature": "odd/tasks/normalization-live-preview.md"
+    }
+  }
+}
