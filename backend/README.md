@@ -1,6 +1,6 @@
-# API de configuración de validación del museo
+# API de fuentes de registros biológicos del museo
 
-Spring Boot **4.1.1**, Java **21**, Spring Data JPA, PostgreSQL y Flyway. Administra únicamente configuración global y catálogo TDWG. El análisis CSV/XLSX y los registros biológicos permanecen en el navegador. Es un MVP local sin autenticación, no un servicio para Internet.
+Spring Boot **4.1.1**, Java **21**, Spring Data JPA, PostgreSQL y Flyway. Administra únicamente la configuración global de las fuentes de registros biológicos y el catálogo TDWG. El análisis CSV/XLSX y los registros biológicos permanecen en el navegador. Es un MVP local sin autenticación, no un servicio para Internet.
 
 ## Ejecución local
 
@@ -68,7 +68,9 @@ PUT ejecuta **lock → revisión → validación → saveAndFlush** dentro de un
 
 ## Arquitectura y generación Java
 
-[`validationconfiguration`](VALIDATION_CONFIGURATION_ARCHITECTURE.md) y [`catalog`](CATALOG_ARCHITECTURE.md) son funcionalidades independientes con núcleo `domain`/`application` Java puro, puertos propiedad de aplicación y adaptadores de infraestructura. No hay dependencias productivas cruzadas. `ConfigurationBeanConfig` y `CatalogBeanConfig` componen explícitamente los casos de uso, adaptadores y mappers. HTTP recibe únicamente el puerto decorado transaccionalmente.
+[`recordsources`](RECORD_SOURCES_ARCHITECTURE.md) y [`catalog`](CATALOG_ARCHITECTURE.md) son funcionalidades independientes con núcleo `domain`/`application` Java puro, puertos propiedad de aplicación y adaptadores de infraestructura. No hay dependencias productivas cruzadas. `ConfigurationBeanConfig` y `CatalogBeanConfig` componen explícitamente los casos de uso, adaptadores y mappers. HTTP recibe únicamente el puerto decorado transaccionalmente.
+
+`recordsources` es el propietario Java de «Fuentes de registros biológicos», alineado con `features/record-sources` en Angular. El cambio de nombre organiza el código; no introduce CRUD de fuentes ni cambia `/api/validation-configuration`, los cinco valores de contexto, campos JSON, revisión, entidades, tablas, migraciones o semillas. Los nombres `Configuration*` siguen describiendo los casos de uso de configuración; «Contexto» permanece en el análisis.
 
 Lombok (versión de Spring Boot), MapStruct **1.6.3** y binding **0.2.0** se ejecutan durante compilación y pruebas. Solo `@Builder` y `@RequiredArgsConstructor` source-only están permitidos en el núcleo. Lombok y los procesadores quedan fuera del JAR ejecutable. Los mappers usan `BackendMapperConfig` con destinos no mapeados como error; no son componentes Spring implícitos. Los codecs Jackson llegan a persistencia mediante `@Context`; `@MappingTarget` ignora identidad. Las entidades tienen getters JavaBean, sin `@Data`, igualdad, hash o `toString` automáticos. Los DTO de entrada/salida viven en `dto/req` y `dto/res`; JSON estricto y Bean Validation quedan en adaptadores.
 

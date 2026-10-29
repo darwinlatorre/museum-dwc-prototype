@@ -15,7 +15,7 @@ class ArchitectureTests(unittest.TestCase):
         self.scratch = tempfile.TemporaryDirectory()
         self.addCleanup(self.scratch.cleanup)
         self.root = Path(self.scratch.name)
-        for feature in ('validationconfiguration', 'catalog'):
+        for feature in ('recordsources', 'catalog'):
             self.feature(feature)
 
     def feature(self, feature):
@@ -26,27 +26,53 @@ class ArchitectureTests(unittest.TestCase):
     def write(self, name, text):
         path = self.root / name
         path.parent.mkdir(parents=True, exist_ok=True)
+        if not text.startswith('package '):
+            package = '.'.join(path.relative_to(self.root).parent.parts)
+            text = f'package {PACKAGE}.{package};\n' + text
         path.write_text(text)
+
+    def test_required_record_sources_boundaries_cannot_be_replaced_by_catalog(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            errors = violations(Path(scratch))
+        for boundary in BOUNDARIES:
+            self.assertIn(f'recordsources/{boundary}: missing Java implementation', errors)
+        self.assertFalse(any(error.startswith('validationconfiguration/') for error in errors))
+
+    def test_package_declaration_must_match_feature_directory(self):
+        path = 'recordsources/infrastructure/adapter/in/web/Example.java'
+        self.write(path, f'package {PACKAGE}.validationconfiguration.infrastructure.adapter.in.web;\n')
+        self.assertEqual([f'{path}: package must be {PACKAGE}.recordsources.infrastructure.adapter.in.web'],
+                         violations(self.root))
+
+    def test_retired_namespace_import_is_rejected_even_in_shared_handler(self):
+        path = 'shared/infrastructure/adapter/in/web/exception/Example.java'
+        target = f'{PACKAGE}.validationconfiguration.domain.exception.ConfigurationConflictException'
+        self.write(path, f'import {target};\n')
+        self.assertEqual([f'{path}: retired namespace dependency {target}'], violations(self.root))
+
+    def test_retired_namespace_cannot_return_as_a_feature(self):
+        self.feature('validationconfiguration')
+        self.assertIn('validationconfiguration: retired feature namespace', violations(self.root))
 
     def test_empty_retired_directories_are_not_active_features(self):
         (self.root / 'profile/domain').mkdir(parents=True)
         self.assertEqual([], violations(self.root))
 
     def test_pure_cores_and_framework_adapters_are_allowed(self):
-        self.write('validationconfiguration/infrastructure/adapter/out/database/Example.java',
+        self.write('recordsources/infrastructure/adapter/out/database/Example.java',
                    'import org.springframework.transaction.support.TransactionTemplate;\n')
-        self.write('validationconfiguration/application/service/Example.java',
-                   f'import {PACKAGE}.validationconfiguration.domain.model.ValidationConfiguration;\n')
+        self.write('recordsources/application/service/Example.java',
+                   f'import {PACKAGE}.recordsources.domain.model.ValidationConfiguration;\n')
         self.assertEqual([], violations(self.root))
 
     def test_source_only_generators_are_allowed(self):
-        self.write('validationconfiguration/domain/model/Example.java', 'import lombok.Builder;\n')
+        self.write('recordsources/domain/model/Example.java', 'import lombok.Builder;\n')
         self.write('catalog/application/service/Example.java', 'import lombok.RequiredArgsConstructor;\n')
         self.assertEqual([], violations(self.root))
 
     def test_runtime_lombok_and_framework_imports_are_rejected(self):
         for target in ('lombok.SneakyThrows', 'jakarta.persistence.Entity', 'org.springframework.stereotype.Service'):
-            path = 'validationconfiguration/domain/model/Example.java'
+            path = 'recordsources/domain/model/Example.java'
             self.write(path, f'import {target};\n')
             self.assertEqual([f'{path}: outward dependency {target}'], violations(self.root))
 
@@ -58,7 +84,7 @@ class ArchitectureTests(unittest.TestCase):
 
     def test_any_feature_cannot_import_another_feature(self):
         self.feature('thirdfeature')
-        target = f'{PACKAGE}.validationconfiguration.domain.model.ValidationConfiguration'
+        target = f'{PACKAGE}.recordsources.domain.model.ValidationConfiguration'
         path = 'thirdfeature/infrastructure/adapter/in/web/Example.java'
         self.write(path, f'import {target};\n')
         self.assertEqual([f'{path}: cross-feature dependency {target}'], violations(self.root))

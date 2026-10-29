@@ -1,7 +1,0 @@
-package co.edu.unicauca.backend.validationconfiguration.infrastructure.adapter.in.web.dto.res;
-
-import java.util.List;
-
-public record ConfigurationResponse(long revision, List<ContextResponse> contexts) {
-    public record ContextResponse(String context, List<String> requiredFields) {}
-}

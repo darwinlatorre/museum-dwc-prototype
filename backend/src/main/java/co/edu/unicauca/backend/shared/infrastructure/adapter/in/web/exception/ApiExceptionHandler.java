@@ -1,7 +1,7 @@
 package co.edu.unicauca.backend.shared.infrastructure.adapter.in.web.exception;
 
-import co.edu.unicauca.backend.validationconfiguration.domain.exception.ConfigurationConflictException;
-import co.edu.unicauca.backend.validationconfiguration.domain.exception.ConfigurationValidationException;
+import co.edu.unicauca.backend.recordsources.domain.exception.ConfigurationConflictException;
+import co.edu.unicauca.backend.recordsources.domain.exception.ConfigurationValidationException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;

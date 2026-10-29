@@ -13,12 +13,18 @@ CORE_GENERATORS = {"lombok.Builder", "lombok.RequiredArgsConstructor"}
 
 def violations(root: Path) -> list[str]:
     errors: list[str] = []
-    features = sorted({"validationconfiguration", "catalog"} | {
+    for path in sorted(root.rglob("*.java")):
+        for imported in IMPORT.findall(path.read_text(encoding="utf-8")):
+            if imported.startswith(f"{PACKAGE}.validationconfiguration."):
+                errors.append(f"{path.relative_to(root)}: retired namespace dependency {imported}")
+    features = sorted({"recordsources", "catalog"} | {
         path.name for path in root.iterdir() if path.is_dir() and path.name != "shared"
         and any(any((path / layer).rglob("*.java")) for layer in ("domain", "application", "infrastructure"))
     })
     for feature in features:
         base = root / feature
+        if feature == "validationconfiguration":
+            errors.append(f"{feature}: retired feature namespace")
         for boundary in ("domain/model", "application/port/in", "application/port/out",
                          "application/service", "infrastructure/adapter/in/web",
                          "infrastructure/adapter/out/database/entity",
@@ -40,6 +46,9 @@ def violations(root: Path) -> list[str]:
             relative = path.relative_to(base)
             location = path.relative_to(root)
             text = path.read_text(encoding="utf-8")
+            expected_package = f"{PACKAGE}.{'.'.join(path.relative_to(root).parent.parts)}"
+            if not re.search(rf"^package\s+{re.escape(expected_package)}\s*;", text, re.MULTILINE):
+                errors.append(f"{location}: package must be {expected_package}")
             if relative.parts[0] in ("adapter", "configuration") or relative.parts[:2] == ("application", "usecase"):
                 errors.append(f"{location}: legacy layer package")
             if path.stem.endswith("Mapper") and relative.parts[0] != "infrastructure":
