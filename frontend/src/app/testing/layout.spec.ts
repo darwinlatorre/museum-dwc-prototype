@@ -142,6 +142,21 @@ describe('Compact collection layouts', () => {
     expect(css).toMatch(/\.missing-source[^{}]*\{[^}]*overflow-wrap:\s*anywhere/s);
   });
 
+  it('contiene la hoja, fija encabezados y fila física y distingue cambios sin crear otra paleta', async () => {
+    const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
+      .replace(/\[_ng(?:content|host)-[^\]]+\]/g, '');
+    expect(css).toMatch(/\.normalization-scroll[^{}]*\{[^}]*max-width:\s*100%[^}]*overflow:\s*auto/s);
+    expect(css).toMatch(/\.normalization-grid[^{}]*thead\s+th[^{}]*\{[^}]*position:\s*sticky[^}]*top:\s*0/s);
+    expect(css).toMatch(/\.normalization-grid[^{}]*th:first-child[^{}]*\{[^}]*position:\s*sticky[^}]*left:\s*0/s);
+    expect(css).toMatch(/\.normalization-changed[^{}]*\{[^}]*border-left:[^}]*var\(--pine\)[^}]*background:[^}]*var\(--museum-/s);
+    expect(css).toMatch(/\.normalization-sheet[^{}]*label[^{}]*\{[^}]*min-height:\s*44px/s);
+    expect(css).toMatch(/input\[role=["']?switch["']?\][^{}]*\{[^}]*appearance:\s*none[^}]*width:\s*44px[^}]*height:\s*24px/s);
+    expect(css).toMatch(/input\[role=["']?switch["']?\]::before[^{}]*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
+    expect(css).toMatch(/input\[role=["']?switch["']?\]:checked::before[^{}]*\{[^}]*transform:\s*translateX\(20px\)/s);
+    expect(css).toMatch(/\.normalization-original[^{}]*\{[^}]*width:\s*min\(36rem,\s*(?:calc\(100vw\s*-\s*2rem\)|100vw\s*-\s*2rem)\)/s);
+  });
+
   it('separates the sheet reading action from its selector', async () => {
     const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');

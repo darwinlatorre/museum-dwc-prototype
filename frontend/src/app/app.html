@@ -40,7 +40,7 @@
     </div>
     <span class="environment">Espacio de investigación</span>
   </header>
-  <main id="main" tabindex="-1">
+  <main id="main" tabindex="-1" [class.normalization-wide]="page() === 'workbench' && normalizationVisible()">
     @if (catalog.isPending() || configuration.isPending()) {
       <p role="status" class="notice">Cargando catálogo y configuración de validación…</p>
     }
@@ -59,7 +59,7 @@
       @if (configuration.data(); as settings) {
         <div [hidden]="page() !== 'workbench'">
           @defer (when page()==='workbench') {
-            <app-import [terms]="terms" [configuration]="settings" [configurationAvailable]="!configuration.isError()" />
+            <app-import [terms]="terms" [configuration]="settings" [configurationAvailable]="!configuration.isError()" [active]="page() === 'workbench'" (normalizationVisible)="normalizationVisible.set($event)" />
           }
         </div>
         @if (page() === 'configuration') {

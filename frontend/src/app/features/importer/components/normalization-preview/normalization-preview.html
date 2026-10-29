@@ -1,0 +1,122 @@
+<section class="normalization-sheet" aria-labelledby="normalization-title">
+  <h3 id="normalization-title">Normalice solo con su aprobación</h3>
+  <p>Todos los registros · copia reversible desde el original. Ninguna opción modifica el archivo ni valida automáticamente.</p>
+  <details class="workbench-help">
+    <summary>Qué cambia al normalizar</summary>
+    <p>Las reglas usan el destino Darwin Core mapeado, no la apariencia del valor. No convierten identificadores ni texto libre a números. No convierten DMS ni inventan datum, unidades o componentes de fecha. Los formatos no reconocidos se conservan.</p>
+    <p>NULL y N/A siguen siendo datos salvo aprobación explícita. Aplicar actualiza únicamente el diagnóstico. JSON y CSV son informes de incidencias, no descargas de registros.</p>
+  </details>
+  <div class="checks normalization-rules">
+    @for (rule of rules; track rule.key) {
+      <label><input type="checkbox" role="switch" [checked]="options()[rule.key]" (change)="toggle(rule.key, $event)" />{{ rule.label }}</label>
+    }
+  </div>
+  <div class="normalization-formats">
+    @if (options().dates) {
+      <label>Interpretación de fechas<select [value]="options().dateOrder || 'safe'" (change)="dateOrder($event)">
+        <option value="safe">Segura: no interpretar fechas ambiguas</option><option value="DMY">Día / mes / año (DMY)</option><option value="MDY">Mes / día / año (MDY)</option>
+      </select><small>03/04/2024 se conserva en modo seguro. DMY elige 3 de abril; MDY, 4 de marzo. ISO válido conserva su precisión.</small></label>
+    }
+    @if (options().coordinates || options().numbers) {
+      <label>Separador decimal<select [value]="options().decimalMode || 'safe'" (change)="decimalMode($event)">
+        <option value="safe">Seguro: punto, sin reinterpretar comas</option><option value="comma">Coma decimal explícita</option>
+      </select><small>Coma decimal no admite separadores de miles ni redondea valores. 1,234 no se interpreta en modo seguro.</small></label>
+    }
+  </div>
+  <div class="normalization-tools">
+    <label><input type="checkbox" role="switch" [checked]="state().hideEmpty()" (change)="hide($event)" />Ocultar columnas sin datos (solo vista)</label>
+    <label>Registros por página<select aria-label="Registros por página" [value]="state().window().limit" [disabled]="!state().ready()" (change)="pageSize($event)">
+      <option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
+    </select></label>
+  </div>
+  <div aria-live="polite" class="normalization-status">
+    @switch (state().status()) {
+      @case ('idle') { <p>Preparando la vista local…</p> }
+      @case ('calculating') { <p>{{ state().metadata() ? 'Recalculando. La hoja visible es una copia anterior, no vigente.' : 'Calculando todos los registros localmente…' }}</p><button (click)="state().cancel()">Cancelar vista previa</button> }
+      @case ('cancelled') { <p>Vista previa cancelada. La copia anterior no está vigente; los originales se conservan.</p><button (click)="state().retry()">Reintentar vista previa</button> }
+      @case ('error') { <p role="alert">{{ state().error() }} La copia anterior no está vigente.</p><button (click)="state().retry()">Reintentar vista previa</button> }
+      @case ('ready') { @if (state().metadata(); as metadata) { <p>{{ metadata.totalRows }} registros · {{ metadata.changedCells }} celdas cambiadas en {{ metadata.changedRows }} registros · {{ state().visibleColumns().length }} de {{ metadata.totalColumns }} columnas visibles</p> } }
+    }
+    @if (state().paging()) { <p>Cargando ventana… La hoja visible corresponde a la ventana anterior.</p> }
+  </div>
+  @if (state().metadata(); as metadata) {
+    @if (state().status() === 'ready') {
+      <section class="normalization-duplicates" aria-label="Avisos de duplicados">
+        @if (!metadata.duplicates.enabled) { <p>Comprobación de duplicados desactivada.</p> }
+        @else {
+          <p>Filas completas iguales: {{ metadata.duplicates.equalRows.groups.length }} grupos · {{ metadata.duplicates.equalRows.affectedRows }} registros.</p>
+          <p>occurrenceID repetido: {{ metadata.duplicates.occurrenceIds.groups.length }} grupos · {{ metadata.duplicates.occurrenceIds.affectedRows }} registros.</p>
+          <p>Los criterios pueden coincidir en un registro; no se suman como registros únicos. Solo avisos: no se elimina ni fusiona nada.</p>
+          @if (metadata.duplicates.occurrenceIdColumnIndex === null) { <p>Sin occurrenceID mapeado; se comprobaron las filas completas.</p> }
+          @if (duplicateGroups().length) {
+            <details><summary>Consultar grupos y filas físicas</summary>
+              @for (group of duplicateGroups().slice(groupPage() * 10, groupPage() * 10 + 10); track group.groupId) {
+                <details><summary>{{ group.criterion }} · {{ group.groupId }} · {{ group.sourceRows.length }} filas</summary>
+                  @for (i of chunks(group.sourceRows.length); track i) {
+                    <details><summary>Filas {{ i + 1 }}–{{ i + 100 < group.sourceRows.length ? i + 100 : group.sourceRows.length }}</summary><p class="literal">{{ group.sourceRows.slice(i, i + 100).join(', ') }}</p></details>
+                  }
+                </details>
+              }
+              <button [disabled]="groupPage() === 0" (click)="groupPage.update(p => p - 1)">Grupos anteriores</button>
+              <button [disabled]="(groupPage() + 1) * 10 >= duplicateGroups().length" (click)="groupPage.update(p => p + 1)">Grupos siguientes</button>
+            </details>
+          }
+        }
+      </section>
+    }
+    @if (state().visibleColumns().length === 0) { <p>Todas las columnas están ocultas. Los {{ metadata.totalRows }} registros siguen presentes. Desactive «Ocultar columnas sin datos» para restaurarlas.</p> }
+    @if (state().visibleColumns().length > 50) {
+      <div class="normalization-column-nav" aria-label="Ventana de columnas">
+        <button [disabled]="!state().ready() || !state().canMoveColumns(-1)" (click)="state().moveColumns(-1)">Columnas anteriores</button>
+        <span>Hasta 50 columnas por ventana; índice físico en cada encabezado.</span>
+        <button [disabled]="!state().ready() || !state().canMoveColumns(1)" (click)="state().moveColumns(1)">Columnas siguientes</button>
+      </div>
+    }
+    <p id="normalization-grid-help">Flechas: recorrer celdas. Tab: salir hacia los controles de página. Active una celda cambiada para consultar el original; Escape cierra. ␠ espacio · ⇥ tabulación · ↵ salto de línea · ∅ vacío.</p>
+    <div class="normalization-scroll" tabindex="0" role="region" aria-label="Todos los registros" [attr.aria-busy]="!state().ready()">
+      <table class="normalization-grid" aria-describedby="normalization-grid-help">
+        <thead><tr><th scope="col">Fila de origen</th>
+          @for (column of state().columns(); track column.columnIndex) {
+            <th scope="col" [title]="'Columna ' + (column.columnIndex + 1) + ': ' + column.sourceHeader"><strong>{{ column.effectiveField }}</strong>
+              @if (column.sourceHeader !== column.effectiveField) { <small class="literal">{{ column.sourceHeader }}</small> }
+              <small>Columna {{ column.columnIndex + 1 }}</small></th>
+          }
+        </tr></thead>
+        <tbody>
+          @for (row of state().rows(); track row.sourceRow) {
+            <tr><th scope="row">{{ row.sourceRow }}
+              @if (row.equalRowGroup) { <small>Fila igual · {{ row.equalRowGroup }}</small> }
+              @if (row.occurrenceIdGroup) { <small>ID repetido · {{ row.occurrenceIdGroup }}</small> }
+            </th>
+              @for (cell of row.cells; track cell.columnIndex) {
+                <td [class.normalization-changed]="cell.kinds.length > 0"><button type="button" [attr.data-cell]="key(row.sourceRow, cell.columnIndex)"
+                  [attr.tabindex]="tabIndex(row.sourceRow, cell.columnIndex)" [attr.aria-expanded]="cell.kinds.length ? detail()?.cell === cell : null"
+                  [attr.aria-controls]="cell.kinds.length ? panelId : null"
+                  (focus)="focusKey.set(key(row.sourceRow, cell.columnIndex)); open(cell, row.sourceRow, $event)"
+                  (mouseenter)="open(cell, row.sourceRow, $event)" (mouseleave)="release($event)" (blur)="release($event)"
+                  (click)="open(cell, row.sourceRow, $event, true)" (keydown)="navigate($event, row.sourceRow, cell.columnIndex)">
+                  <span class="literal">{{ visible(cell.after) }}</span>
+                  @for (kind of cell.kinds; track kind) { <small class="normalization-rule">{{ ruleNames[kind] }}</small> }
+                </button></td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <nav class="normalization-pager" aria-label="Páginas de registros">
+      <button [disabled]="!state().ready() || state().window().offset === 0" (click)="state().page({offset: 0})">Primera página</button>
+      <button [disabled]="!state().ready() || state().window().offset === 0" (click)="state().page({offset: state().window().offset - state().window().limit})">Página anterior</button>
+      <span>{{ metadata.totalRows ? state().window().offset + 1 : 0 }}–{{ state().window().offset + state().window().limit < metadata.totalRows ? state().window().offset + state().window().limit : metadata.totalRows }} de {{ metadata.totalRows }} registros</span>
+      <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= metadata.totalRows" (click)="state().page({offset: state().window().offset + state().window().limit})">Página siguiente</button>
+      <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= metadata.totalRows" (click)="state().page({offset: Math.floor((metadata.totalRows - 1) / state().window().limit) * state().window().limit})">Última página</button>
+    </nav>
+  }
+  @if (detail(); as selected) {
+    <section class="normalization-original" [id]="panelId" role="region" [attr.aria-labelledby]="panelId + '-title'">
+      <div class="section-heading"><h4 [id]="panelId + '-title'">Original y copia · fila {{ selected.row }} · columna {{ selected.cell.columnIndex + 1 }}</h4><button (click)="close(true)">Cerrar original</button></div>
+      <dl><dt>Original exacto</dt><dd class="literal">{{ selected.cell.before }}</dd><dt>Copia exacta</dt><dd class="literal">{{ selected.cell.after }}</dd></dl>
+      <p>Espacios visibles: <span class="literal">{{ visible(selected.cell.before) }}</span> → <span class="literal">{{ visible(selected.cell.after) }}</span></p>
+    </section>
+  }
+</section>

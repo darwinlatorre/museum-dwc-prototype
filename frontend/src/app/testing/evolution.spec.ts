@@ -6,6 +6,9 @@ import { Catalog } from '../features/catalog/catalog';
 import { ImportWorkbench } from '../features/importer/workbench/import-workbench';
 import type { Term } from '../features/catalog/models/catalog-term';
 import type { WorkerRequest } from '../features/importer/models/worker-protocol';
+import type { PreviewRequest } from '../features/importer/models/normalization-preview';
+import type { Dataset } from '../features/importer/models/dataset';
+import { buildNormalizationPreview, readPreviewPage, type PreviewSnapshot } from '../features/importer/engine/normalization-preview';
 import { configurationFixture } from './validation-fixture';
 
 const terms: Term[] = [
@@ -22,7 +25,17 @@ let requests: WorkerRequest[];
 class LocalWorker {
   onmessage?: (event: MessageEvent) => void;
   terminate() {}
-  postMessage(request: WorkerRequest) {
+  private original?: Dataset;
+  private snapshot?: PreviewSnapshot;
+  postMessage(request: WorkerRequest | PreviewRequest) {
+    if (request.kind === 'preview-cancel') return;
+    if (request.kind === 'preview-init' || request.kind === 'preview-update' || request.kind === 'preview-page') {
+      if (request.kind === 'preview-init') this.original = structuredClone(request.original);
+      if (request.kind !== 'preview-page') this.snapshot = buildNormalizationPreview(this.original!, {}, request.options);
+      const data = { ...request, kind: request.kind === 'preview-page' ? 'preview-page' : 'preview-ready', metadata: this.snapshot!.metadata, ...readPreviewPage(this.snapshot!, request.window) };
+      queueMicrotask(() => this.onmessage?.({ data } as MessageEvent));
+      return;
+    }
     requests.push(request);
     queueMicrotask(() => this.onmessage?.({ data: request.kind === 'parse'
       ? { id: request.id, kind: 'parsed', data: { headers: ['catalog', 'raw', 'eventDate'], rows: [{ row: 2, values: ['  original  ', 'N/A', ''] }] } }
@@ -77,7 +90,8 @@ describe('Evolución de los controles públicos', () => {
   it('oculta paginadores innecesarios en normalización y diagnóstico sin cambiar el resultado completo', async () => {
     const f = await workbench();
     await click(f, 'Validar localmente'); await click(f, 'Normalizar');
-    expect(getComputedStyle(f.nativeElement.querySelector('.p-paginator')).display).toBe('none');
+    expect(button(f.nativeElement, 'Página siguiente').disabled).toBe(true);
+    expect(f.nativeElement.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
     await click(f, 'Ver diagnóstico'); await click(f, 'Ver todas las incidencias');
     expect(getComputedStyle(f.nativeElement.querySelector('#all-issues-detail .p-paginator')).display).toBe('none');
     expect(f.componentInstance.issues()).toEqual(issues);

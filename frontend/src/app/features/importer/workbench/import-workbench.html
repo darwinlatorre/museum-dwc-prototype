@@ -265,51 +265,10 @@
       </div>
     }
     @case (4) {
-      <h3>Normalice solo con su aprobación</h3>
-      <details class="workbench-help">
-        <summary>Qué cambia al normalizar</summary>
-        <p>Estas opciones afectan únicamente una copia de trabajo. Al aplicarlas se actualiza el diagnóstico.
-          Los valores originales y el archivo no se modifican.</p>
-      </details>
-      <div class="checks">
-        <label
-          ><input type="checkbox" [formField]="optionForm.trim" />Eliminar espacios al inicio y al
-          final</label
-        >
-        <label
-          ><input type="checkbox" [formField]="optionForm.emptyMarkers" />Tratar NULL y N/A como
-          vacíos (sin distinguir mayúsculas)</label
-        >
-      </div>
-      <h4>Vista previa de cambios en los primeros 20 registros</h4>
-      <p-table [value]="preview()" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50, 100]" [showCurrentPageReport]="true"
-        currentPageReportTemplate="{first}–{last} de {totalRecords} cambios">
-        <ng-template #header
-          ><tr>
-            <th>Fila de origen</th>
-            <th>Campo</th>
-            <th>Original</th>
-            <th>Valor de trabajo</th>
-          </tr></ng-template
-        >
-        <ng-template #body let-change
-          ><tr>
-            <td>{{ change.row }}</td>
-            <td>{{ change.field }}</td>
-            <td class="literal">{{ change.before }}</td>
-            <td class="literal">{{ change.after || '(vacío)' }}</td>
-          </tr></ng-template
-        >
-        <ng-template #emptymessage
-          ><tr>
-            <td colspan="4">No hay cambios en esta vista previa.</td>
-          </tr></ng-template
-        >
-      </p-table>
+      <app-normalization-preview [state]="previewState" [options]="options()" [active]="active()" (optionsChanged)="options.set($event)" />
       <div class="wizard-footer">
         <button [disabled]="!canVisit(3)" (click)="visit(3)">Ver diagnóstico</button>
-        <p-button label="Aplicar normalización y validar" [disabled]="busy()" (onClick)="validate(true)" />
+        <p-button label="Aplicar normalización y validar" [disabled]="busy() || !previewState.ready()" (onClick)="validate(true)" />
         <p-button label="Finalizar" [disabled]="!canVisit(5) || busy()" (onClick)="visit(5)" />
       </div>
     }

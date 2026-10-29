@@ -132,6 +132,11 @@ footer {
     max-width: 1500px;
     margin: var(--museum-space-8) auto;
   }
+  main.normalization-wide {
+    max-width: none;
+    margin: var(--museum-space-6);
+    padding: var(--museum-space-6);
+  }
 }
 @media (max-width: 1050px) {
   .sidebar {

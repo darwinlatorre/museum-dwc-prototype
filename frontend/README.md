@@ -24,7 +24,7 @@ El MVP requiere un entorno local confiable: no implementa ni simula autenticaci�
 2. **Contexto**: elegir exactamente un radio obligatorio entre colección biológica, permiso de recolección o acceso a recursos genéticos, eventos de muestreo, marinos y otros. No hay selección implícita ni contextos combinables. Se utiliza la configuración global del servidor con su revisión real. La ausencia de encabezados obligatorios no bloquea el paso siguiente: primero se permiten equivalencias.
 3. **Mapear columnas**: nombres exactos reconocidos sin cambios; sugerencias nunca automáticas. El selector DwC compartido permite texto libre, flechas/Enter, limpieza y deshabilitación. Limpiar retira la asignación explícita, no la columna ni el reconocimiento implícito del encabezado original. Los destinos deben ser únicos. Pulsar **Validar localmente** para diagnosticar los valores originales en el worker.
 4. **Diagnóstico**: resumen por campo obligatorio con registros sin datos sobre el total. Distingue **Columna ausente** de **Valores vacíos**; cada fila se cuenta una vez por campo. Diez vacíos de `subfamily` entre doce registros muestran **10 de 12**. No se inventan ubicaciones para columnas ausentes.
-5. **Normalizar**: aprobar opcionalmente recorte de espacios y/o tratar `NULL` y `N/A` como vacíos. La vista previa muestra cambios de los primeros 20 registros. **Aplicar normalización y validar** actualiza el diagnóstico sobre una copia. Las dos opciones empiezan desactivadas; los originales no cambian. Cambiar opciones invalida el resultado hasta aplicar y validar de nuevo.
+5. **Normalizar**: consultar todos los registros por páginas de 10/25/50/100 y ventanas de hasta 50 columnas. Seis interruptores, inicialmente apagados, aprueban espacios exteriores, NULL/N/A como vacíos, fechas, coordenadas, números y avisos de duplicados. Las fechas ambiguas y comas decimales requieren elección explícita; ver [reglas y cobertura](NORMALIZATION.md). Cada cambio parte del original y muestra el nombre de la regla. Hover, foco o activación/toque abre el original exacto; Escape o **Cerrar original** cierra sin reabrir al devolver foco. Flechas recorren celdas y Tab sale hacia la paginación. **Ocultar columnas sin datos** es solo presentación, incluida la restauración cuando todas quedan ocultas. Los dos criterios de duplicados muestran grupos y filas físicas por separado y pueden solaparse; nunca eliminan registros. **Aplicar normalización y validar** es explícito y se habilita solo con preview vigente sin error. Cambiar opciones invalida el diagnóstico, no aplica automáticamente. Los originales no cambian.
 6. **Finalizar**: vacío por ahora; no guarda ni envía registros.
 
 ### Mapeo y diagnóstico compactos
@@ -35,7 +35,7 @@ El conteo de vacíos abre un detalle único: campo y columna de origen una sola 
 
 Las descargas JSON/CSV siempre incluyen todas las incidencias, sin filtros ni límites de página. Su contrato es `{field,row,description,severity,context,configurationRevision}`. `context` es uno de los cinco elegibles o `system` para integridad básica. La revisión es la del snapshot analizado, no una revisión inventada al descargar. CSV protege celdas que podrían ejecutarse como fórmulas mediante un apóstrofo.
 
-Las tablas resumen y detalle usan 10 filas iniciales; incidencias, 20. Ocultan paginadores cuando todo cabe en una página. El mapeo y catálogo conservan sus tamaños. Los selectores nativos y PrimeNG comparten tokens de geometría, foco y estados; no se reemplaza el comportamiento nativo.
+Las tablas resumen y detalle usan 10 filas iniciales; incidencias, 20. Ocultan paginadores cuando todo cabe en una página. La hoja de normalización mantiene sus controles de ventana con acciones deshabilitadas en los límites. El mapeo y catálogo conservan sus tamaños. Los selectores nativos y PrimeNG comparten tokens de geometría, foco y estados; no se reemplaza el comportamiento nativo.
 
 El progreso permite volver sin perder archivo, equivalencias, contexto, opciones o diagnóstico vigente. Para mapear se requiere archivo leído, un contexto y configuración disponible; para los pasos posteriores, destinos únicos y validación terminada. Navegar no reinicia el worker. El workbench permanece montado al consultar configuración o catálogo. La franja de los seis pasos desplaza solo su eje horizontal tras renderizar el paso activo y al redimensionar la ventana; retira el listener al destruirse. El pie crece debajo del contenido, sin superponerse.
 
@@ -45,7 +45,9 @@ Hasta **10 MiB**, **50 000 registros**, **500 columnas** y **100 000 incidencias
 
 Las filas CSV conservan líneas físicas, incluidas filas vacías y saltos dentro de comillas. XLSX conserva posiciones de la hoja y convierte fechas Excel a ISO; los huecos se completan sin desplazar registros. Un archivo y una hoja por vez. XLSX **no se descomprime incrementalmente**: el tamaño comprimido no garantiza el consumo de memoria. Si es necesario, cancelar o usar CSV más pequeño.
 
-Cancelar termina el worker. Cambios de mapeo, opciones, contexto, términos o configuración global invalidan el diagnóstico y las respuestas de generaciones anteriores. Una revisión global nueva no puede reutilizar un resultado viejo. No hay configuración sintética de respaldo ante fallos de consulta.
+Cancelar procesamiento termina el worker de análisis. La preview usa otro worker persistente con original cacheado una vez por sesión; paginar u ocultar columnas no renormaliza ni invalida el análisis. Cambiar archivo/hoja/mapeo o destruir el workbench termina ese worker. Cancelar vista previa conserva la copia anterior etiquetada como no vigente; el reintento es manual. Error no habilita Aplicar ni provoca reintentos automáticos. La vista se ensancha únicamente mientras Normalizar está activo y visible en el menú; los demás pasos y secciones conservan su geometría base.
+
+Cambios de mapeo, opciones, contexto, términos o configuración global invalidan el diagnóstico y las respuestas de generaciones anteriores. Una revisión global nueva no puede reutilizar un resultado viejo. No hay configuración sintética de respaldo ante fallos de consulta.
 
 ### Comprobaciones básicas
 
@@ -97,7 +99,7 @@ Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNIN
 | `features/catalog` | Catálogo y contrato `Term` |
 | `features/record-sources` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
 | `features/importer/workbench` | Navegación, generaciones, cancelación y worker |
-| `features/importer/components` | Mapeo y contexto |
+| `features/importer/components` | Mapeo, contexto y presentación modular de normalización |
 | `features/importer/engine` | Parser, normalizador, validador y exportación locales |
 | `features/importer/models` | Dataset, límites, resultados y protocolo del worker |
 | `core/api`, `core/i18n` | Metadatos y presentación |

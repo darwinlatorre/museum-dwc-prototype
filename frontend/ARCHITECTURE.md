@@ -24,9 +24,9 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 | `features/catalog` | `Catalog`, su HTML y el contrato `Term` en `models/catalog-term.ts`. |
 | `features/record-sources` | Administrador de fuentes, HTML/SCSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
 | `features/importer/workbench` | Orquestación del análisis y HTML; conserva `map`, invalidación, cancelación y guardas de generación/navegación. |
-| `features/importer/components` | Componentes existentes `column-mapping` y `record-context`, cada uno en su carpeta; sin envoltorios nuevos. |
+| `features/importer/components` | `column-mapping`, `record-context` y `normalization-preview`: presentación de reglas, ventanas, grupos y detalle original accesible. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
-| `features/importer/models` | `dataset` y límites, `context`, `analysis-result`, `normalization` y `worker-protocol`. |
+| `features/importer/models` | `dataset` y límites, `context`, `analysis-result`, `normalization`, `normalization-preview` y `worker-protocol`. |
 | `core/api` | `Api`: transporte exclusivamente de metadatos; conserva fetch, AbortSignal, revisiones y POST sin cuerpo. No recibe archivos ni registros biológicos. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
@@ -46,6 +46,8 @@ El motor no importa transporte ni vistas: el archivo y sus celdas permanecen en 
 - `workbench/import-workbench.ts` crea el worker mediante
   `new URL('../engine/analysis.worker', import.meta.url)`; Angular debe empaquetarlo
   como módulo independiente. El worker conserva sus imports locales del motor.
+- El controlador local `workbench/normalization-preview-state.ts` conserva solo metadata y ventana actual, original de sesión y referencias al worker persistente. El workbench crea `new URL('../engine/normalization-preview.worker', import.meta.url)`, independiente del worker efímero de análisis. Init envía original/mapping una vez; update solo opciones; page solo ventana con índices físicos explícitos. Ambos comparten contador de mensajes, pero no guardas de generación: paginar/ocultar no invalida validación. Session/generation/id y la identidad del worker descartan respuestas antiguas; error/cancelación requieren reintento manual. No hay dataset en Query, almacenamiento ni API.
+- `normalizationVisible` comunica el paso derivado al shell; la clase ancha requiere además sección activa workbench. El input `active` cierra detalles al ocultarlo, sin desmontar ni reinicializar su worker. No hay mutaciones imperativas de clases ni selectores `:has`.
 - Los HTML grandes están junto a `catalog.ts`, `validation-configuration.ts` y al workbench;
   las plantillas pequeñas de los auxiliares siguen inline.
 - El administrador maestro-detalle deriva recuentos y búsqueda del borrador completo;

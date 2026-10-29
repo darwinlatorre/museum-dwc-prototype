@@ -15,6 +15,7 @@ export class App {
   api = inject(Api);
   page = signal<'workbench' | 'configuration' | 'catalog'>('workbench');
   configurationDirty = signal(false);
+  normalizationVisible = signal(false);
   navigate(page: 'workbench' | 'configuration' | 'catalog') {
     if (page === this.page()) return;
     if (this.configurationDirty() && !window.confirm('Hay cambios sin guardar. ¿Desea descartarlos y salir de la configuración?')) return;
