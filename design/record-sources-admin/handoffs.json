@@ -3,12 +3,14 @@
   "chosen": "01-master-detail.html",
   "handoffs": {
     "01-master-detail.html": {
-      "status": "sent",
+      "status": "implemented",
       "queued": false,
       "sentAt": "2026-10-29T06:29:44.954Z",
-      "startedAt": null,
-      "implementedAt": null,
-      "feature": "odd/tasks/record-sources-admin.md"
+      "startedAt": "2026-10-29T06:37:39.650Z",
+      "implementedAt": "2026-10-29T18:41:45.522Z",
+      "feature": "odd/tasks/record-sources-admin.md",
+      "note": "Implementado en Angular con tokens/primitivas/picker existentes y estados Obligatorio/Opcional persistentes. Front141+build, backend102; UX escritorio/móvil y flujo real10→0→10 contrastados. API independiente reportó51PASS/atomicidad; padre confirmó restauración17/catálogo/JAR. Raw independiente temporal no recuperable; límites, EAGAIN previos y ausencia de aprobación nativa documentados. Alternativas02/03 no implementadas.",
+      "previewUrl": "http://127.0.0.1:4200/"
     }
   }
 }
