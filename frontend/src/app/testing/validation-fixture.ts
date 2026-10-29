@@ -8,4 +8,4 @@ export const requiredSets = {
   marine: [...base, 'occurrenceStatus', 'eventID', 'eventDate', 'locality', 'decimalLatitude', 'decimalLongitude', 'scientificNameID'],
   other: [...base],
 };
-export const configurationFixture = (fields?: string[]) => ({ revision: 7, contexts: contextKeys.map(context => ({ context, requiredFields: [...(fields ?? requiredSets[context])] })) });
+export const configurationFixture = (fields?: string[]) => ({ revision: 7, contexts: contextKeys.map(context => ({ context, requiredFields: [...(fields ?? requiredSets[context])], optionalFields: [] as string[] })) });

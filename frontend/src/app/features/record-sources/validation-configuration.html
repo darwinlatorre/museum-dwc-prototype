@@ -1,8 +1,8 @@
 <section class="validation-configuration" aria-labelledby="configuration-title">
   <header>
-    <p>Administración · Campos obligatorios</p>
+    <p>Administración · Campos configurados</p>
     <h2 id="configuration-title">Fuentes de registros biológicos</h2>
-    <p>Seleccione una fuente y ajuste los campos que serán obligatorios en el diagnóstico.</p>
+    <p>Seleccione una fuente y defina sus campos obligatorios u opcionales para el diagnóstico.</p>
     <div class="configuration-topline">
       <span class="configuration-state">Revisión {{ draft()?.revision }} · {{ dirty() ? 'Cambios sin guardar' : 'Sin cambios pendientes' }}</span>
       <span>5 tipos de fuente · Configuración global</span>
@@ -22,17 +22,17 @@
             [attr.aria-pressed]="context() === source.context" (click)="chooseContext($event)"
             [disabled]="mutation.isPending() || refreshing()" aria-controls="configuration-field-workspace">
             <strong>{{ label(source.context) }}</strong>
-            <span>{{ source.count }} campos{{ context() === source.context ? ' · Seleccionada' : '' }}</span>
+            <span>{{ source.count }} campos · {{ source.required }} obligatorios · {{ source.optional }} opcionales{{ context() === source.context ? ' · Seleccionada' : '' }}</span>
           </button>
         }
       </div>
     </aside>
     <section id="configuration-field-workspace" class="configuration-panel" aria-labelledby="fields-title">
       <div class="configuration-topline">
-        <div><h3 id="fields-title">{{ label(context()) }}</h3><p>{{ fields().length }} campos obligatorios</p></div>
+        <div><h3 id="fields-title">{{ label(context()) }}</h3><p>{{ fields().length }} campos · {{ required().length }} obligatorios · {{ optional().length }} opcionales</p></div>
         <span class="configuration-state">Fuente seleccionada</span>
       </div>
-      <p>Quitar un campo solo cambia su obligatoriedad en esta fuente; no elimina el término del catálogo.</p>
+      <p>El botón de estado alterna entre Obligatorio y Opcional; el campo permanece guardado y visible. Quitar lo retira de esta fuente, no del catálogo.</p>
       <p class="field-label">Agregar campo obligatorio</p>
       <div class="configuration-add">
         <app-dwc-picker [terms]="terms()" label="Agregar campo obligatorio" [(value)]="field"
@@ -42,7 +42,7 @@
       <p>Elija un término DwC o escriba un valor libre. Máximo 200 caracteres; 500 campos por fuente.</p>
       @if (field() && fieldError()) { <p class="error" role="alert">{{ fieldError() }}</p> }
       <div class="configuration-search">
-        <label for="configuration-search">Buscar entre los campos obligatorios</label>
+        <label for="configuration-search">Buscar entre los campos configurados</label>
         <div class="configuration-search-controls">
           <input id="configuration-search" type="search" placeholder="Nombre del campo" [value]="search()"
             (input)="search.set($any($event.target).value)" aria-controls="configuration-fields">
@@ -50,12 +50,18 @@
         </div>
         <p role="status">{{ visibleFields().length }} de {{ fields().length }} campos</p>
       </div>
-      <ul id="configuration-fields" class="configuration-fields" [attr.aria-label]="'Campos obligatorios de ' + label(context())" tabindex="0">
+      <ul id="configuration-fields" class="configuration-fields" [attr.aria-label]="'Campos configurados de ' + label(context())" tabindex="0">
         @for (field of visibleFields(); track field) {
-          <li><span class="literal">{{ field }}</span><button type="button" [attr.aria-label]="'Quitar ' + field"
-            [disabled]="mutation.isPending() || refreshing()" (click)="remove(field)">Quitar</button></li>
+          <li><span class="literal">{{ field }}</span><div class="configuration-field-actions">
+            <button type="button" [attr.aria-pressed]="required().includes(field)"
+              [attr.aria-label]="'Cambiar ' + field + (required().includes(field) ? ' a opcional' : ' a obligatorio')"
+              [disabled]="mutation.isPending() || refreshing()" (click)="toggle(field)">
+              {{ required().includes(field) ? 'Obligatorio' : 'Opcional' }}</button>
+            <button type="button" [attr.aria-label]="'Quitar ' + field"
+              [disabled]="mutation.isPending() || refreshing()" (click)="remove(field)">Quitar</button>
+          </div></li>
         } @empty {
-          <li>{{ fields().length ? 'Ningún campo coincide con la búsqueda.' : 'No hay campos obligatorios configurados para este contexto.' }}</li>
+          <li>{{ fields().length ? 'Ningún campo coincide con la búsqueda.' : 'No hay campos configurados para este contexto.' }}</li>
         }
       </ul>
     </section>
@@ -77,7 +83,7 @@
     <p>Se guarda la configuración completa de los cinco contextos con su revisión vigente.
       Una revisión obsoleta se rechaza sin sobrescribir cambios ajenos. Actualizar descarta sus cambios
       únicamente después de una lectura correcta del servidor.</p>
-    <p>La obligatoriedad configurada orienta el diagnóstico, no certifica una publicación SiB ni modifica
+    <p>Solo los campos obligatorios generan incidencias por datos ausentes; los opcionales permanecen configurados. La obligatoriedad configurada orienta el diagnóstico, no certifica una publicación SiB ni modifica
       el vocabulario TDWG. Las comprobaciones básicas de fechas y coordenadas siguen activas.</p>
     <p>Al salir con cambios o una entrada sin agregar, se solicita confirmación. Guardar y actualizar
       bloquean la edición hasta finalizar; un fallo conserva el borrador.</p>

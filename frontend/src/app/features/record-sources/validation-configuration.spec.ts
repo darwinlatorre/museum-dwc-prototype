@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
+import type { ValidationConfiguration } from './models/validation-configuration';
 import { ValidationConfigurationEditor } from './validation-configuration';
 import { Api } from '../../core/api/api';
 import { configurationFixture, contextKeys } from '../../testing/validation-fixture';
 
-async function setup() {
-  const original = configurationFixture(['customField']);
+async function setup(original: ValidationConfiguration = configurationFixture(['customField'])) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   client.setQueryData(['validation-configuration'], original);
   const api = {
@@ -33,6 +33,81 @@ beforeEach(() => vi.stubGlobal('matchMedia', (media: string) => ({ matches: fals
 afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
 describe('Editor global público', () => {
+  it('alterna sin mover filas ni foco y guarda ambas listas completas con búsqueda activa', async () => {
+    const { f, root, api, button, click, original } = await setup(configurationFixture(['first', 'customField', 'last']));
+    const rows = [...root.querySelectorAll('.configuration-fields li')];
+    const toggle = button('Cambiar customField a opcional');
+    expect(toggle).toBeTruthy();
+    toggle.focus();
+    await click('Cambiar customField a opcional');
+    expect([...root.querySelectorAll('.configuration-fields li')]).toEqual(rows);
+    expect(document.activeElement).toBe(toggle);
+    expect(toggle.textContent).toContain('Opcional');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(root.textContent).toContain('3 campos · 2 obligatorios · 1 opcionales');
+    const search = root.querySelector<HTMLInputElement>('input[type=search]')!;
+    search.value = 'CUSTOM'; search.dispatchEvent(new Event('input')); await f.whenStable();
+    expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));
+    expect(api.updateValidationConfiguration.mock.calls[0][0]).toEqual({ revision: 7, contexts: original.contexts.map(item => ({ ...item,
+      requiredFields: item.context === 'collection' ? ['first', 'last'] : item.requiredFields,
+      optionalFields: item.context === 'collection' ? ['customField'] : [],
+    })) });
+    await click('Cambiar customField a obligatorio');
+    expect(toggle.textContent).toContain('Obligatorio');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(2));
+    expect(api.updateValidationConfiguration.mock.calls[1][0].contexts[0]).toEqual({ context: 'collection',
+      requiredFields: ['first', 'last', 'customField'], optionalFields: [] });
+  });
+
+  it('rehidrata opcionales, busca ambos estados, rechaza duplicado y Quitar elimina el opcional', async () => {
+    const original = configurationFixture(['customField']);
+    original.contexts[0].optionalFields = ['  optionalValue  '];
+    const { f, root, api, type, button, click } = await setup(original);
+    expect(button('Cambiar   optionalValue   a obligatorio').textContent).toContain('Opcional');
+    await type('  optionalValue  ');
+    expect(button('Agregar campo').disabled).toBe(true);
+    expect(root.textContent).toContain('Este campo ya está configurado en el contexto.');
+    await click('Limpiar Agregar campo obligatorio');
+    const search = root.querySelector<HTMLInputElement>('input[type=search]')!;
+    search.value = 'VALUE'; search.dispatchEvent(new Event('input')); await f.whenStable();
+    expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
+    await click('Quitar   optionalValue  ');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));
+    expect(api.updateValidationConfiguration.mock.calls[0][0]).toEqual({ ...original,
+      contexts: original.contexts.map(item => ({ ...item, optionalFields: [] })) });
+    await click('Limpiar búsqueda');
+    expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
+    expect(root.querySelector('.configuration-fields')?.textContent).not.toContain('optionalValue');
+  });
+
+  it('cuenta el límite combinado sin enviar escrituras al rechazar el campo 501', async () => {
+    const original = configurationFixture(['customField']);
+    original.contexts[0].optionalFields = Array.from({ length: 499 }, (_, i) => `optional${i}`);
+    const { root, type, button, api } = await setup(original);
+    await type('overflow');
+    expect(button('Agregar campo').disabled).toBe(true);
+    expect(root.textContent).toContain('No se pueden agregar más de 500 campos por contexto.');
+    expect(api.updateValidationConfiguration).not.toHaveBeenCalled();
+  });
+
+  it('normaliza lecturas legadas y guarda listas opcionales explícitas en las cinco fuentes', async () => {
+    const legacy = { revision: 7, contexts: contextKeys.map(context => ({ context, requiredFields: ['customField'] })) };
+    const { api, click, root } = await setup(legacy);
+    expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
+    await click('Cambiar customField a opcional');
+    await click('Guardar configuración');
+    await vi.waitFor(() => expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1));
+    expect(api.updateValidationConfiguration.mock.calls[0][0]).toEqual({ revision: 7, contexts: legacy.contexts.map(item => ({
+      ...item, requiredFields: item.context === 'collection' ? [] : ['customField'],
+      optionalFields: item.context === 'collection' ? ['customField'] : [],
+    })) });
+    expect(legacy.contexts.every(item => !('optionalFields' in item))).toBe(true);
+  });
+
   it('presenta cinco fuentes seleccionables con recuentos reales y un espacio de campos dedicado', async () => {
     const { f, root, api } = await setup();
     expect(root.querySelector('h2')?.textContent).toBe('Fuentes de registros biológicos');
@@ -88,7 +163,7 @@ describe('Editor global público', () => {
     expect(root.textContent).toContain('Cambios sin guardar');
     expect(root.querySelector('.configuration-fields')?.textContent).toContain('  freeValue  ');
     await type('  freeValue  ');
-    expect(root.textContent).toContain('Este campo ya es obligatorio');
+    expect(root.textContent).toContain('Este campo ya está configurado');
     expect(button('Agregar campo').disabled).toBe(true);
     await click('Limpiar Agregar campo obligatorio');
     expect(root.querySelector<HTMLInputElement>('app-dwc-picker input')?.value).toBe('');

@@ -17,7 +17,7 @@ Las query functions devuelven promesas y propagan `AbortSignal` hasta `fetch`. U
 
 ## Escrituras y recuperación
 
-El administrador de Fuentes de registros biológicos en `features/record-sources` usa `injectMutation` para enviar `{revision, contexts}` completo. Solo tras éxito:
+El administrador de Fuentes de registros biológicos en `features/record-sources` usa `injectMutation` para enviar `{revision, contexts}` completo: los cinco contextos con `requiredFields` y `optionalFields` explícitos, sin filtrar por búsqueda. El editor normaliza lecturas legadas sin opcionales a `[]`; alternar estado conserva la fila, mientras Quitar retira el campo de ambas listas. La clave Query no cambia. Solo tras éxito:
 
 1. Cancela consultas anteriores de configuración para que no pisen la respuesta guardada.
 2. Actualiza `['validation-configuration']` con el snapshot devuelto.

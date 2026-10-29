@@ -109,6 +109,21 @@ describe('controlled normalization', () => {
   });
 });
 describe('validation', () => {
+  it('ignora subfamily opcional con diez vacíos de doce y restaura los diez errores al exigirlo', () => {
+    const data = { headers: ['subfamily'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i + 2, values: [i < 10 ? '' : 'Synthetic'] })) };
+    const config = configurationFixture([]);
+    config.contexts[0].optionalFields = ['subfamily'];
+    const vocabulary = [{ ...terms[0], name: 'subfamily' }];
+    const before = structuredClone(data);
+    expect(validate(data, {}, config, vocabulary, 'collection')).toEqual([]);
+    config.contexts[0].requiredFields = ['subfamily'];
+    config.contexts[0].optionalFields = [];
+    expect(validate(data, {}, config, vocabulary, 'collection')).toEqual(Array.from({ length: 10 }, (_, i) => ({
+      field: 'subfamily', row: i + 2, description: 'subfamily es obligatorio en este contexto.', severity: 'ERROR',
+      context: 'collection', configurationRevision: 7,
+    })));
+    expect(data).toEqual(before);
+  });
   it('distinguishes missing columns from blank cells and leaves source unchanged', () => {
     expect(run('eventDate\n2024-01-01', ['catalogNumber'])).toEqual([{
       row: null, field: 'catalogNumber', severity: 'ERROR', context: 'other', configurationRevision: 7,

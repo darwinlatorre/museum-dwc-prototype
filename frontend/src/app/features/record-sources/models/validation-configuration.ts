@@ -3,6 +3,7 @@ export type Context = typeof CONTEXTS[number];
 export interface ContextRequirements {
   context: Context;
   requiredFields: string[];
+  optionalFields?: string[];
 }
 export interface ValidationConfiguration {
   revision: number;
