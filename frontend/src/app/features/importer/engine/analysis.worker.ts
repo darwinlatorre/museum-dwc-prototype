@@ -4,6 +4,7 @@ import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
 import { fromMatrix, parseCsv } from './parser';
 import { normalize } from './normalizer';
 import { validate } from './validator';
+import { appendDuplicateWarnings } from './normalization-duplicates';
 
 addEventListener('message', async ({ data: request }: MessageEvent<WorkerRequest>) => {
   const reply = (message: WorkerResponse) => postMessage(message);
@@ -30,19 +31,10 @@ addEventListener('message', async ({ data: request }: MessageEvent<WorkerRequest
         }
       } else throw new Error('Seleccione un archivo CSV o XLSX.');
     } else {
-      const normalized = normalize(request.data, request.options);
-      reply({
-        id: request.id,
-        kind: 'result',
-        issues: validate(
-          normalized.data,
-          request.mapping,
-          request.configuration,
-          request.terms,
-          request.context,
-        ),
-        changes: normalized.changes,
-      });
+      const normalized = normalize(request.data, request.options, request.mapping);
+      const issues = validate(normalized.data, request.mapping, request.configuration, request.terms, request.context);
+      if (request.options.duplicates) appendDuplicateWarnings(issues, normalized.data, request.mapping, request.configuration.revision);
+      reply({ id: request.id, kind: 'result', issues, changes: normalized.changes });
     }
   } catch (error) {
     reply({
