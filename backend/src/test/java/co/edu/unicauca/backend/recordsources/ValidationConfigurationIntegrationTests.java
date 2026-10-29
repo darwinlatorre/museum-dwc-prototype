@@ -63,9 +63,18 @@ class ValidationConfigurationIntegrationTests {
         try (var input = new ClassPathResource("data/validation-configuration.json").getInputStream()) {
             var seed = json.readTree(input);
             mvc.perform(put(API).contentType("application/json").content(json.writeValueAsString(
-                Map.of("revision", revision(), "contexts", seed.get("contexts")))))
+                Map.of("revision", revision(), "contexts", seedContexts(seed)))))
                 .andExpect(status().isOk());
         }
+    }
+
+    List<Map<String, Object>> seedContexts(JsonNode seed) {
+        var contexts = new ArrayList<Map<String, Object>>();
+        for (JsonNode entry : seed.get("contexts")) {
+            contexts.add(Map.of("context", entry.get("context"), "requiredFields", entry.get("requiredFields"),
+                "optionalFields", List.of()));
+        }
+        return contexts;
     }
 
     String configuration() throws Exception {
@@ -81,7 +90,7 @@ class ValidationConfigurationIntegrationTests {
     @Test void seedExposesExactFiveContextsAndRequiredMatrix() throws Exception {
         JsonNode config = json.readTree(configuration());
         try (var input = new ClassPathResource("data/validation-configuration.json").getInputStream()) {
-            assertThat(config.get("contexts")).isEqualTo(json.readTree(input).get("contexts"));
+            assertThat(config.get("contexts")).isEqualTo(json.readTree(json.writeValueAsString(seedContexts(json.readTree(input)))));
         }
         var names = new ArrayList<String>();
         var sizes = new ArrayList<Integer>();
@@ -166,7 +175,7 @@ class ValidationConfigurationIntegrationTests {
         var response = mvc.perform(put(API).contentType("application/json").content(request))
             .andExpect(status().isOk()).andReturn().getResponse();
         assertThat(json.readTree(response.getContentAsString()).get("contexts"))
-            .isEqualTo(json.readTree(request).get("contexts"));
+            .isEqualTo(json.readTree(fullBody(revision(), fields, List.of())).get("contexts"));
     }
 
     @Test void concurrentClientsHaveExactlyOneWinnerWithoutLostUpdate() throws Exception {
@@ -181,7 +190,7 @@ class ValidationConfigurationIntegrationTests {
             assertThat(List.of(a, b)).containsExactlyInAnyOrder(200, 409);
             var saved = json.readTree(configuration());
             assertThat(saved.get("revision").asLong()).isEqualTo(revision + 1);
-            assertThat(saved.get("contexts")).isEqualTo(json.readTree(body(revision, List.of(a == 200 ? "first" : "second"))).get("contexts"));
+            assertThat(saved.get("contexts")).isEqualTo(json.readTree(fullBody(revision, List.of(a == 200 ? "first" : "second"), List.of())).get("contexts"));
         }
     }
     Callable<Integer> update(CountDownLatch ready, String body) {
@@ -216,7 +225,7 @@ class ValidationConfigurationIntegrationTests {
     }
 
     @Test void concurrentBootstrapAndRestartPreserveEditedConfiguration() throws Exception {
-        mvc.perform(put(API).contentType("application/json").content(body(revision(), List.of(" campo Ω "))))
+        mvc.perform(put(API).contentType("application/json").content(fullBody(revision(), List.of(" campo Ω "), List.of(" optional Ω "))))
             .andExpect(status().isOk());
         String before = configuration();
         var ready = new CountDownLatch(2);
@@ -261,6 +270,139 @@ class ValidationConfigurationIntegrationTests {
                 assertThat(configuration()).isEqualTo(before);
             }
         }
+    }
+
+    String fullBody(long revision, List<String> required, Object optional) {
+        return json.writeValueAsString(Map.of("revision", revision, "contexts",
+            List.of("collection", "permit", "sampling", "marine", "other").stream()
+                .map(context -> Map.of("context", context, "requiredFields", required,
+                    "optionalFields", optional)).toList()));
+    }
+
+    void saved(String request, String expected) throws Exception {
+        var response = mvc.perform(put(API).contentType("application/json").content(request))
+            .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("application/json"))
+            .andReturn().getResponse().getContentAsString();
+        assertThat(json.readTree(response)).isEqualTo(json.readTree(expected));
+        assertThat(json.readTree(configuration())).isEqualTo(json.readTree(expected));
+    }
+
+    @Test void optionalRoundTripPromotionDemotionAndRemovalPreserveUntouchedText() throws Exception {
+        var untouched = List.of(" county ", "county", "Texto Ω\noriginal");
+        var required = new ArrayList<>(untouched);
+        required.add("moving");
+        long r = revision();
+        saved(fullBody(r, required, List.of("other field")), fullBody(r + 1, required, List.of("other field")));
+        saved(fullBody(r + 1, untouched, List.of("other field", "moving")),
+            fullBody(r + 2, untouched, List.of("other field", "moving")));
+        saved(fullBody(r + 2, required, List.of("other field")), fullBody(r + 3, required, List.of("other field")));
+        saved(fullBody(r + 3, untouched, List.of("other field", "moving")),
+            fullBody(r + 4, untouched, List.of("other field", "moving")));
+        saved(fullBody(r + 4, untouched, List.of()), fullBody(r + 5, untouched, List.of()));
+    }
+
+    @Test void legacyStoredJsonReadsWithEmptyOptionalWithoutRewritingOnGet() throws Exception {
+        long r = revision();
+        String legacyContexts = json.readTree(body(r, List.of(" original Ω "))).get("contexts").toString();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+            entityManager.createNativeQuery("update validation_configuration set contexts=cast(:contexts as jsonb)")
+                .setParameter("contexts", legacyContexts).executeUpdate());
+        String storedBefore = new TransactionTemplate(transactionManager).execute(status ->
+            (String) entityManager.createNativeQuery("select contexts::text from validation_configuration", String.class).getSingleResult());
+        String expected = fullBody(r, List.of(" original Ω "), List.of());
+        assertThat(json.readTree(configuration())).isEqualTo(json.readTree(expected));
+        assertThat(json.readTree(configuration())).isEqualTo(json.readTree(expected));
+        String storedAfter = new TransactionTemplate(transactionManager).execute(status ->
+            (String) entityManager.createNativeQuery("select contexts::text from validation_configuration", String.class).getSingleResult());
+        assertThat(storedAfter).isEqualTo(storedBefore);
+    }
+
+    @Test void legacyPutPreservesOptionalValuesAndPromotesOnlyExactRequiredMatches() throws Exception {
+        long r = revision();
+        var optional = List.of(" moving ", "moving", "keep Ω");
+        saved(fullBody(r, List.of("required"), optional), fullBody(r + 1, List.of("required"), optional));
+        saved(body(r + 1, List.of("new required")), fullBody(r + 2, List.of("new required"), optional));
+        saved(body(r + 2, List.of("moving", "new required")),
+            fullBody(r + 3, List.of("moving", "new required"), List.of(" moving ", "keep Ω")));
+        // Omission is per context, not a document-wide legacy flag.
+        String mixed = fullBody(r + 3, List.of("required"), List.of())
+            .replaceFirst("\\\"optionalFields\\\":\\[\\],?", "");
+        // Remove a possible comma before the closing brace after removing the property.
+        mixed = mixed.replace(",}", "}");
+        String expected = fullBody(r + 4, List.of("required"), List.of())
+            .replaceFirst("\\\"optionalFields\\\":\\[\\]", "\"optionalFields\":[\" moving \",\"keep Ω\"]");
+        saved(mixed, expected);
+    }
+
+    @Test void invalidOptionalListsLeaveCompletePublicStateAndRevisionUnchanged() throws Exception {
+        long r = revision();
+        saved(fullBody(r, List.of("required"), List.of("saved optional")),
+            fullBody(r + 1, List.of("required"), List.of("saved optional")));
+        String before = configuration();
+        String catalog = catalogState();
+        String historical = history();
+        for (String token : List.of("null", "{}", "0", "true", "\"field\"", "[null]", "[1]", "[true]",
+                "[\"\"]", "[\" \"]", "[\"\\u2003\"]", "[\"x\",\"x\"]", "[\"required\"]",
+                "[\"" + "x".repeat(201) + "\"]")) {
+            for (int context = 0; context < 5; context++) {
+                String request = fullBody(r + 1, List.of("required"), List.of("saved optional"));
+                String marker = "\"optionalFields\":[\"saved optional\"]";
+                int start = -1;
+                for (int i = 0; i <= context; i++) start = request.indexOf(marker, start + 1);
+                request = request.substring(0, start) + "\"optionalFields\":" + token
+                    + request.substring(start + marker.length());
+                mvc.perform(put(API).contentType("application/json").content(request))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                    .andExpect(jsonPath("$.title").value("Solicitud incorrecta"))
+                    .andExpect(jsonPath("$.detail").value("El contenido de la configuración de validación no es válido."))
+                    .andExpect(jsonPath("$.status").value(400)).andExpect(jsonPath("$.instance").value(API));
+                assertThat(configuration()).as(token).isEqualTo(before);
+                assertThat(catalogState()).isEqualTo(catalog);
+                assertThat(history()).isEqualTo(historical);
+            }
+        }
+    }
+
+    @Test void combinedLimitIncludesPreservedOptionalFieldsAndAcceptsExactBoundaries() throws Exception {
+        var fields = IntStream.range(0, 500)
+            .mapToObj(i -> ("f" + i).repeat(100).substring(0, 200)).toList();
+        long r = revision();
+        saved(fullBody(r, fields.subList(0, 250), fields.subList(250, 500)),
+            fullBody(r + 1, fields.subList(0, 250), fields.subList(250, 500)));
+        String before = configuration();
+        var tooMany = new ArrayList<>(fields.subList(0, 250));
+        tooMany.add("extra");
+        for (String request : List.of(fullBody(r + 1, tooMany, fields.subList(250, 500)), body(r + 1, tooMany),
+                fullBody(r + 1, List.of(), IntStream.range(0, 501).mapToObj(i -> "f" + i).toList()))) {
+            mvc.perform(put(API).contentType("application/json").content(request)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("El contenido de la configuración de validación no es válido."));
+            assertThat(configuration()).isEqualTo(before);
+        }
+        saved(fullBody(r + 1, List.of(), fields), fullBody(r + 2, List.of(), fields));
+        saved(fullBody(r + 2, List.of(), List.of()), fullBody(r + 3, List.of(), List.of()));
+    }
+
+    @Test void legacyAndExplicitConcurrentSavesHaveOneWinnerAndStaleSaveCannotEraseOptional() throws Exception {
+        long r = revision();
+        saved(fullBody(r, List.of("required"), List.of("preserved")),
+            fullBody(r + 1, List.of("required"), List.of("preserved")));
+        var ready = new CountDownLatch(2);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var results = executor.invokeAll(List.of(update(ready, body(r + 1, List.of("legacy"))),
+                update(ready, fullBody(r + 1, List.of("explicit"), List.of("new optional")))));
+            int first = results.getFirst().get();
+            assertThat(List.of(first, results.getLast().get())).containsExactlyInAnyOrder(200, 409);
+            String expected = first == 200 ? fullBody(r + 2, List.of("legacy"), List.of("preserved"))
+                : fullBody(r + 2, List.of("explicit"), List.of("new optional"));
+            assertThat(json.readTree(configuration())).isEqualTo(json.readTree(expected));
+        }
+        String before = configuration();
+        mvc.perform(put(API).contentType("application/json").content(fullBody(r + 1, List.of(), List.of())))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.title").value("Conflicto"))
+            .andExpect(jsonPath("$.detail").value("La revisión de la configuración cambió; actualice los datos antes de guardar."))
+            .andExpect(jsonPath("$.status").value(409)).andExpect(jsonPath("$.instance").value(API));
+        assertThat(configuration()).isEqualTo(before);
     }
 
     @Test void operationBoundaryIsOneTransactionalProxy() {

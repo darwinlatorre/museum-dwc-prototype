@@ -28,16 +28,27 @@ No hay rutas activas de perfiles, publicación, duplicación ni carga de archivo
 {
   "revision": 0,
   "contexts": [
-    {"context": "collection", "requiredFields": []},
-    {"context": "permit", "requiredFields": []},
-    {"context": "sampling", "requiredFields": []},
-    {"context": "marine", "requiredFields": []},
-    {"context": "other", "requiredFields": []}
+    {"context": "collection", "requiredFields": [], "optionalFields": []},
+    {"context": "permit", "requiredFields": [], "optionalFields": []},
+    {"context": "sampling", "requiredFields": [], "optionalFields": []},
+    {"context": "marine", "requiredFields": [], "optionalFields": []},
+    {"context": "other", "requiredFields": [], "optionalFields": []}
   ]
 }
 ```
 
-Las listas vacías son una configuración explícita válida; el ejemplo no representa los defaults. Se exigen exactamente cinco contextos únicos con las claves textuales mostradas. Cada lista admite hasta **500** campos únicos de **200** caracteres como máximo. No se aceptan campos nulos, en blanco, duplicados ni valores JSON no textuales. Se preserva el texto arbitrario y el orden de campos, **sin recorte implícito**; ` county ` y `county` son valores diferentes. La respuesta ordena los contextos como en el ejemplo.
+Las listas vacías son una configuración explícita válida; el ejemplo no representa los defaults. Se exigen exactamente cinco contextos únicos con las claves textuales mostradas. Cada contexto admite hasta **500 campos combinados** entre `requiredFields` y `optionalFields`, de **200** caracteres como máximo. Ambas listas son disjuntas: un mismo texto exacto no puede aparecer en las dos. No se aceptan campos nulos, en blanco, duplicados ni valores JSON no textuales. Se preserva el texto arbitrario y el orden de campos, **sin recorte implícito**; ` county ` y `county` son valores diferentes. La respuesta ordena los contextos como en el ejemplo.
+
+`optionalFields` contiene campos configurados y visibles, pero no obligatorios; alternar el estado mueve el nombre entre listas, mientras Quitar lo retira de ambas. Las respuestas GET/PUT incluyen siempre ambas listas. Los campos opcionales son metadatos, no generan diagnósticos de obligatoriedad.
+
+| `optionalFields` por contexto | Lectura o PUT |
+|---|---|
+| Ausente en JSON almacenado o semilla antigua | Se lee como `[]`; GET no reescribe datos ni revisión |
+| Ausente en PUT legado | Conserva los opcionales guardados bajo el mismo bloqueo/revisión; elimina de esa lista solo coincidencias exactas promovidas explícitamente a `requiredFields` |
+| Lista explícita, incluso `[]` | Reemplaza la lista; `[]` elimina todos los opcionales de ese contexto |
+| `null`, forma incorrecta, elementos no textuales/nulos/blancos, duplicados, solapamiento o límites excedidos | 400, sin cambiar configuración ni revisión |
+
+La omisión se interpreta individualmente por contexto. `requiredFields` sigue siendo obligatorio. Para clientes nuevos, enviar ambas listas completas de los cinco contextos, no solo la búsqueda visible. Se conserva el orden y texto exacto de los valores que no se mueven; no se normalizan espacios, mayúsculas ni nombres libres. Una revisión obsoleta válida recibe 409 y nunca borra opcionales.
 
 `revision` debe ser un entero JSON no negativo representable en un `long`; no se convierten cadenas, decimales, booleanos ni valores nulos. No se admiten propiedades desconocidas ni estructuras parciales. Solo se reciben nombres de campos de configuración, nunca archivos, celdas o registros biológicos.
 
@@ -64,13 +75,15 @@ TDWG sigue siendo la única autoridad del vocabulario. Esta obligatoriedad es po
 
 La semilla se valida e inserta mediante JPA/HQL `on conflict (id) do nothing`. Reiniciar nunca sobrescribe una configuración editada. El bootstrap completo tiene una sola transacción; arranques concurrentes son idempotentes. La lectura usa transacción read-only y OSIV sigue deshabilitado.
 
-PUT ejecuta **lock → revisión → validación → saveAndFlush** dentro de una única transacción que envuelve el caso de uso. El bloqueo es `PESSIMISTIC_WRITE`, no una transacción independiente por método de repositorio. La revisión es explícita, no `@Version`. MapStruct actualiza la misma entidad administrada ignorando su identidad.
+`optionalFields` se guarda en el JSONB existente, sin V5 ni modificación de V1–V4, tablas, columnas o semillas. Los defaults heredados siguen siendo obligatorios; su lista opcional inicial es vacía.
+
+PUT ejecuta **lock → revisión → merge legado → validación → saveAndFlush** dentro de una única transacción que envuelve el caso de uso. El bloqueo es `PESSIMISTIC_WRITE`, no una transacción independiente por método de repositorio. La revisión es explícita, no `@Version`. MapStruct actualiza la misma entidad administrada ignorando su identidad.
 
 ## Arquitectura y generación Java
 
 [`recordsources`](RECORD_SOURCES_ARCHITECTURE.md) y [`catalog`](CATALOG_ARCHITECTURE.md) son funcionalidades independientes con núcleo `domain`/`application` Java puro, puertos propiedad de aplicación y adaptadores de infraestructura. No hay dependencias productivas cruzadas. `ConfigurationBeanConfig` y `CatalogBeanConfig` componen explícitamente los casos de uso, adaptadores y mappers. HTTP recibe únicamente el puerto decorado transaccionalmente.
 
-`recordsources` es el propietario Java de «Fuentes de registros biológicos», alineado con `features/record-sources` en Angular. El cambio de nombre organiza el código; no introduce CRUD de fuentes ni cambia `/api/validation-configuration`, los cinco valores de contexto, campos JSON, revisión, entidades, tablas, migraciones o semillas. Los nombres `Configuration*` siguen describiendo los casos de uso de configuración; «Contexto» permanece en el análisis.
+`recordsources` es el propietario Java de «Fuentes de registros biológicos», alineado con `features/record-sources` en Angular. El cambio de nombre organiza el código; no introduce CRUD de fuentes ni cambia `/api/validation-configuration`, los cinco valores de contexto, revisión, entidades, tablas, migraciones o semillas. S4 agrega únicamente `optionalFields` al contrato JSON, con compatibilidad de lectura y PUT legados descrita arriba. Los nombres `Configuration*` siguen describiendo los casos de uso de configuración; «Contexto» permanece en el análisis.
 
 Lombok (versión de Spring Boot), MapStruct **1.6.3** y binding **0.2.0** se ejecutan durante compilación y pruebas. Solo `@Builder` y `@RequiredArgsConstructor` source-only están permitidos en el núcleo. Lombok y los procesadores quedan fuera del JAR ejecutable. Los mappers usan `BackendMapperConfig` con destinos no mapeados como error; no son componentes Spring implícitos. Los codecs Jackson llegan a persistencia mediante `@Context`; `@MappingTarget` ignora identidad. Las entidades tienen getters JavaBean, sin `@Data`, igualdad, hash o `toString` automáticos. Los DTO de entrada/salida viven en `dto/req` y `dto/res`; JSON estricto y Bean Validation quedan en adaptadores.
 

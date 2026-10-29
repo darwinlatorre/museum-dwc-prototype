@@ -4,6 +4,9 @@ import co.edu.unicauca.backend.recordsources.domain.model.ValidationConfiguratio
 
 public interface ConfigurationOperations {
     ValidationConfiguration get();
-    ValidationConfiguration update(ValidationConfiguration configuration);
+    ValidationConfiguration update(ConfigurationUpdate command);
+    default ValidationConfiguration update(ValidationConfiguration configuration) {
+        return update(new ConfigurationUpdate(configuration, java.util.Set.of()));
+    }
     void initialize(ValidationConfiguration seed);
 }

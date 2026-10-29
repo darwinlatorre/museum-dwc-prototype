@@ -2,7 +2,7 @@
 
 `co.edu.unicauca.backend.recordsources` es el módulo propietario de la configuración global de «Fuentes de registros biológicos», alineado con `features/record-sources` en Angular. Reemplaza el producto de perfiles con una única configuración editable por contexto. Catálogo es independiente: ninguna funcionalidad importa clases productivas de la otra.
 
-El nombre del módulo es organizativo: se preservan `/api/validation-configuration`, las claves `collection`/`permit`/`sampling`/`marine`/`other`, los campos JSON y la revisión. No se renombran entidades, tablas, columnas, migraciones ni semillas; tampoco se agrega CRUD de fuentes. Los casos de uso conservan los nombres `Configuration*` y «Contexto» no cambia en el análisis.
+El nombre del módulo es organizativo: se preservan `/api/validation-configuration`, las claves `collection`/`permit`/`sampling`/`marine`/`other`, los campos JSON existentes y la revisión. S4 añade `optionalFields` a cada contexto con compatibilidad legada. No se renombran entidades, tablas, columnas, migraciones ni semillas; tampoco se agrega CRUD de fuentes. Los casos de uso conservan los nombres `Configuration*` y «Contexto» no cambia en el análisis.
 
 Código y pruebas pertenecen a `recordsources`; `scripts/check_architecture.py` comprueba paquetes coherentes con sus directorios, ausencia de imports del namespace retirado y separación respecto de catálogo.
 
@@ -13,11 +13,11 @@ Código y pruebas pertenecen a `recordsources`; `scripts/check_architecture.py` 
 | Frontera | Responsabilidad |
 |---|---|
 | `domain/model` | Registros `ValidationConfiguration`, `ContextFields` y cinco contextos |
-| `domain/validation` | Cinco claves únicas, límites, texto no vacío/duplicado y copia inmutable sin trim |
+| `domain/validation` | Cinco claves únicas, listas disjuntas, máximo 500 campos combinados/200 caracteres, copia inmutable sin trim |
 | `domain/exception` | Errores puros de validación y revisión |
-| `application/port/in` | Leer, reemplazar con revisión e inicializar |
+| `application/port/in` | Leer, reemplazar con revisión e inicializar; `ConfigurationUpdate` expresa contextos con opcionales omitidos |
 | `application/port/out` | Lectura, bloqueo, reemplazo e inserción idempotente |
-| `application/service` | Bloquear, comparar revisión, validar, incrementar y guardar |
+| `application/service` | Bloquear, comparar revisión, combinar opcionales legados, validar, incrementar y guardar |
 | `infrastructure/adapter/in/web` | HTTP, Bean Validation y mapper req/res separado |
 | `infrastructure/adapter/json` | Contrato estricto común a HTTP, semillas y JSONB; sin coerción numérica |
 | `infrastructure/adapter/out/database` | Entidad JPA, repositorio y mapper de persistencia con codec `@Context` |
@@ -32,6 +32,12 @@ El núcleo no importa Spring, Jakarta, Jackson, JPA, Commons CSV ni DTO HTTP. So
 `TransactionalConfigurationOperations` es la única implementación publicada del puerto de entrada; el caso de uso puro no se registra como bean independiente. `get` es read-only; `update` e `initialize` usan propagación REQUIRED.
 
 La transacción de actualización mantiene `PESSIMISTIC_WRITE` desde `lockGlobal()` hasta `saveAndFlush()`. Se compara la revisión antes de validar el contenido en aplicación. Un cliente obsoleto recibe 409 sin escribir; dos clientes con la misma revisión tienen exactamente un ganador. La revisión explícita no es `@Version`. El mapper usa `@MappingTarget` sobre la entidad administrada e ignora `id`.
+
+La presencia de `optionalFields` se detecta en el codec JSON y el mapper HTTP la convierte a `ConfigurationUpdate`, un comando Java puro. El dominio siempre contiene listas concretas, nunca null para representar omisión. `update(ValidationConfiguration)` sigue siendo un reemplazo explícito completo para consumidores Java; ambas entradas del decorador envuelven el caso de uso entero.
+
+Tras bloquear y comparar revisión, aplicación valida la entrada y conserva opcionales de los contextos omitidos, retirando solo coincidencias textuales exactas promovidas a obligatorias. Valida también el resultado combinado antes de incrementar y guardar. Listas explícitas vacías eliminan los opcionales; solapamientos explícitos y exceso del límite combinado se rechazan sin efectos. No se usa lectura previa al bloqueo para este merge.
+
+El codec común lee semillas y JSONB antiguos sin `optionalFields` como listas vacías. GET solo decodifica: no reescribe la fila. MapStruct mantiene listas separadas en HTTP y persistencia; las respuestas incluyen siempre `optionalFields`. El campo se guarda en el JSONB existente, sin V5 ni cambios de entidad, esquema o semillas. Solo `requiredFields` representa obligatoriedad para el analizador del navegador.
 
 Bootstrap valida el documento completo con revisión cero e inserta por HQL `on conflict (id) do nothing`, con flush dentro de la misma transacción. No hace merge ni sustituye configuración existente. La exclusión única de PostgreSQL resuelve el arranque concurrente aun antes de existir la fila; no se usa un inexistente bloqueo de fila como sustituto de esa restricción.
 

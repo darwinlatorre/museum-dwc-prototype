@@ -21,7 +21,8 @@ class ConfigurationMapperTests {
 
     ValidationConfiguration value(long revision) {
         return ValidationConfiguration.builder().revision(revision).contexts(Arrays.stream(Context.values())
-            .map(context -> ContextFields.builder().context(context).requiredFields(List.of(" campo Ω\n ", "county")).build()).toList()).build();
+            .map(context -> ContextFields.builder().context(context).requiredFields(List.of(" campo Ω\n ", "county"))
+                .optionalFields(List.of(" optional Ω ", "optional")).build()).toList()).build();
     }
     @Test void generatedMappersRoundTripOriginalTextAndEveryContext() {
         var original = value(7);

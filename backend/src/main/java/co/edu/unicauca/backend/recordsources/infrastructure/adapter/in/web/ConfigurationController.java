@@ -23,6 +23,6 @@ public class ConfigurationController {
 
     @PutMapping(consumes = "application/json")
     public ConfigurationResponse update(@Valid @RequestBody UpdateConfigurationRequest request) {
-        return mapper.toResponse(operations.update(mapper.toDomain(request)));
+        return mapper.toResponse(operations.update(mapper.toCommand(request)));
     }
 }
