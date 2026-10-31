@@ -113,7 +113,7 @@
     </nav>
   }
   @if (detail(); as selected) {
-    <section class="normalization-original" [id]="panelId" role="region" [attr.aria-labelledby]="panelId + '-title'">
+    <section #originalRegion class="normalization-original" [id]="panelId" role="region" [attr.aria-labelledby]="panelId + '-title'">
       <div class="section-heading"><h4 [id]="panelId + '-title'">Original y copia · fila {{ selected.row }} · columna {{ selected.cell.columnIndex + 1 }}</h4><button (click)="close(true)">Cerrar original</button></div>
       <dl><dt>Original exacto</dt><dd class="literal">{{ selected.cell.before }}</dd><dt>Copia exacta</dt><dd class="literal">{{ selected.cell.after }}</dd></dl>
       <p>Espacios visibles: <span class="literal">{{ visible(selected.cell.before) }}</span> → <span class="literal">{{ visible(selected.cell.after) }}</span></p>

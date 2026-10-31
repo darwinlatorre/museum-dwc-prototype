@@ -191,6 +191,7 @@
 .normalization-sheet { min-width: 0; position: relative; }
 .normalization-sheet .normalization-rules { flex-wrap: wrap; gap: var(--museum-space-3); }
 .normalization-sheet label { min-height: 44px; }
+.normalization-sheet button, .normalization-footer button { min-height: 44px; }
 .normalization-rules label, .normalization-tools > label:first-child {
   display: flex; align-items: center; gap: var(--museum-space-2);
   padding: var(--museum-space-2); border: 1px solid var(--museum-line);
@@ -204,6 +205,9 @@
 .normalization-sheet input[role='switch']::before {
   content: ''; position: absolute; width: 16px; height: 16px; top: 3px; left: 3px;
   border-radius: var(--museum-radius-sm); background: var(--pine); transition: transform 120ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .normalization-sheet input[role='switch']::before { transition: none; }
 }
 .normalization-sheet input[role='switch']:checked { background: var(--pine); }
 .normalization-sheet input[role='switch']:checked::before { background: var(--museum-surface); transform: translateX(20px); }

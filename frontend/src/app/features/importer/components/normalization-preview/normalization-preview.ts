@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import type { Normalization, NormalizationKind } from '../../models/normalization';
 import type { PreviewCell } from '../../models/normalization-preview';
 import type { NormalizationPreviewState } from '../../workbench/normalization-preview-state';
@@ -7,7 +7,7 @@ let nextPanel = 0;
 @Component({
   selector: 'app-normalization-preview',
   templateUrl: './normalization-preview.html',
-  host: { '(keydown.escape)': 'close(true)' },
+  host: { '(document:keydown.escape)': 'escape($event)' },
 })
 export class NormalizationPreview {
   readonly state = input.required<NormalizationPreviewState>();
@@ -38,6 +38,7 @@ export class NormalizationPreview {
       ...(duplicates?.occurrenceIds.groups ?? []).map(group => ({ ...group, criterion: 'occurrenceID repetido' })),
     ];
   });
+  private readonly originalRegion = viewChild<ElementRef<HTMLElement>>('originalRegion');
   private opener?: HTMLButtonElement;
   private suppressed?: HTMLButtonElement;
   constructor() {
@@ -78,13 +79,21 @@ export class NormalizationPreview {
   }
   open(cell: PreviewCell, row: number, event: Event, activate = false) {
     const target = event.currentTarget as HTMLButtonElement;
-    if (!cell.kinds.length || !this.state().ready() || (!activate && this.suppressed === target)) return;
+    if (!this.active() || !cell.kinds.length || !this.state().ready() || (!activate && this.suppressed === target)) return;
     this.opener = target;
     this.suppressed = undefined;
     this.detail.set({ cell, row });
   }
   release(event: Event) {
     if (this.suppressed === event.currentTarget) this.suppressed = undefined;
+  }
+  escape(event: KeyboardEvent) {
+    const region = this.originalRegion()?.nativeElement;
+    if (!this.active() || !this.detail() || !region) return;
+    const target = event.target;
+    // Hover can open the original while focus stays outside this component.
+    const restore = target === this.opener || (target instanceof Node && region.contains(target));
+    this.close(restore);
   }
   close(restore: boolean) {
     const opener = this.opener;

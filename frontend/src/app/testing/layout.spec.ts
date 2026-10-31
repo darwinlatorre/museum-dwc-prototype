@@ -157,6 +157,21 @@ describe('Compact collection layouts', () => {
     expect(css).toMatch(/\.normalization-original[^{}]*\{[^}]*width:\s*min\(36rem,\s*(?:calc\(100vw\s*-\s*2rem\)|100vw\s*-\s*2rem)\)/s);
   });
 
+  it('F2 desactiva la transición del pulgar scoped bajo movimiento reducido sin cambiar su estado normal', async () => {
+    const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
+      .replace(/\[_ng(?:content|host)-[^\]]+\]/g, '');
+    expect(css).toMatch(/\.normalization-sheet\s+input\[role=["']?switch["']?\]::before\s*\{[^}]*transition:\s*transform\s+120ms\s+ease/s);
+    expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.normalization-sheet\s+input\[role=["']?switch["']?\]::before\s*\{[^}]*transition:\s*none\s*;/s);
+  });
+
+  it('F3 limita la altura mínima de 44px a botones de hoja y footer de normalización', async () => {
+    const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
+      .replace(/\[_ng(?:content|host)-[^\]]+\]/g, '');
+    expect(css).toMatch(/\.normalization-sheet\s+button\s*,\s*\.normalization-footer\s+button\s*\{[^}]*min-height:\s*44px\s*;/s);
+  });
+
   it('separates the sheet reading action from its selector', async () => {
     const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');

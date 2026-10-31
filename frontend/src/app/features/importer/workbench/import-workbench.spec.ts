@@ -568,6 +568,56 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelectorAll('.normalization-changed')).toHaveLength(0);
   });
 
+  it('F1 cierra el original con Escape desde Aplicar sin robar foco y respeta la vista inactiva', async () => {
+    const { f, root, toggle, button } = await normalization({ headers: ['scientificName'], rows: [{ row: 2, values: [' Aus bus '] }] });
+    await toggle('Eliminar espacios al inicio y al final');
+    const apply = button('Aplicar normalización y validar');
+    const cell = root.querySelector<HTMLButtonElement>('.normalization-changed button')!;
+    apply.focus();
+    cell.dispatchEvent(new MouseEvent('mouseenter')); await f.whenStable();
+    expect(root.querySelector('.normalization-original dd')?.textContent).toBe(' Aus bus ');
+    expect(document.activeElement).toBe(apply);
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    apply.dispatchEvent(escape); await f.whenStable();
+    expect(root.querySelector('.normalization-original')).toBeNull();
+    expect(document.activeElement).toBe(apply);
+    expect(escape.defaultPrevented).toBe(false);
+    expect(cell.getAttribute('aria-expanded')).toBe('false');
+    await f.whenStable();
+    expect(root.querySelector('.normalization-original')).toBeNull();
+    cell.click(); await f.whenStable();
+    const close = button('Cerrar original');
+    close.focus(); close.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await f.whenStable();
+    expect(root.querySelector('.normalization-original')).toBeNull();
+    expect(document.activeElement).toBe(cell);
+    cell.dispatchEvent(new FocusEvent('focus')); await f.whenStable();
+    expect(root.querySelector('.normalization-original')).toBeNull();
+    f.componentRef.setInput('active', false); await f.whenStable();
+    apply.focus();
+    cell.dispatchEvent(new MouseEvent('mouseenter')); await f.whenStable();
+    expect(root.querySelector('.normalization-original')).toBeNull();
+    apply.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await f.whenStable();
+    expect(document.activeElement).toBe(apply);
+  });
+
+  it('F3 vincula el footer de acciones de 44px solo al paso Normalizar', async () => {
+    const { root, click } = await normalization({ headers: ['a'], rows: [{ row: 2, values: ['x'] }] });
+    const footer = root.querySelector('.wizard-footer.normalization-footer');
+    expect(footer).toBeTruthy();
+    expect([...footer!.querySelectorAll('button')].map(button => button.textContent?.trim())).toEqual([
+      'Ver diagnóstico', 'Aplicar normalización y validar', 'Finalizar',
+    ]);
+    await click('Ver diagnóstico');
+    expect(root.querySelector('.wizard-footer')).toBeTruthy();
+    expect(root.querySelector('.normalization-footer')).toBeNull();
+    await click('Contexto');
+    expect(root.querySelector('.wizard-footer')).toBeTruthy();
+    expect(root.querySelector('.normalization-footer')).toBeNull();
+    await click('Mapear columnas');
+    expect(root.querySelector('.wizard-footer')).toBeTruthy();
+    expect(root.querySelector('.normalization-footer')).toBeNull();
+  });
+
   it('descarta ready y páginas atrasadas, ignora respuestas desconocidas y etiqueta la copia anterior', async () => {
     const { f, root, preview, toggle, button } = await normalization({ headers: ['a'], rows: [{ row: 2, values: [' x '] }] });
     DelayedWorker.previewAutomatic = false;
