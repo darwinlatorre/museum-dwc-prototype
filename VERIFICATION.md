@@ -1,8 +1,10 @@
 # Evidencia de verificación del MVP
 
-## Normalización interactiva — T4 aceptada; cierre documental T5 en curso
+## Normalización interactiva — CLOSED, T1–T5 completadas
 
-**Resultado vigente (L13):** los tres bloqueadores F1/F2/F3 están resueltos mediante recheck real dirigido y contraste del padre. Commit local `9d368fe`,6archivos/+83/-5; no aprobación nativa ni cierre integral de T5. Las entradas de recuperación siguientes conservan sus estados históricos.
+**Resultado vigente (L14):** feature aceptada y cierre T5 observado por padre: corrección fuente `9d368fe` y aceptación documental `4d0cfe1` (6archivos/+151/-13). Comprobación estructuralexit0 de SOLO los2enlaces Markdown relativos añadidos y handoffIMPLEMENTED; gitdiffcheckexit0. No revisión de todos los enlaces del repositorio. Evidencia `.browser/normalization-live-preview/runtime-resume/documentation-check.json`.
+
+Salud final: GETconfiguración/catálogoHTTP200 en API8080/DEV4200, DB55432OPEN; parentjobs2/3 vivos. SOLO preview propiojob4/4201 detenido y puertoCLOSED, ningún otro recurso detenido (`.browser/normalization-live-preview/runtime-resume/final-health.json`). Sin push/PR/merge. Último commit de seguimiento aún a cargo del padre, sin SHA inventado. Las frases de bloqueo/T5in_progress/preview activo siguientes son HISTÓRICAS, no el estado actual. No se ejecutaron comprobaciones funcionales nuevas para este cierre; fuente intacta ya respaldada por203/15archivos y buildPASS, no suma de históricos.
 
 ### Aceptación dirigida tras restaurar runtime
 
@@ -13,7 +15,7 @@
 
 **Límites vigentes:** no certificación exhaustiva ISO/a11y/roving/matriz de opciones/originales gigantes; glifos de espacios box-like previos no corregidos, sin diagnóstico de fuente. ASSESSmedium/nativeunassessable por untracked/candidate null, sin aprobación nativa; auditoría npm pendiente aceptada. Se conservan los incidentes y fallos históricos, no se presentan como fallos pendientes F1/F2/F3.
 
-Handoff01-hoja-ancha ya IMPLEMENTED por padre con preview4200. Cinco cortes locales cohesivos: diseño e3a80b8, motor3aaa6c7/1174633, UI7a2b2b6 y corrección9d368fe; UI912adiciones+83correctivas sin comprimir/borrar pruebas para400. Base feature29eff98;18commits/11765líneas frente a origin/main incluyen funcionalidades anteriores cerradas, no el candidato actual. T5 sigue in_progress: faltan comprobación estructural documental, parada SOLO preview propio4201job4 y commit documental del padre; API8080job2/DB55432 y DEV4200job3 activos. Ninguna parada/commit documental aún acreditados, sin PR/push/merge. Esta actualización solo documenta evidencia del padre; no ejecuta pruebas ni servicios.
+**HISTÓRICO — estado L13 anterior al cierre L14:** Handoff01-hoja-ancha ya IMPLEMENTED por padre con preview4200. Cinco cortes locales cohesivos: diseño e3a80b8, motor3aaa6c7/1174633, UI7a2b2b6 y corrección9d368fe; UI912adiciones+83correctivas sin comprimir/borrar pruebas para400. Base feature29eff98;18commits/11765líneas frente a origin/main incluyen funcionalidades anteriores cerradas, no el candidato actual. T5 sigue in_progress: faltan comprobación estructural documental, parada SOLO preview propio4201job4 y commit documental del padre; API8080job2/DB55432 y DEV4200job3 activos. Ninguna parada/commit documental aún acreditados, sin PR/push/merge. Esta actualización solo documenta evidencia del padre; no ejecuta pruebas ni servicios.
 
 ### Historial — recuperación T4, pendiente entonces de runtime humano
 
@@ -26,7 +28,7 @@ Registro: [normalization-live-preview.md](odd/tasks/normalization-live-preview.m
 
 **T4 BLOCKED, decisión humana única:** restaurar manualmente DB propia55432+API8080 con configuración anterior conocida, O proporcionar los parámetros FICTICIOS seguros conocidos. No compartir credenciales reales, leer env protegido ni sustituir la prueba final por mocks. T1/T2/T3done intactos; T5pending por prerrequisitoT4. Tras runtime disponible: preview propio4201/envDir vacío, navegador dirigido SOLO F1/F2/F3 y overflow móvil, luego handoff/docs/commit local del padre. Sin nuevas suites/sondas/revisiones generales; sin handoff implemented, commit/push ni feature cerrada.
 
-### Actualización posterior — runtime de normalización restaurado (L12)
+### Historial — runtime de normalización restaurado (L12)
 
 Pedido literal: «Levantalos con los paramentros anteriores.» Según evidencia del padre, DB sintética propia existente55432/postgres17-alpine y volumen anónimo conservados; API8080parentjob2 desde JAR copiado SHA256 `9dfaf3dbd4520e9c050b2d21119f134c94c52728c224ddff4cc7747908282084`, DEV4200job3 y preview productivo propio4201job4/envDir VACÍO arrancaron correctamente. GET públicos job5: configuración/catálogoHTTP200 en8080/4200/4201; configuración5contextos byteidéntica a aceptación previa (`.browser/normalization-live-preview/runtime-resume/health.json`).
 
