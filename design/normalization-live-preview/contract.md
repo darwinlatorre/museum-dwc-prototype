@@ -128,12 +128,12 @@ Siempre sobre la copia normalizada actual, sin eliminar ni fusionar. Filas igual
 
 Metadata distingue grupos y filas afectadas por criterio; no sumar como si fueran filas únicas. Desactivado = comprobación desactivada, no "0 duplicados encontrados". Columna ID ausente = ayuda "Sin occurrenceID mapeado; se comprobaron las filas completas". sourceRows incluye todas las filas físicas de cada grupo, incluso fuera de página. Se puede mostrar lista paginada en UI sin repetir cálculo. Pertenencia completa permanece en worker; ready publica grupos/memberships necesarios, como máximo dos membresías por fila. No incluir values biológicos adicionales en grupos ni otra copia del dataset.
 
-## Contraste visual y accesibilidad a implementar
+## Contrato visual y accesibilidad
 
 - Paginación 10/25/50/100; todas las filas alcanzables, sin insertar 50.000 filas en DOM. Índices sourceRow/columnIndex nunca dependen de orden visible.
-- Campo DwC principal + encabezado original siempre, incluso cuando coinciden. Original físico anclado a izquierda; encabezados sticky en scroll interno.
+- Campo DwC principal; mostrar encabezado original secundario cuando difiera para evitar texto duplicado. Índice físico y nombre original siguen consultables siempre. Fila física anclada a izquierda; encabezados sticky en scroll interno.
 - Cambios con nombre de regla, borde/superficie y conteo, nunca solo color. Antes/después exactos como texto; visualizadores ␠/⇥/↵ y ∅ no alteran Dataset ni portapapeles/datos almacenados.
-- Producción: un original accesible por foco y activación/tap; hover también. Cierre con Escape y botón devuelve foco sin reabrirlo. No dialog modal para tooltip simple. Si el detalle contiene controles, usar popover/región no tooltip interactivo, aria-controls/expanded en disparador, una única instancia sin ids duplicados. Cerrar/invalidar detalle al cambiar página/opciones; no dejar original de generación vieja. Para muchas celdas preferir foco roving y entrada/salida tabular documentada; los bocetos usan botones por celda porque contienen solo 10 filas por página, no prescriben miles de paradas Tab.
+- Producción: un original accesible por foco y activación/tap; hover también. Escape cierra también con foco externo y lo conserva allí; desde el interior, Escape o el botón restauran el foco a la celda sin reabrir el original. No dialog modal para tooltip simple. Si el detalle contiene controles, usar popover/región no tooltip interactivo, aria-controls/expanded en disparador, una única instancia sin ids duplicados. Cerrar/invalidar detalle al cambiar página/opciones; no dejar original de generación vieja. Para muchas celdas preferir foco roving y entrada/salida tabular documentada; los bocetos usan botones por celda porque contienen solo 10 filas por página, no prescriben miles de paradas Tab.
 - Native checkbox con role=switch y etiqueta completa, mínimo 44px de zona táctil y foco visible. No sustituir select nativo por control casero. Respetar movimiento reducido; sin animaciones de tabla.
 
 ## Cobertura y límites de esta unidad
