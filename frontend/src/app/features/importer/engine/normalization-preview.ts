@@ -9,6 +9,7 @@ export interface PreviewSnapshot {
   readonly original: Dataset;
   readonly current: Dataset;
   readonly masks: (Uint8Array | undefined)[];
+  readonly changedRowIndices: readonly number[];
   readonly metadata: PreviewMetadata;
   readonly duplicates: DuplicateIndex;
 }
@@ -20,6 +21,7 @@ export function* computeNormalizationPreview(original: Dataset, mapping: Record<
     duplicates: { enabled: false, occurrenceIdColumnIndex: null, equalRows: { groups: [], affectedRows: 0 }, occurrenceIds: { groups: [], affectedRows: 0 } } };
   const occupied = new Uint8Array(columns.length);
   const rows: Dataset['rows'] = [], masks: (Uint8Array | undefined)[] = [];
+  const changedRowIndices: number[] = [];
   let work = 0;
   const physicalRows = new Set<number>();
   for (const row of original.rows) {
@@ -43,7 +45,10 @@ export function* computeNormalizationPreview(original: Dataset, mapping: Record<
       }
       if (++work % 4096 === 0) yield;
     }
-    if (values) metadata.changedRows++;
+    if (values) {
+      changedRowIndices.push(rows.length);
+      metadata.changedRows++;
+    }
     rows.push(values ? { row: row.row, values } : row);
     masks.push(mask);
     // Zero-column datasets still yield by row.
@@ -53,7 +58,7 @@ export function* computeNormalizationPreview(original: Dataset, mapping: Record<
   const current = { headers: original.headers, rows };
   const duplicates = yield* duplicateGroups(current, mapping, !!options.duplicates);
   metadata.duplicates = duplicates.metadata;
-  return { original, current, masks, metadata, duplicates };
+  return { original, current, masks, changedRowIndices, metadata, duplicates };
 }
 
 /** Convenient synchronous API for small pure tests; worker uses the incremental iterator instead. */
@@ -65,9 +70,13 @@ export function buildNormalizationPreview(original: Dataset, mapping: Record<str
 }
 
 export function readPreviewPage(snapshot: PreviewSnapshot, window: PreviewWindow): { window: PreviewWindow; rows: PreviewRow[] } {
-  if (!isPreviewWindow(window) || window.offset > snapshot.metadata.totalRows || window.columnIndices.some(c => c >= snapshot.metadata.totalColumns)) throw new Error('Ventana de vista previa inválida.');
+  if (!isPreviewWindow(window)) throw new Error('Ventana de vista previa inválida.');
+  const changed = window.rowFilter === 'changed';
+  const total = changed ? snapshot.metadata.changedRows : snapshot.metadata.totalRows;
+  if (window.offset > total || window.columnIndices.some(c => c >= snapshot.metadata.totalColumns)) throw new Error('Ventana de vista previa inválida.');
   const rows: PreviewRow[] = [];
-  for (let r = window.offset; r < Math.min(window.offset + window.limit, snapshot.metadata.totalRows); r++) {
+  for (let position = window.offset; position < Math.min(window.offset + window.limit, total); position++) {
+    const r = changed ? snapshot.changedRowIndices[position] : position;
     const sourceRow = snapshot.original.rows[r].row;
     const equalRowGroup = snapshot.duplicates.equalMembership.get(sourceRow);
     const occurrenceIdGroup = snapshot.duplicates.idMembership.get(sourceRow);

@@ -85,6 +85,48 @@ describe('worker persistente por frontera postMessage', () => {
   });
 });
 
+describe('filtro de ventana por postMessage', () => {
+  it('alterna páginas cacheadas, confirma filtro/tokens y no recalcula ni reenvía originales', async () => {
+      const p = await preview();
+      const source = { headers: ['occurrenceID', 'hidden'], rows: Array.from({ length: 36 }, (_, i) => ({ row: i * 5 + 7, values: [i < 2 ? 'dup' : `${i}`, i >= 2 && i % 2 === 0 ? ' x ' : 'x'] })) };
+      const changed = { ...window, rowFilter: 'changed' };
+      await p.send(p.init({ original: source, mapping: {}, options: { ...options, trim: true, duplicates: true }, window: changed }));
+      const ready = p.replies[0];
+      expect(ready).toMatchObject({ kind: 'preview-ready', id: 1, session: 1, generation: 1, window: changed, metadata: { totalRows: 36, changedRows: 17, duplicates: { equalRows: { affectedRows: 2 }, occurrenceIds: { affectedRows: 2 } } } });
+      if (ready.kind !== 'preview-ready') throw new Error('Se esperaba snapshot');
+      expect(ready.rows.map(row => row.sourceRow)).toEqual(Array.from({ length: 10 }, (_, i) => (i * 2 + 2) * 5 + 7));
+      for (const row of source.rows) Object.defineProperty(row, 'values', { get: () => { throw new Error('Paginación no lee celdas ocultas ni recalcula'); } });
+      for (const [offset, rowFilter] of [[10, 'changed'], [25, 'all'], [0, 'changed']] as const) {
+        const view = { ...window, offset, rowFilter, columnIndices: [] };
+        await p.send({ kind: 'preview-page', window: view });
+        const reply = p.replies.at(-1);
+        const positions = Array.from({ length: 36 }, (_, i) => i).filter(i => rowFilter === 'all' || (i >= 2 && i % 2 === 0)).slice(offset, offset + 10);
+        expect(reply).toEqual({ kind: 'preview-page', id: p.replies.length, session: 1, generation: 1, window: view, rows: positions.map(i => ({ sourceRow: i * 5 + 7, cells: [] })) });
+      }
+      expect(p.replies.filter(r => r.kind === 'preview-ready')).toHaveLength(1);
+      expect(p.replies.every(r => !('original' in r) && !('current' in r) && !('changedRowIndices' in r))).toBe(true);
+      expect(Object.keys(ready).sort()).toEqual(['generation', 'id', 'kind', 'metadata', 'rows', 'session', 'window']);
+  });
+  it('rechaza filtros/bordes inválidos sin consumir generación ni perder snapshot', async () => {
+    const p = await preview();
+    await p.send(p.init({ options: { ...options, trim: true }, window: { ...window, rowFilter: 'changed' } }));
+    for (const payload of [
+      { kind: 'preview-update', options, window: { ...window, rowFilter: 'invalid' } },
+      { kind: 'preview-page', window: { ...window, rowFilter: null } },
+      { kind: 'preview-page', window: { ...window, rowFilter: 'changed', offset: 2 } },
+    ]) {
+      await p.send(payload, 1, payload.kind === 'preview-update' ? 2 : 1);
+      expect(p.replies.at(-1)).toEqual({ kind: 'preview-error', id: p.replies.length, session: 1, generation: payload.kind === 'preview-update' ? 2 : 1, message: 'Ventana de vista previa inválida.' });
+    }
+    await p.send({ kind: 'preview-page', window: { ...window, rowFilter: 'changed' } });
+    expect(p.replies.at(-1)).toMatchObject({ kind: 'preview-page', generation: 1, rows: [{ sourceRow: 4 }] });
+    await p.send({ kind: 'preview-update', options, window: { ...window, rowFilter: 'changed' } }, 1, 2);
+    expect(p.replies.at(-1)).toMatchObject({ kind: 'preview-ready', generation: 2, metadata: { changedRows: 0 }, rows: [] });
+    await p.send({ kind: 'preview-page', window }, 1, 2);
+    expect(p.replies.at(-1)).toMatchObject({ kind: 'preview-page', window, rows: [{ sourceRow: 4 }, { sourceRow: 9 }, { sourceRow: 20 }] });
+  });
+});
+
 describe('analysis worker conserva protocolo y añade avisos al aplicar', () => {
   async function analyze(duplicates: boolean, count = 3) {
     let listener: (event: MessageEvent) => Promise<void>;

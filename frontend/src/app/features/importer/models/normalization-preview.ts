@@ -1,7 +1,7 @@
 import type { Dataset } from './dataset';
 import type { Normalization, NormalizationKind } from './normalization';
 export interface PreviewToken { id: number; session: number; generation: number }
-export interface PreviewWindow { offset: number; limit: 10 | 25 | 50 | 100; columnIndices: number[] }
+export interface PreviewWindow { offset: number; limit: 10 | 25 | 50 | 100; columnIndices: number[]; rowFilter?: 'all' | 'changed' }
 export type PreviewRequest = PreviewToken & (
   | { kind: 'preview-init'; original: Dataset; mapping: Record<string, string>; options: Normalization; window: PreviewWindow }
   | { kind: 'preview-update'; options: Normalization; window: PreviewWindow }
@@ -36,6 +36,7 @@ export function isPreviewToken(value: unknown): value is PreviewToken {
 }
 export function isPreviewWindow(value: unknown): value is PreviewWindow {
   return object(value) && count(value['offset']) && [10, 25, 50, 100].some(limit => limit === value['limit']) &&
+    (value['rowFilter'] === undefined || value['rowFilter'] === 'all' || value['rowFilter'] === 'changed') &&
     Array.isArray(value['columnIndices']) && value['columnIndices'].length <= 50 && value['columnIndices'].every(count) && new Set(value['columnIndices']).size === value['columnIndices'].length;
 }
 function groups(value: unknown): boolean {

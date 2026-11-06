@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalize } from './normalizer';
 import { buildNormalizationPreview, readPreviewPage } from './normalization-preview';
-import { isPreviewResponse } from '../models/normalization-preview';
+import { isPreviewResponse, type PreviewWindow } from '../models/normalization-preview';
 import { validate } from './validator';
 import { missingCells } from './required-fields';
 import { configurationFixture } from '../../../testing/validation-fixture';
@@ -127,6 +127,76 @@ describe('preview completa, compacta y duplicados independientes', () => {
     const reply = { id: 1, session: 1, generation: 1, kind: 'preview-ready', metadata: snapshot.metadata, ...readPreviewPage(snapshot, page) };
     expect(isPreviewResponse(reply)).toBe(true);
     for (const value of [null, {}, { ...reply, id: -1 }, { ...reply, rows: [{}] }, { ...reply, metadata: {} }, { ...reply, window: { ...page, limit: 101 } }]) expect(isPreviewResponse(value)).toBe(false);
+  });
+});
+
+describe('ventanas de filas cambiadas desde snapshot', () => {
+  // Intersection keeps the RED behavioral even before the optional property exists.
+  const changed: PreviewWindow & { rowFilter: 'changed' } = { ...page, limit: 10, rowFilter: 'changed' };
+  it('pagina cambios dispersos con identidad física y última página parcial', () => {
+    const original = data(['x'], Array.from({ length: 70 }, (_, i) => [i % 3 === 1 ? ` ${i} ` : `${i}`]));
+    const snapshot = buildNormalizationPreview(original, {}, { ...off, trim: true });
+    const expected = original.rows.filter((_, i) => i % 3 === 1).map(row => row.row);
+    expect(snapshot.metadata.changedRows).toBe(23);
+    for (const offset of [0, 10, 20]) {
+      const result = readPreviewPage(snapshot, { ...changed, offset });
+      expect(result.window).toEqual({ ...changed, offset });
+      expect(result.rows.map(row => row.sourceRow)).toEqual(expected.slice(offset, offset + 10));
+      expect(result.rows.every(row => row.cells[0].before !== row.cells[0].after)).toBe(true);
+    }
+    expect(readPreviewPage(snapshot, { ...changed, offset: 23 }).rows).toEqual([]);
+    expect(() => readPreviewPage(snapshot, { ...changed, offset: 24 })).toThrow('Ventana de vista previa inválida.');
+  });
+  it('incluye cambios ocultos/fuera de 50 columnas sin reescanear otras filas', () => {
+    const original = data(Array.from({ length: 60 }, (_, c) => `c${c}`), Array.from({ length: 30 }, (_, r) => Array.from({ length: 60 }, (_, c) => c === 59 && r === 29 ? ' x ' : 'x')));
+    const snapshot = buildNormalizationPreview(original, {}, { ...off, trim: true });
+    Object.defineProperty(original.rows[0], 'values', { get: () => { throw new Error('No reescanear'); } });
+    expect(readPreviewPage(snapshot, changed).rows).toEqual([{ sourceRow: 89, cells: [{ columnIndex: 0, before: 'x', after: 'x', kinds: [] }] }]);
+    expect(readPreviewPage(snapshot, { ...changed, columnIndices: [] }).rows).toEqual([{ sourceRow: 89, cells: [] }]);
+    expect(readPreviewPage(snapshot, { ...changed, columnIndices: [59] }).rows[0].cells[0]).toEqual({ columnIndex: 59, before: ' x ', after: 'x', kinds: ['trim'] });
+  });
+  it('excluye duplicados intactos y conserva grupos globales al alternar vistas', () => {
+    const snapshot = buildNormalizationPreview(data(['occurrenceID', 'x'], [['same', 'x'], ['same', 'x'], [' other ', 'y']]), {}, { ...off, trim: true, duplicates: true });
+    const metadata = structuredClone(snapshot.metadata);
+    expect(readPreviewPage(snapshot, changed).rows.map(row => row.sourceRow)).toEqual([8]);
+    const all = readPreviewPage(snapshot, { ...page, rowFilter: 'all' } as PreviewWindow);
+    expect(all.rows.map(row => row.sourceRow)).toEqual([2, 5, 8]);
+    expect(all.rows[0].equalRowGroup).toBe(metadata.duplicates.equalRows.groups[0].groupId);
+    expect(all.rows[1].occurrenceIdGroup).toBe(metadata.duplicates.occurrenceIds.groups[0].groupId);
+    expect(metadata.duplicates.equalRows.groups.map(g => g.sourceRows)).toEqual([[2, 5]]);
+    expect(metadata.duplicates.occurrenceIds.groups.map(g => g.sourceRows)).toEqual([[2, 5]]);
+    expect(snapshot.metadata).toEqual(metadata);
+  });
+  it('distingue cero cambios, dataset vacío y filas sin columnas fuente', () => {
+    for (const original of [data(['x'], [['x'], ['x']]), data(['x'], []), data([], [[], []])]) {
+      const snapshot = buildNormalizationPreview(original, {}, { ...off, trim: true });
+      expect(readPreviewPage(snapshot, { ...changed, columnIndices: [] }).rows).toEqual([]);
+      expect(readPreviewPage(snapshot, { ...page, columnIndices: [] }).rows).toEqual(original.rows.map(row => ({ sourceRow: row.row, cells: [] })));
+      expect(snapshot.metadata.changedRows).toBe(0);
+    }
+  });
+  it('rechaza enum inválido en lector y guard sin alterar metadata ni páginas previas', () => {
+    const snapshot = buildNormalizationPreview(data(['x'], [[' x '], ['y']]), {}, { ...off, trim: true });
+    const before = readPreviewPage(snapshot, page), metadata = structuredClone(snapshot.metadata);
+    for (const rowFilter of ['invalid', null, false, 0]) {
+      const window = { ...page, rowFilter } as unknown as PreviewWindow;
+      expect(() => readPreviewPage(snapshot, window)).toThrow('Ventana de vista previa inválida.');
+      expect(isPreviewResponse({ id: 1, session: 1, generation: 1, kind: 'preview-page', ...before, window })).toBe(false);
+    }
+    expect(snapshot.metadata).toEqual(metadata);
+    expect(readPreviewPage(snapshot, page)).toEqual(before);
+    expect(isPreviewResponse({ id: 1, session: 1, generation: 1, kind: 'preview-page', ...readPreviewPage(snapshot, changed) })).toBe(true);
+  });
+  it('preserva ventana omitida/all, borde exacto, errores y celdas literales anteriores', () => {
+    const snapshot = buildNormalizationPreview(data(['x'], [[' x '], ['y']]), {}, off);
+    const legacy = readPreviewPage(snapshot, page);
+    expect(legacy).toEqual({ window: page, rows: [{ sourceRow: 2, cells: [{ columnIndex: 0, before: ' x ', after: ' x ', kinds: [] }] }, { sourceRow: 5, cells: [{ columnIndex: 0, before: 'y', after: 'y', kinds: [] }] }] });
+    expect(readPreviewPage(snapshot, { ...page, rowFilter: 'all' } as PreviewWindow).rows).toEqual(legacy.rows);
+    for (const rowFilter of [undefined, 'all']) {
+      const window = { ...page, rowFilter } as PreviewWindow;
+      expect(readPreviewPage(snapshot, { ...window, offset: 2 }).rows).toEqual([]);
+      expect(() => readPreviewPage(snapshot, { ...window, offset: 3 })).toThrow('Ventana de vista previa inválida.');
+    }
   });
 });
 
