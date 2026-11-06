@@ -1,9 +1,9 @@
 {
   "title": "Normalización interactiva · Copia completa de registros",
-  "brief": "Tres propuestas estáticas con datos sintéticos y reglas ilustrativas. Hoja navegable completa, originales accesibles, consentimiento reversible y dos avisos de duplicados. Contrato técnico congelado por el padre para T2/T3; producción todavía pendiente. Dirección elegida01;02/03 son alternativas.",
-  "feature": "odd/tasks/normalization-live-preview.md",
+  "brief": "Iteración de la dirección elegida 01 para S1–S5 de normalización compacta: seis reglas fijas, Con cambios por defecto, Todos accesible y ocultación visual de columnas vacías. 36 registros sintéticos, originales consultables y avisos globales de duplicados. Contrato vigente para esta evolución: simplification-contract.md; contract.md es histórico. 02/03 se conservan como alternativas históricas, sin cambios. Solo diseño; no acredita implementación ni validación productiva de esta evolución.",
+  "feature": "odd/tasks/normalization-simplification.md",
   "artboards": [
-    { "file": "01-hoja-ancha.html", "title": "Hoja ancha · recomendada", "tradeoff": "Maximiza columnas visibles con controles compactos; el detalle de reglas es desplegable y el original se consulta en un panel temporal.", "width": 1440, "height": 1000 },
+    { "file": "01-hoja-ancha.html", "title": "Hoja ancha · recomendada", "tradeoff": "Prioriza revisar filas modificadas con barra compacta; Todos sigue visible, formatos y reglas requieren desplegarse y el original usa un panel temporal.", "width": 1440, "height": 1000 },
     { "file": "02-controles-laterales.html", "title": "Mesa con controles laterales", "tradeoff": "Explicaciones junto a cada grupo de controles; sacrifica 268px de hoja y exige más desplazamiento horizontal.", "width": 1440, "height": 1000 },
     { "file": "03-inspector-de-celda.html", "title": "Hoja con inspector de celda", "tradeoff": "Comparación original/trabajo estable para valores largos; reserva 300px incluso sin selección y requiere apilado móvil.", "width": 1440, "height": 1000 }
   ]
