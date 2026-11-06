@@ -1,5 +1,15 @@
 # Evidencia de verificación del MVP
 
+## Actualización del backend a Java 27
+
+- Maven compila con `release 27`; Spring Boot **4.1.2**, Lombok **1.18.48** y contenedor `eclipse-temurin:27-jre-resolute` (Ubuntu Resolute). Se conservan el usuario no privilegiado y el JAR copiado dentro de la imagen.
+- Primer intento `bash ./mvnw package -Dmaven.test.skip=true`: **FAIL**, inicialización de Lombok (`com.sun.tools.javac.tree.EndPosTable`) con las dependencias anteriores. Se corrigió Lombok y se actualizó Spring Boot al parche compatible con Java 27.
+- En copia aislada bajo `.browser/java27/build/backend/`, `bash ./mvnw package -Dmaven.test.skip=true`: **PASS**; `docker build -t universidad-java27-check:local .`: **PASS**. No se añadieron ni ejecutaron tests; solo se alineó la expectativa existente de la ayuda de `start.sh`.
+- Arranque real de la imagen con PostgreSQL 17 Alpine desechable en tmpfs, red propia, puerto HTTP aleatorio en localhost y sincronización programada deshabilitada: **PASS**. `GET /api/catalog/status` y `GET /api/validation-configuration`: **HTTP 200**; `bash /app/docker-healthcheck.sh`: **exit 0**. Runtime **Temurin 27+35** y usuario **museum, uid 999** comprobados dentro del contenedor.
+- Contenedores y red propios eliminados al finalizar; sin acceder a dotenv, volúmenes ni servicios existentes. Logs y respuestas locales: `.browser/java27/`.
+- La evaluación nativa `assess` quedó **unassessable** por exigir declaración explícita de archivos sin seguimiento; no hubo aprobación nativa ni se accedió a `.env.example`. La verificación independiente requerida por el cambio de entorno sí se ejecutó.
+- Verificación independiente estructural: sin bloqueadores; `git diff --check` y `bash -n start.sh` aprobados. El padre contrastó sintaxis de ambos scripts y `bash start.sh --help`. No se ejecutaron suites backend/frontend, navegador ni auditorías; esta evidencia acredita compilación y arranque, no compatibilidad exhaustiva de todos los endpoints.
+
 ## Vigente: reglas fijas y revisión compacta — CLOSED, T1–T5 done
 
 Especificación: [normalization-simplification.md](odd/tasks/normalization-simplification.md), S1–S5 y L10–L11; contrato actual: [simplification-contract.md](design/normalization-live-preview/simplification-contract.md). **Las cinco Specs están aceptadas con evidencia acotada combinada**, no con certificación exhaustiva. Esta actualización documental registra observaciones suministradas y contrastadas por el padre; no ejecuta pruebas ni navegador nuevos. La sección de normalización interactiva siguiente es histórica, no prescribe switches opt-in para la UI vigente.

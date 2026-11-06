@@ -10,7 +10,7 @@ Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Pe
 
 ## Ejecución local
 
-Requisitos del host: Bash, Node.js **24**, npm, Java **21** y Docker con Compose que admita `up --wait --wait-timeout`. Se incluye Maven Wrapper. La instalación de dependencias, el wrapper y las imágenes requieren acceso a Internet; no se agregan plugins ni se cambian versiones.
+Requisitos del host: Bash, Node.js **24**, npm, Java **27** y Docker con Compose que admita `up --wait --wait-timeout`. Se incluye Maven Wrapper. La instalación de dependencias, el wrapper y las imágenes requieren acceso a Internet; no se agregan plugins ni se cambian versiones.
 
 1. Gestionar manualmente un único `.env` en la raíz. La plantilla `.env.example` es responsabilidad del humano: la excepción en `.gitignore` permite versionarla después de revisarla y sanitizarla; esto **no implica que ya esté publicada**. Completar `DB_NAME`, `DB_USER` y `DB_PASSWORD` con valores no vacíos. Las otras variables son `DB_HOST=localhost`, `DB_PORT=5432` y `SERVER_PORT=8080`. No guardar credenciales reales en Git ni compartir la salida de `docker compose config` sin `--quiet`.
 2. Ejecutar desde la raíz (o invocar su ruta absoluta desde cualquier directorio):

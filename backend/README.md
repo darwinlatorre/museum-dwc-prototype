@@ -1,6 +1,6 @@
 # API de fuentes de registros biológicos del museo
 
-Spring Boot **4.1.1**, Java **21**, Spring Data JPA, PostgreSQL y Flyway. Administra únicamente la configuración global de las fuentes de registros biológicos y el catálogo TDWG. El análisis CSV/XLSX y los registros biológicos permanecen en el navegador. Es un MVP local sin autenticación, no un servicio para Internet.
+Spring Boot **4.1.2**, Java **27**, Spring Data JPA, PostgreSQL y Flyway. Administra únicamente la configuración global de las fuentes de registros biológicos y el catálogo TDWG. El análisis CSV/XLSX y los registros biológicos permanecen en el navegador. Es un MVP local sin autenticación, no un servicio para Internet.
 
 ## Ejecución local
 
@@ -85,7 +85,7 @@ PUT ejecuta **lock → revisión → merge legado → validación → saveAndFlu
 
 `recordsources` es el propietario Java de «Fuentes de registros biológicos», alineado con `features/record-sources` en Angular. El cambio de nombre organiza el código; no introduce CRUD de fuentes ni cambia `/api/validation-configuration`, los cinco valores de contexto, revisión, entidades, tablas, migraciones o semillas. S4 agrega únicamente `optionalFields` al contrato JSON, con compatibilidad de lectura y PUT legados descrita arriba. Los nombres `Configuration*` siguen describiendo los casos de uso de configuración; «Contexto» permanece en el análisis.
 
-Lombok (versión de Spring Boot), MapStruct **1.6.3** y binding **0.2.0** se ejecutan durante compilación y pruebas. Solo `@Builder` y `@RequiredArgsConstructor` source-only están permitidos en el núcleo. Lombok y los procesadores quedan fuera del JAR ejecutable. Los mappers usan `BackendMapperConfig` con destinos no mapeados como error; no son componentes Spring implícitos. Los codecs Jackson llegan a persistencia mediante `@Context`; `@MappingTarget` ignora identidad. Las entidades tienen getters JavaBean, sin `@Data`, igualdad, hash o `toString` automáticos. Los DTO de entrada/salida viven en `dto/req` y `dto/res`; JSON estricto y Bean Validation quedan en adaptadores.
+Lombok **1.18.48** (compatible con Java 27), MapStruct **1.6.3** y binding **0.2.0** se ejecutan durante compilación y pruebas. Solo `@Builder` y `@RequiredArgsConstructor` source-only están permitidos en el núcleo. Lombok y los procesadores quedan fuera del JAR ejecutable. Los mappers usan `BackendMapperConfig` con destinos no mapeados como error; no son componentes Spring implícitos. Los codecs Jackson llegan a persistencia mediante `@Context`; `@MappingTarget` ignora identidad. Las entidades tienen getters JavaBean, sin `@Data`, igualdad, hash o `toString` automáticos. Los DTO de entrada/salida viven en `dto/req` y `dto/res`; JSON estricto y Bean Validation quedan en adaptadores.
 
 ## Sincronización TDWG y última versión válida
 

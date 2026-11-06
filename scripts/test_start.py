@@ -11,7 +11,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 HELP = ("Uso: ./start.sh [--help]\n"
         "Valida el .env raíz con Compose, compila Angular y Spring y despliega el MVP local.\n"
-        "Requiere Bash, Node.js 24, npm, Java 21 y Docker Compose con --wait.\n"
+        "Requiere Bash, Node.js 24, npm, Java 27 y Docker Compose con --wait.\n"
         "No borra volúmenes; ante un fallo se detiene sin anunciar éxito.\n")
 SUCCESS = "MVP disponible en http://localhost:4200 (servicios saludables).\n"
 

@@ -5,7 +5,7 @@ if (( $# == 1 )) && [[ $1 == --help ]]; then
     printf '%s\n' \
         'Uso: ./start.sh [--help]' \
         'Valida el .env raíz con Compose, compila Angular y Spring y despliega el MVP local.' \
-        'Requiere Bash, Node.js 24, npm, Java 21 y Docker Compose con --wait.' \
+        'Requiere Bash, Node.js 24, npm, Java 27 y Docker Compose con --wait.' \
         'No borra volúmenes; ante un fallo se detiene sin anunciar éxito.'
     exit 0
 fi

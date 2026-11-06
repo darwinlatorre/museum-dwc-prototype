@@ -7,12 +7,12 @@ Para iniciar el módulo y conocer sus contratos, consultar primero [README.md](R
 Los enlaces llevan a documentación externa, que puede estar disponible en el idioma original de cada proyecto.
 
 - [Documentación de Apache Maven](https://maven.apache.org/guides/index.html).
-- [Plugin Maven de Spring Boot](https://docs.spring.io/spring-boot/4.1.1/maven-plugin).
-- [Creación de una imagen OCI](https://docs.spring.io/spring-boot/4.1.1/maven-plugin/build-image.html).
-- [Spring Web](https://docs.spring.io/spring-boot/4.1.1/reference/web/servlet.html).
-- [Acceso a datos con Spring Data JPA](https://docs.spring.io/spring-boot/4.1.1/reference/data/sql.html#data.sql.jpa-and-spring-data).
-- [Migraciones Flyway](https://docs.spring.io/spring-boot/4.1.1/how-to/data-initialization.html#howto.data-initialization.migration-tool.flyway).
-- [Validación](https://docs.spring.io/spring-boot/4.1.1/reference/io/validation.html).
+- [Plugin Maven de Spring Boot](https://docs.spring.io/spring-boot/4.1.2/maven-plugin).
+- [Creación de una imagen OCI](https://docs.spring.io/spring-boot/4.1.2/maven-plugin/build-image.html).
+- [Spring Web](https://docs.spring.io/spring-boot/4.1.2/reference/web/servlet.html).
+- [Acceso a datos con Spring Data JPA](https://docs.spring.io/spring-boot/4.1.2/reference/data/sql.html#data.sql.jpa-and-spring-data).
+- [Migraciones Flyway](https://docs.spring.io/spring-boot/4.1.2/how-to/data-initialization.html#howto.data-initialization.migration-tool.flyway).
+- [Validación](https://docs.spring.io/spring-boot/4.1.2/reference/io/validation.html).
 
 ## Guías
 

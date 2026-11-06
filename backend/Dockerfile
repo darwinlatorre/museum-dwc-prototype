@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:27-jre-resolute
 WORKDIR /app
 RUN groupadd --system museum && useradd --system --gid museum --no-create-home museum
 COPY --chown=museum:museum target/backend-0.0.1-SNAPSHOT.jar /app/backend.jar
