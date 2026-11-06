@@ -47,18 +47,19 @@ No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Las imág
 2. En **Contexto**, elegir una sola opción: colección biológica, permiso de recolección o acceso a recursos genéticos, eventos de muestreo, marinos u otros. Separar archivos cuyos registros necesiten contextos distintos. No hay selección de perfiles.
 3. Confirmar el mapeo de columnas: primero las que contienen datos y después las totalmente vacías bajo «Campos sin datos». Las sugerencias Darwin Core no se aplican automáticamente. Se permite llegar al mapeo aunque falten encabezados, para poder reconocer equivalencias antes del diagnóstico. Pulsar **Validar localmente**.
 4. Revisar el **Diagnóstico**: resumen compacto de campos obligatorios sin datos. Abrir un conteo muestra filas originales y valores; campo y columna de origen se indican una sola vez. **Ver todas las incidencias** permite consultar el detalle completo filtrable, sin añadir otro detalle simultáneo. Las descargas incluyen todo el diagnóstico y la revisión de configuración utilizada. La ausencia de una columna se informa como tal, sin inventar celdas; las filas conservan sus números originales.
-5. En **Normalizar**, recorrer todos los registros mediante páginas de 10/25/50/100 filas y ventanas de hasta 50 columnas:
-   - Los interruptores actualizan la copia en tiempo real; con todos apagados se recuperan los originales. El detalle antes/después se abre al pasar el ratón, enfocar o tocar; Escape lo cierra.
-   - Las fechas usan modo seguro salvo elección explícita DMY/MDY; interpretar coma decimal también requiere elección explícita. Los identificadores no se convierten por apariencia numérica.
-   - Duplicados avisa por filas completas iguales y por `occurrenceID` no vacío repetido, sin eliminar registros. Ocultar columnas vacías solo cambia la vista.
-   - Pulsar **Aplicar normalización y validar** actualiza explícitamente el diagnóstico desde la copia; mover interruptores no lo hace. El primer diagnóstico usa los originales y el archivo nunca cambia. [Reglas y límites de normalización](frontend/NORMALIZATION.md).
+5. En **Normalizar**, revisar la copia local con **Con cambios** por defecto; **Todos** permite recorrer el conjunto completo en páginas de 10/25/50/100 filas y ventanas de hasta 50 columnas:
+   - Seis reglas siempre activas, sin interruptores: recortar espacios extremos, tratar NULL/N/A como vacíos sin distinguir mayúsculas, fechas Darwin Core, coordenadas decimales, valores numéricos Darwin Core y comprobar duplicados. Los originales y el archivo no cambian.
+   - **Formatos y reglas** empieza plegado. Fechas y decimales usan modo seguro; DMY/MDY y coma decimal requieren elección explícita. Los identificadores conservan ceros y mayúsculas, sin conversión por apariencia numérica.
+   - Duplicados avisa sobre todos los registros por filas completas iguales y por `occurrenceID` no vacío repetido, sin borrar ni convertir esos avisos en cambios de valor. **Ocultar columnas sin datos** y los filtros solo cambian la vista; una fila modificada en una columna oculta sigue en Con cambios.
+   - El detalle antes/después se abre al pasar el ratón, enfocar o tocar; Escape lo cierra. La tabla muestra valores literales; las marcas de espacios quedan en el detalle del original.
+   - **Aplicar normalización y validar** sigue siendo explícito y permanece en Normalizar. Cambiar formatos o vistas no valida automáticamente; el primer diagnóstico usa originales. [Reglas y límites de normalización](frontend/NORMALIZATION.md).
 6. **Finalizar** queda vacío por ahora; no guarda ni envía registros.
 
 El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de configuración y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
 
 ### Idioma y conservación de datos
 
-La interfaz, las ayudas y los diagnósticos del sistema se presentan en español. Los nombres oficiales Darwin Core, las URI, los identificadores técnicos, las claves y los valores de contratos de API permanecen sin cambios. Los datos de los archivos y los textos escritos por usuarios no se traducen ni modifican automáticamente. Las definiciones oficiales del catálogo se conservan como citas de la fuente original, con su idioma indicado. El retiro definitivo de perfiles se aplica mediante la migración autorizada descrita abajo; no modifica los archivos originales ni traduce contenido del usuario.
+La interfaz, las ayudas y los diagnósticos del sistema se presentan en español. Los nombres oficiales Darwin Core, las URI, los identificadores técnicos, las claves y los valores de contratos de API permanecen sin cambios. Los datos de los archivos y los textos escritos por usuarios no se traducen. Normalizar prepara una copia con las seis reglas fijas descritas arriba; solo Aplicar actualiza el diagnóstico, sin modificar los originales. Las definiciones oficiales del catálogo se conservan como citas de la fuente original, con su idioma indicado. El retiro definitivo de perfiles se aplica mediante la migración autorizada descrita abajo; no modifica los archivos originales ni traduce contenido del usuario.
 
 ## Configuración global de validación
 
@@ -125,7 +126,7 @@ Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base
 ```text
 Aplicación de gestión Angular / PrimeNG
  ├─ TanStack Query → metadatos REST de configuración global y catálogo
- └─ archivo local → Web Worker → parser → normalizador optativo → motor de validación
+ └─ archivo local → Web Worker → parser → originales o copia normalizada explícitamente aplicada → motor de validación
                                                           └─ diagnóstico → descarga local
 Spring Boot REST → configuración global transaccional → repositorio JPA → PostgreSQL
                                     revisión + bloqueo + migraciones aditivas

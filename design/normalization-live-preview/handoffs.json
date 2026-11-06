@@ -5,11 +5,11 @@
     "01-hoja-ancha.html": {
       "status": "implemented",
       "queued": false,
-      "sentAt": "2026-10-29T20:37:47.971Z",
-      "startedAt": "2026-10-29T21:27:27.349Z",
-      "implementedAt": "2026-10-31T21:59:27.737Z",
-      "feature": "odd/tasks/normalization-live-preview.md",
-      "note": "Implementación y aceptación acotada completas: hoja52registros/500columnas,formatosreversibles/ambosduplicados;203tests/build,independienteUI,desktop1920/mobile390. F1Escape/F2reduce/F344pxcorregidos9d368fe yrecheckreal+contrastepadre. Sin certificaciónISO/accesibilidadexhaustiva ni aprobaciónnativa; límitesVERIFICATION. Desarrollo4200activo.",
+      "sentAt": "2026-11-06T16:33:04.946Z",
+      "startedAt": "2026-11-06T16:33:10.947Z",
+      "implementedAt": "2026-11-06T17:27:22.928Z",
+      "feature": "odd/tasks/normalization-simplification.md",
+      "note": "Nueva evolución S1–S5 aceptada:6reglasfijas/no controles,Con cambiosdefault/Todos/hideEmpty/UIcompacta.225tests/build/licencias+independiente178/OWN5/threadreal,UIreal120filas4→6→7/zero12/500[]/dupsglobales/42exportsfiltro0/44px/móvil390. Padrecontraste2PNG/JSONCSV/HAR31+21sesionesseparadas. C1fc4/C2143/C3b787/C4021locales;noPR/nativa/ISOa11yexhaustiva.",
       "previewUrl": "http://127.0.0.1:4200/"
     }
   }

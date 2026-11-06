@@ -1,6 +1,44 @@
 # Evidencia de verificación del MVP
 
-## Normalización interactiva — CLOSED, T1–T5 completadas
+## Vigente: reglas fijas y revisión compacta — T4 aceptada; T5 en curso
+
+Especificación: [normalization-simplification.md](odd/tasks/normalization-simplification.md), S1–S5 y L10; contrato actual: [simplification-contract.md](design/normalization-live-preview/simplification-contract.md). **Las cinco Specs están aceptadas con evidencia acotada combinada**, no con certificación exhaustiva. Esta actualización documental registra observaciones suministradas y contrastadas por el padre; no ejecuta pruebas ni navegador nuevos. La sección de normalización interactiva siguiente es histórica, no prescribe switches opt-in para la UI vigente.
+
+### Candidato y comprobaciones automatizadas
+
+Cadena local C1 `fc4f4224b88ebe6ec8e09ff2a695bbcc599bef43` → C2 `143d55985a8677942206c7c5c0da007198447b64` → C3 `b787754d6452bbf921fcc1cdd3d03becd7904431` → C4 `021f9e29404e243c268e84724648423349a26866` → C5 documental pendiente en `feat/normalization-changes-review`. C1–C4: **990 líneas autorales observadas**, no conteo final con C5. Estrategia cacheada `auto-chain` / `stacked-to-main`, destino main registrado LOCAL `17ce991dc8c57ca59a5c6a95ec74c6a539872c0e`. Base `505d60d` y sus veinte commits de funcionalidades previas cerradas quedan fuera de revisión nueva. Su integración o disposición explícita sigue siendo prerrequisito de publicación futura, no autorización de merge ni bloqueo documental. Sin push/PR/merge ni SHA C5 inventado.
+
+- GREEN públicos por corte: C2 **107/4 archivos**, C3 **59/3**, C4 **71/3**. No sumarlos como un total nuevo. Los RED, intentos técnicos y correcciones de harness están conservados en L6–L8 y `.browser/normalization-simplification/{engine,fixed-rules,compact-review}/`.
+- Independiente integrado `mw578dwh`: **178/7 existentes PASS**, **5 OWN PASS**, puente **worker_threads real PASS**; fuente C4 sin cambios. Evidencia auténtica `.browser/normalization-simplification/independent/result.md`, incluidos seis JSON OWN1–OWN6. Primero hubo 4 OWN PASS/1 FAIL por expectativa de columna [0] frente a ventana de50, y puente exit1 por colisión esbuild sourcefile/salida: corregidos solo los harness antes de PASS, no defectos del producto. Scratch externo no recuperado ni eliminado.
+- Seam completo del padre: **225 pruebas/15 archivos PASS**, checker y build exit0, `3rdpartylicenses.txt` presente. `.browser/normalization-simplification/seam/{results.json,suite.stdout,build.stdout,build.stderr}`. Bundle **649.97 kB / 500.00 kB**, exceso **149.97 kB**, presupuesto intacto. Sin nuevas pruebas backend ni auditoría npm; la auditoría pendiente aceptada no se repitió.
+
+### Navegador real: núcleo y cinco comprobaciones complementarias
+
+QA `mw588jkj` comprobó el núcleo S1–S5 con controles públicos, sin sourcefix: fixture **120 filas/70 columnas**, cambios iniciales4 en físicos **2/22/50/112**; coma explícita6 añade **152/182** y DMY7 añade **222**. Todos conserva120, páginas10/25/50/100 y última20 hasta físico240; IDs `0001`, `1`, `ABC`, `abc` intactos. Seis reglas fijas, único switch de ocultación; formatos/duplicados plegados al entrar. Columna60 oculta no retira fila112 cambiada; columna69 con único dato en fila236 sin cambios permanece visible al calcular vacías sobre TODOS.
+
+Fixture12 sin cambios: Con cambios **0–0 de 0**, ambos avisos globales1grupo/2afectadas por criterio; CTA lleva foco a Todos y permite llegar al físico24. Fixture500: ocultar conserva fila física2 con cero celdas; restaurar devuelve ventana50. Valores planos sin glifos en cada espacio; visualizador solo en detalle del original.
+
+Geometría observada: primera fila a1440×900 top786.22/bottom858.47; a1920 top772.22. Móvil390 sin overflow documental, hoja con scroll interno1838/340, cabecera/fila física sticky. Controles44px, zona hide44×24 y thumb16, desplazamiento checked20; reduced-motion0s. Escape externo/interno, flechas y Tab comprobados. El reporte inicial quedó **PARTIAL por cinco comprobaciones auxiliares NO ejecutadas**, no por defectos de producto ni indisponibilidad. Espera25s con condición errónea «Resumen» tras Aplicar se conserva como incidente de automatización: Aplicar permanece en Normalizar, no timeout ambiental/EAGAIN. Otros incidentes de selectores pertenecen al harness.
+
+Continuación dirigida `mw58prll`: SOLO las cinco pendientes A–E, reporte `qa/remaining/report.json` **completed/PASS**:
+
+1. Filtro de incidencias realmente visible en0; JSON/CSV conservan las **42 incidencias completas**, los seis campos coinciden en cada fila, contexto system/revisión0; dos avisos full y dos ID en físicos12/202.
+2. Clic real Cerrar restaura foco a celda2:9, panel cerrado sin reapertura inmediata.
+3. Thumb normal asentado20 con transición.12s; movimiento reducido contrastado en el recorrido principal.
+4. Ambos botones DOM de navegación de500columnas en viewport:169.44×44 y170.03×44.
+5. Ayuda **Sin occurrenceID** efectivamente visible.
+
+HAR principal **31 GET** y suplementario **21 GET** son sesiones separadas, no una sesión sumada; suplemento además hizo dos GET directos posteriores de metadatos. Configuración/catálogo byteidénticos antes/después y hashes de fuentes intactos; sin POST/PUT, solicitudes biológicas ni errores de consola, ambas sesiones cerradas. HAR describe tráfico emitido; no convierte estados worker0 en éxito HTTP.
+
+Procedencia cruda bajo `.browser/normalization-simplification/e2e/`: fixtures/manifest, `qa/` (informe y HAR principal), `qa/remaining/` (informe, descargas JSON/CSV y HAR suplementario), `qa/parent-contrast.json`. El padre leyó ambos reportes, análisis/F1 y cinco resultados, contrastó los42registros CSV/JSON en todos sus campos y ambos HAR por separado, y abrió dos PNG representativos:1440por defecto y móvil con formatos. Confirmó físicos4/6/7, Todos120/última240 y ausencia de cuerpos POST. No es una repetición propia de cada acción del navegador.
+
+### Límites y cierre pendiente
+
+S1–S5 aceptadas en este alcance; no certificación ISO, accesibilidad exhaustiva, benchmark25millones ni nueva comprobación de cada CLI. ASSESS high/agentEscalation4, nativa no evaluable por untracked/candidate null, sin aprobación nativa, reviewDue ni START ofrecidos; independiente nuevo completado, no equivalente a aprobación nativa. Notas históricas de auditoría, cachés privados y captura accidental externa se conservan intactas abajo; ningún bypass de `.env.example`.
+
+T4 **done**; T5 **in_progress**: quedan comprobación documental del padre, detener SOLO preview propio job5/4201, salud final de desarrollo y commit local C5. DEV job2/4200, API job1/8080 y DB55432 permanecen activos según último reporte; no se acredita limpieza ni salud final todavía. Handoff01 actualizado IMPLEMENTED por el padre con preview4200; alternativas02/03 históricas intactas. No promesa de limpiar scratch/cachés externos.
+
+## Histórico: normalización interactiva — CLOSED, T1–T5 completadas
 
 **Resultado vigente (L14):** feature aceptada y cierre T5 observado por padre: corrección fuente `9d368fe` y aceptación documental `4d0cfe1` (6archivos/+151/-13). Comprobación estructuralexit0 de SOLO los2enlaces Markdown relativos añadidos y handoffIMPLEMENTED; gitdiffcheckexit0. No revisión de todos los enlaces del repositorio. Evidencia `.browser/normalization-live-preview/runtime-resume/documentation-check.json`.
 

@@ -1,5 +1,7 @@
 # Contrato de normalización en vivo — CONGELADO
 
+> **Histórico:** los defaults opt-in y la vista de este contrato fueron sustituidos para la evolución actual por [simplification-contract.md](simplification-contract.md), bajo S1–S5 de [normalization-simplification.md](../../odd/tasks/normalization-simplification.md). Las seis reglas de Normalizar ya no tienen switches; se conserva aquí el registro técnico e histórico, no una instrucción de UI vigente.
+
 **Adoptado por el padre para T2/T3; todavía no implementado.** Deriva del contrato PROPUESTO por el agente T1, con decisiones de integración revisadas. Dirección elegida:01-hoja-ancha.html;02/03 son alternativas. Cubre S1–S8 de `odd/tasks/normalization-live-preview.md`. No cambia API, configuración global, dependencias ni exportaciones. Las tres láminas son ilustraciones locales con 36 registros sintéticos, no motor de producción ni validación TDWG completa.
 
 ## Dirección y decisión visual
