@@ -1,6 +1,6 @@
 # Normalización automática y revisión compacta de cambios
 Seis reglas fijas en Normalizar; filas modificadas por defecto, vista completa opcional y ocultación visual de columnas vacías.
-Rama actual C4/C5 `feat/normalization-changes-review`, base de la evolución `505d60d`; delivery_strategy `auto-chain`, chain_strategy `stacked-to-main`, destino `main`; previsión1000–1300líneas autorales/running990 observadas C1–C4 + C5 documental pendiente (sin total final). Cortes locales coherentes, sin publicación; runner serial `.browser/normalization/vitest.serial.config.mjs`.
+CLOSED: T1–T5 done, S1–S5 aceptadas con alcance acotado. Rama actual `feat/normalization-changes-review`, base de la evolución `505d60d`; delivery_strategy `auto-chain`, chain_strategy `stacked-to-main`, destino `main` LOCAL registrado `17ce991dc8c57ca59a5c6a95ec74c6a539872c0e`. C1–C5:1151líneas autorales observadas antes del último seguimiento documental del padre; C5 `cc3602353b6873ff42dffdd798a26507ca6cec6d`. Cortes locales coherentes, sin publicación; runner serial `.browser/normalization/vitest.serial.config.mjs`.
 
 ## Specs
 
@@ -22,9 +22,11 @@ Comprobar duplicados»
 - **T2 [S2,S3,S4]** — done — implementación C2 y comprobaciones propias/públicas en `143d55985a8677942206c7c5c0da007198447b64`: RED público válido y GREEN107/4archivos,99pruebas anteriores preservadas; arquitectura/diff exit0. Risk:item4; aceptación independiente integrada completada después en T4. Véanse L6/L10.
 - **T3 [S1–S5]** — done — implementación en C3 `b787754d6452bbf921fcc1cdd3d03becd7904431` y C4 `021f9e29404e243c268e84724648423349a26866`, GREEN público final71/3archivos y lectura de estado/template completos por el padre. S1 preservado y S2–S5 implementados; aceptación integrada separada en T4 ya completada. Véanse L8/L10.
 - **T4 [S1–S5]** — done — independiente integrado item4, seam225/15+checker/build y navegador real principal más continuación de cinco pendientes, contrastados por el padre: S1–S5 aceptadas con alcance limitado sobre C4 `021f9e29404e243c268e84724648423349a26866`. Sin sourcefix ni aprobación nativa. Véase L10.
-- **T5 [S1–S5]** — in_progress — documentación raíz/contrato histórico/espejo actualizados y handoff01 IMPLEMENTED por el padre; pendientes su comprobación documental, parada SOLO preview job5/4201, salud final DEV4200/API8080/DB55432 y commit local C5 en la misma rama. No limpieza ni commit final acreditados. Sin push/PR/merge.
+- **T5 [S1–S5]** — done — C5 `cc3602353b6873ff42dffdd798a26507ca6cec6d`, documentación/handoff01 IMPLEMENTED, comprobación de SOLO5enlaces añadidos/diff0 y salud final observados por el padre. SOLO previewjob5 detenido/4201CLOSED; DEVjob2/4200 y APIjob1/8080 GETconfiguración/catálogo200, DB55432OPEN. Último seguimiento documental a cargo del padre, sin SHA inventado ni nueva unidad de comportamiento. Sin push/PR/merge. Véase L11.
 
 ## Log
+
+L1–L10 son registros históricos de sus respectivos cortes: sus frases de T5 pendiente/en curso o preview activo no describen el cierre vigente de L11. Las cinco comprobaciones auxiliares omitidas en el primer QA ya están completadas A–EPASS (L10).
 
 ### L1 — Pedido original
 
@@ -161,3 +163,15 @@ Aceptación S1–S5 acotada: NO certificación ISO/a11y exhaustiva/benchmark25mi
 T5 in_progress: README/AGENTS/VERIFICATION y aviso histórico en contract.md actualizados; contrato autoritativo sigue simplification-contract.md. Handoff01 NUEVO IMPLEMENTED/preview4200 ya registrado por el padre,02/03 históricos intactos. Pendientes SOLO comprobación documental del padre, detener preview propiojob5/4201, salud final de DEVjob2/4200+APIjob1/8080+DB55432 y commit local C5. Estos servicios siguen activos según último reporte; no afirmar limpieza ni salud final observadas. No tocar scratch externo ni prometer limpiar cachés. Este cierre pasivo no ejecuta tests, navegadores ni servicios; RED/GREEN no aplicable a documentación.
 
 Cadena local C1fc4f422(321) → C2143d559(140) → C3b787754(178) → C4021f9e2(351) → C5pendiente en feat/normalization-changes-review; running990+C5sin total final ni SHA inventado. Estrategia cacheada auto-chain/stacked-to-main hacia main LOCALregistrado17ce991dc8c57ca59a5c6a95ec74c6a539872c0e. Base505d60d/20commits anteriores cerrados fuera de nueva revisión; integración o disposición explícita antes de publicación futura, sin autorización de integración vieja ni bloqueo de implementación. Sin push/PR/merge. Espejo canónico: topic odd/normalization-simplification/tasks con texto COMPLETO; topic erróneo odd/tasks/normalization-simplification.md permanece intacto.
+
+### L11 — Cierre T1–T5 observado; C5 y salud final acreditados
+
+El padre observó C5 `cc3602353b6873ff42dffdd798a26507ca6cec6d`:6archivos,140adiciones+21eliminaciones=161líneas autorales. Cadena local dependiente C1fc4f422(321) → C2143d559(140) → C3b787754(178) → C4021f9e2(351) → C5cc36023(161):1151observadas, cada uno de los cinco cortes≤400. No es el tamaño de toda la rama desde origin/main ni incluye el último seguimiento documental del padre, todavía sin SHA; ese seguimiento no constituye nueva unidad de comportamiento. T1–T5 done; S1–S5 aceptadas con los límites de L10, sin trabajo funcional autorizado pendiente.
+
+Comprobación documental pasiva del padre PASS: SOLO5enlaces Markdown locales AÑADIDOS, handoff01 IMPLEMENTED, frontend sin cambios desde candidato225/15 y diff0. No auditoría de todos los enlaces del repositorio ni pruebas funcionales nuevas. Evidencia `.browser/normalization-simplification/final/documentation.json`.
+
+Salud final observada por el padre en `.browser/normalization-simplification/final/health.json`: SOLO preview propiojob5 detenido y4201CLOSED; APIjob1/8080 y DEVjob2/4200 GETconfiguración/catálogoHTTP200, DB55432OPEN. Ambas sesiones QA propias ya cerradas; ningún otro recurso detenido. Permanecen únicamente los dos jobs de desarrollo y DB indicados. No se afirma limpieza de scratch/cachés externos ni se ejecutan servicios/checks/git en esta actualización pasiva.
+
+Se conserva procedencia del QA inicial PARTIAL, no defecto ni pendiente actual: suplemento completó las cinco A–EPASS; HAR31/21separados y42incidencias completas contrastados por el padre. Resultado automatizado vigente225/15+checker/buildexit0, sin agregación con históricos/focales/independiente. Fuente frontend sigue C4 `021f9e29404e243c268e84724648423349a26866`; backend intacto/no reejecutado. Límites: bundle649.97/500kB (exceso149.97), auditoría npm pendiente aceptada/no repetida, nativa no evaluable/sin aprobación, no certificación exhaustiva ISO/a11y ni benchmark25millones.
+
+Estrategia cacheada auto-chain/stacked-to-main, misma rama feat/normalization-changes-review y main LOCAL17ce; base505d60d/veinte antecedentes cerrados fuera de nueva revisión. Integración o disposición explícita de esa base antes de publicación futura permanece prerrequisito humano, NO autorización de integración/publicación ni bloqueo del cierre. Sin push/PR/merge. Solo queda al padre registrar este último seguimiento documental; no se inventa SHA ni se presenta como requisito funcional sin cumplir. Espejo completo canónico174 y resultado190 se actualizan en sus topics estables;187erróneo permanece intacto.
