@@ -86,6 +86,8 @@ async function normalization(data: Dataset) {
     (label!.querySelector('input') as HTMLInputElement).click(); await view.f.whenStable();
   };
   const mode = async (label: string, value: string) => {
+    const formats = [...view.root.querySelectorAll('details')].find(item => item.querySelector('summary')?.textContent?.trim() === 'Formatos y reglas');
+    if (formats && !formats.open) { formats.querySelector('summary')!.click(); await view.f.whenStable(); }
     const select = [...view.root.querySelectorAll('label')].find(item => item.textContent?.startsWith(label))?.querySelector('select');
     expect(select, label).toBeTruthy();
     select!.value = value; select!.dispatchEvent(new Event('change')); await view.f.whenStable();
@@ -124,7 +126,7 @@ describe('Preservación pública del análisis local', () => {
     await click('Aplicar normalización y validar');
     expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
     await respond();
-    expect(root.querySelector('h3')?.textContent).toContain('Normalice');
+    expect(root.querySelector('h3')?.textContent).toBe('Normalización');
     await click('Finalizar');
     expect(root.querySelector('.wizard-final')?.textContent?.trim()).toBe('');
     expect(root.textContent).toContain('original.csv');
@@ -141,7 +143,7 @@ describe('Preservación pública del análisis local', () => {
     const init = DelayedWorker.all.find(worker => worker.previewRole)!.requests[0];
     expect(init).toMatchObject({ kind: 'preview-init', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
     expect(switches.every(control => !control.checked)).toBe(true);
-    expect(root.textContent).toContain('Todos los registros');
+    expect([...root.querySelectorAll('button')].some(button => button.textContent?.trim() === 'Todos')).toBe(true);
     expect(root.textContent).not.toContain('primeros 20');
   });
 
@@ -160,7 +162,7 @@ describe('Preservación pública del análisis local', () => {
       expect(analyses()).toHaveLength(count);
     }
     const cells = [...root.querySelectorAll('.normalization-grid tbody tr:first-child td .literal')].map(cell => cell.textContent);
-    expect(cells).toEqual(['2024-03-04', '1.234', '2.500', '0007', 'Aus␠bus', '∅']);
+    expect(cells).toEqual(['2024-03-04', '1.234', '2.500', '0007', 'Aus bus', '∅']);
     expect(root.textContent).toContain('occurrenceID repetido: 1 grupos · 2 registros');
     await click('Aplicar normalización y validar');
     expect(analyses().at(-1)!.request).toMatchObject({ kind: 'validate', data, options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'MDY', decimalMode: 'comma' } });
@@ -500,10 +502,200 @@ describe('Preservación pública del análisis local', () => {
     expect(http).not.toHaveBeenCalled();
   });
 
+  it('C4 inicia Con cambios con filas físicas dispersas y formatos cerrados, sin glifos en la tabla', async () => {
+    const data = { headers: ['scientificName'], rows: Array.from({ length: 36 }, (_, i) => ({ row: i * 3 + 2, values: [[1, 15, 34].includes(i) ? ` Aus bus ${i} ` : `Aus bus ${i}`] })) };
+    const { root, preview, button } = await normalization(data);
+    expect(preview.requests[0]).toMatchObject({ kind: 'preview-init', window: { rowFilter: 'changed', offset: 0 } });
+    expect([...root.querySelectorAll('.normalization-grid tbody th')].map(cell => cell.childNodes[0].textContent?.trim())).toEqual(['5', '47', '104']);
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–3 de 3 · 36 registros en total');
+    expect(button('Con cambios').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Todos').getAttribute('aria-pressed')).toBe('false');
+    expect(button('Todos').closest('[role=group]')?.getAttribute('aria-label')).toBe('Vista de registros');
+    const formats = [...root.querySelectorAll('details')].find(item => item.querySelector('summary')?.textContent?.trim() === 'Formatos y reglas')!;
+    expect(formats).toBeTruthy(); expect(formats.open).toBe(false);
+    expect(formats.querySelectorAll('select')).toHaveLength(2);
+    expect(formats.querySelectorAll('.normalization-rules li')).toHaveLength(6);
+    expect(root.querySelector('.normalization-grid tbody .literal')?.textContent).toBe('Aus bus 1');
+    expect(root.querySelector('.normalization-grid')?.textContent).not.toContain('␠');
+  });
+
+  it('C4 Todos y Con cambios solo paginan sin cancelar análisis, recalcular ni reenviar originales', async () => {
+    const data = { headers: ['a'], rows: [{ row: 4, values: [' x '] }, { row: 19, values: ['y'] }] };
+    const { f, root, preview, click } = await normalization(data);
+    await click('Aplicar normalización y validar');
+    const analysis = DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!;
+    root.querySelector<HTMLButtonElement>('.normalization-changed button')!.click(); await f.whenStable();
+    const start = preview.requests.length;
+    const initial = preview.requests[0] as PreviewRequest;
+    for (const [name, filter, rows] of [['Todos', 'all', 2], ['Con cambios', 'changed', 1]] as const) {
+      await click(name);
+      expect(root.querySelector('.normalization-original')).toBeNull();
+      expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(rows);
+      expect(preview.request).toMatchObject({ kind: 'preview-page', session: initial.session, generation: initial.generation, window: { rowFilter: filter, offset: 0 } });
+    }
+    expect(preview.requests.slice(start).every(request => request.kind === 'preview-page' && !('original' in request) && !('options' in request) && !('mapping' in request))).toBe(true);
+    expect(analysis.terminated).toBe(false);
+    expect(DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)).toBe(analysis);
+    expect(data.rows[0].values[0]).toBe(' x ');
+  });
+
+  it('C4 pagina según el tamaño filtrado, última página física y reinicia al cambiar vista', async () => {
+    const data = { headers: ['a'], rows: Array.from({ length: 50 }, (_, i) => ({ row: i * 4 + 3, values: [i < 42 && i % 2 === 0 ? ` x${i} ` : `x${i}`] })) };
+    const { root, preview, click, button } = await normalization(data);
+    await click('Última página');
+    expect(preview.request).toMatchObject({ window: { rowFilter: 'changed', offset: 20 } });
+    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('163');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('21–21 de 21 · 50 registros en total');
+    expect(button('Página siguiente').disabled).toBe(true);
+    await click('Todos');
+    expect(preview.request).toMatchObject({ window: { rowFilter: 'all', offset: 0 } });
+    await click('Última página');
+    expect(preview.request).toMatchObject({ window: { rowFilter: 'all', offset: 40 } });
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(10);
+    await click('Con cambios');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('1–10 de 21');
+    expect(button('Página anterior').disabled).toBe(true);
+  });
+
+  it('C4 cero cambios conserva duplicados globales, 0–0 y CTA devuelve foco a Todos', async () => {
+    const data = { headers: ['occurrenceID', 'a'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i * 4 + 2, values: ['ID', 'Aus bus'] })) };
+    const { root, preview, click, button } = await normalization(data);
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(0);
+    expect(root.querySelector('.normalization-empty')?.textContent).toContain('Sin cambios');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('0–0 de 0 · 12 registros en total');
+    expect(button('Última página').disabled).toBe(true);
+    const duplicates = root.querySelector<HTMLDetailsElement>('details.normalization-duplicates')!;
+    expect(duplicates.open).toBe(false);
+    expect(duplicates.querySelector('summary')?.textContent).toContain('1 grupos');
+    expect(duplicates.textContent).toContain('occurrenceID repetido: 1 grupos · 12 registros');
+    expect(duplicates.textContent).toContain('46');
+    button('Mostrar todos').focus(); await click('Mostrar todos');
+    expect(document.activeElement).toBe(button('Todos'));
+    expect(root.querySelector('.normalization-empty')).toBeNull();
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(10);
+    expect(preview.request).toMatchObject({ kind: 'preview-page', window: { rowFilter: 'all' } });
+    await click('Con cambios');
+    expect(root.querySelector('.normalization-empty')?.textContent).toContain('Sin cambios');
+  });
+
+  it('C4 cambios solo en columnas ocultas o fuera de ventana mantienen filas y metadata global', async () => {
+    const headers = Array.from({ length: 60 }, (_, i) => `col${i}`);
+    const data = { headers, rows: [
+      { row: 7, values: headers.map((_, i) => i === 59 ? 'NULL' : '') },
+      { row: 91, values: headers.map((_, i) => i === 0 ? 'presente' : '') },
+    ] };
+    const { root, preview, toggle } = await normalization(data);
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
+    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('7');
+    expect(root.querySelectorAll('.normalization-changed')).toHaveLength(0);
+    await toggle('Ocultar columnas sin datos (solo vista)');
+    expect(preview.request).toMatchObject({ kind: 'preview-page', window: { rowFilter: 'changed', columnIndices: [0] } });
+    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('7');
+    expect(root.querySelectorAll('.normalization-grid td')).toHaveLength(1);
+    expect(root.querySelector('.normalization-grid td .literal')?.textContent).toBe('∅');
+  });
+
+  it('C4 ventana confirmada conserva filas y conteos anteriores hasta la última respuesta de filtro', async () => {
+    const data = { headers: ['a'], rows: [{ row: 4, values: [' x '] }, { row: 19, values: ['y'] }] };
+    const { f, root, preview, click, button } = await normalization(data);
+    DelayedWorker.previewAutomatic = false;
+    await click('Todos'); const older = preview.request as PreviewRequest;
+    expect(button('Todos').getAttribute('aria-pressed')).toBe('true');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–1 de 1');
+    expect(root.querySelector('.normalization-scroll')?.getAttribute('aria-label')).toBe('Con cambios');
+    expect(root.querySelector('.normalization-scroll')?.getAttribute('aria-busy')).toBe('true');
+    expect(button('Aplicar normalización y validar').disabled).toBe(true);
+    expect(root.textContent).toContain('ventana anterior');
+    await click('Con cambios'); const latest = preview.request as PreviewRequest;
+    preview.answerPreview(older); await f.whenStable();
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
+    expect(button('Aplicar normalización y validar').disabled).toBe(true);
+    preview.answerPreview(latest); await f.whenStable();
+    expect(button('Aplicar normalización y validar').disabled).toBe(false);
+    preview.answerPreview(older); await f.whenStable();
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–1 de 1');
+    await click('Todos'); preview.answerPreview(); await f.whenStable();
+    await click('Con cambios');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Todos · 1–2 de 2');
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(2);
+  });
+
+  it('C4 formatos durante paginación conservan vista solicitada y descartan páginas de otra generación', async () => {
+    const data = { headers: ['a'], rows: [{ row: 4, values: [' x '] }, { row: 19, values: ['y'] }] };
+    const { f, root, preview, mode, click, button } = await normalization(data);
+    DelayedWorker.previewAutomatic = false;
+    await click('Todos'); const stale = preview.request as PreviewRequest;
+    await mode('Interpretación de fechas', 'MDY');
+    const update = preview.request as PreviewRequest;
+    expect(update).toMatchObject({ kind: 'preview-update', window: { rowFilter: 'all', offset: 0 }, options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true } });
+    expect(update.generation).toBeGreaterThan(stale.generation);
+    preview.answerPreview(stale); await f.whenStable();
+    expect(button('Aplicar normalización y validar').disabled).toBe(true);
+    preview.answerPreview(update); await f.whenStable();
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Todos · 1–2 de 2');
+    expect(button('Aplicar normalización y validar').disabled).toBe(false);
+    preview.answerPreview(stale); await f.whenStable();
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(2);
+    DelayedWorker.previewAutomatic = true;
+    await click('Con cambios'); await mode('Separador decimal', 'comma');
+    expect(preview.request).toMatchObject({ kind: 'preview-update', window: { rowFilter: 'changed', offset: 0 } });
+  });
+
+  it.each(['mapeo', 'archivo'])('C4 nueva sesión por %s reinicia Con cambios e ignora filtros anteriores', async change => {
+    const data = { headers: ['a'], rows: [{ row: 4, values: [' x '] }, { row: 19, values: ['y'] }] };
+    const { f, root, preview, click, respond, chooseContext } = await normalization(data);
+    DelayedWorker.previewAutomatic = false;
+    await click('Todos'); const stale = preview.request as PreviewRequest;
+    if (change === 'mapeo') {
+      await click('Mapear columnas');
+      const field = root.querySelector<HTMLInputElement>('input[aria-label="Mapear a"]')!;
+      field.value = 'scientificName'; field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', bubbles: true })); await f.whenStable();
+    } else {
+      await click('Cambiar archivo');
+      const input = root.querySelector('input[type=file]')!;
+      Object.defineProperty(input, 'files', { value: [new File(['a\nx'], 'nuevo.csv')] }); input.dispatchEvent(new Event('change')); await f.whenStable();
+      DelayedWorker.all.at(-1)!.respond({ kind: 'parsed', data }); await f.whenStable();
+      await chooseContext(); await click('Mapear columnas');
+    }
+    expect(preview.terminated).toBe(true);
+    await click('Validar localmente'); await respond(); await click('Normalizar');
+    const next = DelayedWorker.all.filter(worker => worker.previewRole).at(-1)!;
+    expect(next.request).toMatchObject({ kind: 'preview-init', window: { rowFilter: 'changed', offset: 0 } });
+    expect((next.request as PreviewRequest).session).toBeGreaterThan(stale.session);
+    next.answerPreview(); await f.whenStable();
+    preview.answerPreview(stale); await f.whenStable();
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–1 de 1');
+  });
+
+  it.each([{ rows: [] }, { rows: [{ row: 2, values: ['x'] }] }])('C4 vacío honesto solo tras ready, no al cargar o fallar: %j', async ({ rows }) => {
+    DelayedWorker.previewAutomatic = false;
+    const { f, root, preview, click, button } = await normalization({ headers: ['a'], rows });
+    expect(root.querySelector('.normalization-empty')).toBeNull();
+    expect(button('Aplicar normalización y validar').disabled).toBe(true);
+    preview.answerPreview(); await f.whenStable();
+    expect(root.querySelector('.normalization-empty')?.textContent).toContain('Sin cambios');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('0–0 de 0');
+    for (const name of ['Primera página', 'Página anterior', 'Página siguiente', 'Última página']) expect(button(name).disabled).toBe(true);
+    preview.onerror?.(); await f.whenStable();
+    expect(root.querySelector('.normalization-empty')).toBeNull();
+    expect(root.querySelector('[role=alert]')?.textContent).toContain('Los originales se conservan');
+    await click('Reintentar vista previa');
+    const next = DelayedWorker.all.filter(worker => worker.previewRole).at(-1)!;
+    expect(next.request).toMatchObject({ kind: 'preview-init', window: { rowFilter: 'changed', offset: 0 } });
+    expect(root.querySelector('.normalization-empty')).toBeNull();
+    next.answerPreview(); await f.whenStable();
+    await click('Todos'); next.answerPreview(); await f.whenStable();
+    expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(rows.length);
+    expect(root.querySelector('.normalization-empty')).toBeNull();
+  });
+
   it('alcanza la última fila, cambia tamaños y pagina con mensajes pequeños sobre un único original', async () => {
     const data = { headers: ['eventDate'], rows: Array.from({ length: 31 }, (_, i) => ({ row: i * 3 + 7, values: ['2024/02/29'] })) };
     const original = JSON.stringify(data);
     const { f, root, click, preview, mode } = await normalization(data);
+    await click('Todos');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(10);
     expect(root.textContent).toContain('Filas completas iguales: 1 grupos · 31 registros');
     await click('Última página');
@@ -669,10 +861,8 @@ describe('Preservación pública del análisis local', () => {
 
   it('no invalida el análisis al paginar u ocultar; las opciones sí cancelan y Apply captura todos los flags', async () => {
     const { f, root, preview, toggle, click, mode } = await normalization({ headers: ['a'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i + 2, values: [' x '] })) });
-    for (const [label, value] of [['Interpretación de fechas', 'DMY'], ['Separador decimal', 'comma']]) {
-      const select = [...root.querySelectorAll('label')].find(item => item.textContent?.startsWith(label))!.querySelector('select')!;
-      select.value = value; select.dispatchEvent(new Event('change')); await f.whenStable();
-    }
+    await mode('Interpretación de fechas', 'DMY');
+    await mode('Separador decimal', 'comma');
     await click('Aplicar normalización y validar');
     const analysis = DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!;
     expect(analysis.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'DMY', decimalMode: 'comma' } });
@@ -795,6 +985,7 @@ describe('Preservación pública del análisis local', () => {
     expect((next.request as PreviewRequest).session).toBeGreaterThan(failed.session);
     preview.answerPreview(failed); preview.onerror?.(); await f.whenStable();
     expect(root.textContent).toContain('Calculando todos');
+    expect(next.request).toMatchObject({ window: { rowFilter: 'changed' } });
     next.answerPreview(); await f.whenStable();
     expect(button('Aplicar normalización y validar').disabled).toBe(false);
     expect(data.rows[0].values[0]).toBe(' x ');

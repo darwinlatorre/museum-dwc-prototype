@@ -38,6 +38,14 @@ export class NormalizationPreview {
       ...(duplicates?.occurrenceIds.groups ?? []).map(group => ({ ...group, criterion: 'occurrenceID repetido' })),
     ];
   });
+  readonly viewName = computed(() => this.state().window().rowFilter === 'changed' ? 'Con cambios' : 'Todos');
+  readonly range = computed(() => {
+    const state = this.state();
+    const total = state.viewTotal();
+    const { offset, limit } = state.window();
+    return `${total ? offset + 1 : 0}–${Math.min(offset + limit, total)} de ${total}`;
+  });
+  private readonly allButton = viewChild<ElementRef<HTMLButtonElement>>('allButton');
   private readonly originalRegion = viewChild<ElementRef<HTMLElement>>('originalRegion');
   private opener?: HTMLButtonElement;
   private suppressed?: HTMLButtonElement;
@@ -51,6 +59,10 @@ export class NormalizationPreview {
       this.opener = undefined;
       this.suppressed = undefined;
     });
+  }
+  showAll() {
+    this.state().setRowFilter('all');
+    this.allButton()?.nativeElement.focus({ preventScroll: true });
   }
   dateOrder(event: Event) {
     const value = (event.target as HTMLSelectElement).value;

@@ -12,7 +12,11 @@ export class NormalizationPreviewState {
   readonly error = signal('');
   readonly paging = signal(false);
   readonly hideEmpty = signal(false);
-  readonly window = signal<PreviewWindow>({ offset: 0, limit: 10, columnIndices: [] });
+  // Requested selection and confirmed window are deliberately separate while paging.
+  readonly rowFilter = signal<'all' | 'changed'>('changed');
+  readonly window = signal<PreviewWindow>({ offset: 0, limit: 10, columnIndices: [], rowFilter: 'changed' });
+  readonly viewTotal = computed(() => this.window().rowFilter === 'changed'
+    ? this.metadata()?.changedRows ?? 0 : this.metadata()?.totalRows ?? 0);
   readonly revision = signal(0);
   readonly visibleColumns = computed(() => {
     const metadata = this.metadata();
@@ -34,6 +38,7 @@ export class NormalizationPreviewState {
   private pageId = 0;
   private columnOffset = 0;
   private confirmed = false;
+  private requestedWindow: PreviewWindow = { offset: 0, limit: 10, columnIndices: [], rowFilter: 'changed' };
   constructor(private readonly createWorker: () => Worker, private readonly nextId: () => number) {}
 
   reset(original: Dataset | undefined, mapping: Record<string, string>) {
@@ -49,7 +54,9 @@ export class NormalizationPreviewState {
     this.paging.set(false);
     this.error.set('');
     this.columnOffset = 0;
-    this.window.set({ offset: 0, limit: 10, columnIndices: [] });
+    this.rowFilter.set('changed');
+    this.requestedWindow = { offset: 0, limit: 10, columnIndices: [], rowFilter: 'changed' };
+    this.window.set(this.requestedWindow);
     this.revision.update(value => value + 1);
   }
   start(options: Normalization) {
@@ -91,7 +98,8 @@ export class NormalizationPreviewState {
         this.worker = worker;
         worker.onmessage = ({ data }: MessageEvent<unknown>) => {
           if (worker !== this.worker || !isPreviewResponse(data) || data.session !== this.session || data.generation !== this.generation) return;
-          if (data.kind === 'preview-ready' && data.id === this.calculationId && this.status() === 'calculating') {
+          if (data.kind === 'preview-ready' && data.id === this.calculationId && this.status() === 'calculating'
+            && data.window.rowFilter === this.requestedWindow.rowFilter) {
             this.confirmed = true;
             this.metadata.set(data.metadata);
             this.rows.set(data.rows);
@@ -101,7 +109,8 @@ export class NormalizationPreviewState {
             this.columnOffset = 0;
             const indices = this.selectedIndices();
             if (indices.join() !== data.window.columnIndices.join()) this.page({ columnIndices: indices });
-          } else if (data.kind === 'preview-page' && data.id === this.pageId && this.status() === 'ready') {
+          } else if (data.kind === 'preview-page' && data.id === this.pageId && this.status() === 'ready' && this.paging()
+            && data.window.rowFilter === this.requestedWindow.rowFilter) {
             this.rows.set(data.rows);
             this.window.set(data.window);
             this.paging.set(false);
@@ -124,7 +133,8 @@ export class NormalizationPreviewState {
     this.error.set('');
     this.status.set('calculating');
     this.revision.update(value => value + 1);
-    const window: PreviewWindow = { offset: 0, limit: this.window().limit, columnIndices: this.original.headers.map((_, i) => i).slice(0, 50) };
+    const window: PreviewWindow = { offset: 0, limit: this.window().limit, columnIndices: this.original.headers.map((_, i) => i).slice(0, 50), rowFilter: this.rowFilter() };
+    this.requestedWindow = window;
     const token = { id: this.calculationId, session: this.session, generation: this.generation };
     const request: PreviewRequest = init
       ? { ...token, kind: 'preview-init', original: this.original, mapping: this.mapping, options: this.options, window }
@@ -153,9 +163,15 @@ export class NormalizationPreviewState {
   canMoveColumns(direction: number) {
     return direction < 0 ? this.columnOffset > 0 : this.columnOffset + 50 < this.visibleColumns().length;
   }
+  setRowFilter(rowFilter: 'all' | 'changed') {
+    if (this.status() !== 'ready' || rowFilter === this.rowFilter()) return;
+    this.rowFilter.set(rowFilter);
+    this.page({ rowFilter, offset: 0 });
+  }
   page(change: Partial<PreviewWindow>) {
     if (this.status() !== 'ready' || !this.worker) return;
-    const window = { ...this.window(), ...change };
+    const window = { ...this.requestedWindow, ...change };
+    this.requestedWindow = window;
     this.pageId = this.nextId();
     this.paging.set(true);
     this.revision.update(value => value + 1);

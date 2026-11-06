@@ -10,9 +10,20 @@ La normalización crea una copia reversible **desde el original**, nunca desde l
 
 ## Política de Normalizar y compatibilidad del motor
 
-El pedido explícito S1 de `odd/tasks/normalization-simplification.md` y el [contrato vigente](../design/normalization-live-preview/simplification-contract.md) sustituyen el opt-in anterior **solo en Normalizar y Aplicar**: trim, emptyMarkers, dates, coordinates, numbers y duplicates siempre son true; no hay seis interruptores de reglas. El workbench deriva las opciones únicamente de los modos de fecha/separador, inicialmente `safe`. Los selects nativos siguen permitiendo DMY/MDY y coma explícitos sin poder desactivar reglas. La hoja conserva por ahora todos los registros y su ocultación visual de columnas vacías; la integración de vistas filtradas es una unidad posterior.
+El pedido explícito S1 de `odd/tasks/normalization-simplification.md` y el [contrato vigente](../design/normalization-live-preview/simplification-contract.md) sustituyen el opt-in anterior **solo en Normalizar y Aplicar**: trim, emptyMarkers, dates, coordinates, numbers y duplicates siempre son true; no hay seis interruptores de reglas. El workbench deriva las opciones únicamente de los modos de fecha/separador, inicialmente `safe`. Los selects nativos siguen permitiendo DMY/MDY y coma explícitos sin poder desactivar reglas. La hoja comienza en **Con cambios** y mantiene **Todos** al lado; **Ocultar columnas sin datos** sigue siendo solo presentación.
 
 El diagnóstico inicial y su resumen/detalle de obligatorios usan originales con `{ trim: false, emptyMarkers: false }`. Entrar en Normalizar o cambiar formatos no aplica ni valida automáticamente: solo **Aplicar normalización y validar** captura las seis reglas y los modos actuales. Originales, precisión, rangos, registro cerrado DwC e identificadores permanecen protegidos. Los defaults compartidos del motor no cambian; la tabla siguiente describe sus opciones de bajo nivel.
+
+## Revisión compacta y ventana confirmada
+
+- **Con cambios** incluye filas con algún valor distinto del original en cualquier columna, aunque esté oculta o fuera de la ventana. Un duplicado sin cambios no se incluye. **Todos** recupera el conjunto completo, sin eliminar ni fusionar registros.
+- Cada sesión de archivo/hoja/mapeo inicia con `rowFilter: 'changed'` explícito. Cambiar vista solo envía `preview-page` con offset0; no reenvía originales/opciones, recalcula, invalida el análisis ni valida. Los cambios de formato mantienen la vista elegida y reinician offset0; reintentar conserva esa elección.
+- La selección solicitada se distingue de `window` confirmada. Mientras llega la última página, la hoja conserva filas, nombre y rango anteriores, con aviso de ventana anterior/busy y Aplicar deshabilitado. Solo se aceptan id/sesión/generación y filtro vigentes. Un update durante paginación descarta páginas anteriores.
+- Rango y última página usan `changedRows` o `totalRows` según el filtro confirmado. Vacío: **0–0 de 0**. Metadata, duplicados y columnas vacías describen siempre el dataset completo, no la página ni solo los cambios. `columnIndices: []` conserva filas físicas.
+- **Sin cambios** aparece únicamente con ventana vigente Con cambios vacía; no sustituye carga, cancelación o error. Los avisos globales permanecen disponibles. **Mostrar todos** devuelve foco al botón persistente Todos al retirar el CTA.
+- **Formatos y reglas** y **Duplicados** son disclosures nativos inicialmente cerrados. El primero conserva selects nativos y ayuda de ambigüedad; el segundo conserva grupos y filas físicas. Tabla con valores literales planos y badges de regla; visualizador de espacios solo en detalle original/copia exactos. Flechas recorren celdas, Tab sale y Escape cierra sin robar foco externo. Cambiar vista/página/formato cierra el detalle obsoleto.
+
+Estas comprobaciones públicas/estructurales no certifican geometría de escritorio/móvil ni accesibilidad exhaustiva; aceptación integrada y navegador pendientes en T4.
 
 ## Reglas del motor
 

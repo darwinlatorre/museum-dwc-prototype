@@ -157,6 +157,16 @@ describe('Compact collection layouts', () => {
     expect(css).toMatch(/\.normalization-original[^{}]*\{[^}]*width:\s*min\(36rem,\s*(?:calc\(100vw\s*-\s*2rem\)|100vw\s*-\s*2rem)\)/s);
   });
 
+  it('C4 mantiene barra flexible, selección con tokens y disclosures táctiles solo en Normalizar', async () => {
+    const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
+      .replace(/\[_ng(?:content|host)-[^\]]+\]/g, '');
+    expect(css).toMatch(/\.normalization-views\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s);
+    expect(css).toMatch(/\.normalization-views\s+button\[aria-pressed=['"]?true['"]?\][^{}]*\{[^}]*background:\s*var\(--pine\)[^}]*color:\s*var\(--museum-surface\)/s);
+    expect(css).toMatch(/\.normalization-sheet\s+summary[^{}]*\{[^}]*min-height:\s*44px/s);
+    expect(css).toMatch(/\.normalization-formats[^{}]*\.normalization-tools[^{}]*\{[^}]*min-width:\s*0/s);
+  });
+
   it('F2 desactiva la transición del pulgar scoped bajo movimiento reducido sin cambiar su estado normal', async () => {
     const f = TestBed.createComponent(LayoutStyles); await f.whenStable();
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')

@@ -189,10 +189,17 @@
 .issue-error .issue-message { color: var(--museum-error-text); }
 .issue-warning .issue-message { font-weight: 500; }
 .normalization-sheet { min-width: 0; position: relative; }
-.normalization-sheet .normalization-rules { flex-wrap: wrap; gap: var(--museum-space-3); }
+.normalization-sheet > h3 { margin: 0 0 var(--museum-space-2); }
+.normalization-sheet .normalization-rules { display: grid; gap: var(--museum-space-2); padding-left: var(--museum-space-5); }
+.normalization-sheet summary { min-height: 44px; }
+.normalization-views { display: flex; gap: var(--museum-space-1); flex-wrap: wrap; }
+.normalization-views button[aria-pressed='true'] { background: var(--pine); border-color: var(--pine); color: var(--museum-surface); }
+.normalization-range, #normalization-grid-help { margin: var(--museum-space-2) 0; color: var(--museum-text-muted); }
+.normalization-empty { padding: var(--museum-space-4); border: 1px solid var(--museum-line); }
+.normalization-status p { margin: var(--museum-space-2) 0; }
 .normalization-sheet label { min-height: 44px; }
 .normalization-sheet button, .normalization-footer button { min-height: 44px; }
-.normalization-rules label, .normalization-tools > label:first-child {
+.normalization-tools > label {
   display: flex; align-items: center; gap: var(--museum-space-2);
   padding: var(--museum-space-2); border: 1px solid var(--museum-line);
   border-radius: var(--museum-radius-md);
@@ -213,11 +220,15 @@
 .normalization-sheet input[role='switch']:checked::before { background: var(--museum-surface); transform: translateX(20px); }
 .normalization-sheet input[role='switch']:focus-visible { outline: 2px solid var(--pine); outline-offset: 3px; }
 .normalization-formats, .normalization-tools, .normalization-pager, .normalization-column-nav {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--museum-space-3); margin: var(--museum-space-4) 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--museum-space-3); margin: var(--museum-space-2) 0;
+  min-width: 0;
 }
 .normalization-formats > label { flex: 1 1 18rem; min-width: 0; }
 .normalization-formats small { display: block; color: var(--museum-text-muted); }
-.normalization-tools select, .normalization-formats select { max-width: 100%; }
+.normalization-pager select, .normalization-formats select { max-width: 100%; }
+.normalization-pager label { display: flex; align-items: center; flex-wrap: wrap; gap: var(--museum-space-2); }
+.normalization-settings { margin: var(--museum-space-2) 0; }
+.normalization-column-nav span { color: var(--museum-text-muted); }
 .normalization-scroll { max-width: 100%; max-height: 65vh; overflow: auto; border: 1px solid var(--museum-line); }
 .normalization-grid { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
 .normalization-grid th, .normalization-grid td { text-align: left; border-bottom: 1px solid var(--museum-line); padding: var(--museum-space-2); max-width: 22rem; }
@@ -237,7 +248,7 @@
 }
 .normalization-original .section-heading { flex-wrap: wrap; }
 .normalization-original dd { margin: 0 0 var(--museum-space-3); white-space: pre-wrap; }
-.normalization-duplicates { padding: var(--museum-space-3); border: 1px solid var(--museum-line); }
+.normalization-duplicates { padding: 0; border-block: 1px solid var(--museum-line); }
 .normalization-duplicates summary { min-height: 44px; cursor: pointer; overflow-wrap: anywhere; }
 @media (max-width: 800px) {
   .checks { flex-direction: column; align-items: stretch; }

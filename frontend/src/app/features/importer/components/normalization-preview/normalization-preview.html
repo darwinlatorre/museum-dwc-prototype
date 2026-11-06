@@ -1,11 +1,16 @@
 <section class="normalization-sheet" aria-labelledby="normalization-title">
-  <h3 id="normalization-title">Normalice solo con su aprobación</h3>
-  <p>Todos los registros · copia reversible desde el original. Ninguna opción modifica el archivo ni valida automáticamente.</p>
-  <details class="workbench-help">
-    <summary>Qué cambia al normalizar</summary>
-    <p>Las reglas usan el destino Darwin Core mapeado, no la apariencia del valor. No convierten identificadores ni texto libre a números. No convierten DMS ni inventan datum, unidades o componentes de fecha. Los formatos no reconocidos se conservan.</p>
-    <p>Las seis reglas están siempre activas en esta copia, incluidos NULL y N/A como vacíos. Aplicar actualiza únicamente el diagnóstico. JSON y CSV son informes de incidencias, no descargas de registros.</p>
-  </details>
+  <h3 id="normalization-title">Normalización</h3>
+  <div class="normalization-tools">
+    <div class="normalization-views" role="group" aria-label="Vista de registros">
+      <button type="button" [attr.aria-pressed]="state().rowFilter() === 'changed'" [disabled]="state().status() !== 'ready'" (click)="state().setRowFilter('changed')">Con cambios</button>
+      <button #allButton type="button" [attr.aria-pressed]="state().rowFilter() === 'all'" [disabled]="state().status() !== 'ready'" (click)="state().setRowFilter('all')">Todos</button>
+    </div>
+    <label><input type="checkbox" role="switch" [checked]="state().hideEmpty()" (change)="hide($event)" />Ocultar columnas sin datos (solo vista)</label>
+  </div>
+  <details class="workbench-help normalization-settings">
+    <summary>Formatos y reglas</summary>
+    <p>Copia desde originales. Solo Aplicar actualiza el diagnóstico; los formatos y vistas no validan automáticamente.</p>
+    <p>Seis reglas siempre activas por destino Darwin Core, sin convertir identificadores ni inventar datum, unidades o fechas. Los formatos no reconocidos se conservan.</p>
   <ul class="normalization-rules" aria-label="Reglas siempre activas">
     @for (rule of rules; track rule.key) {
       <li>{{ rule.label }}</li>
@@ -23,25 +28,24 @@
       </select><small>Coma decimal no admite separadores de miles ni redondea valores. 1,234 no se interpreta en modo seguro.</small></label>
     }
   </div>
-  <div class="normalization-tools">
-    <label><input type="checkbox" role="switch" [checked]="state().hideEmpty()" (change)="hide($event)" />Ocultar columnas sin datos (solo vista)</label>
-    <label>Registros por página<select aria-label="Registros por página" [value]="state().window().limit" [disabled]="!state().ready()" (change)="pageSize($event)">
-      <option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
-    </select></label>
-  </div>
+  </details>
   <div aria-live="polite" class="normalization-status">
     @switch (state().status()) {
       @case ('idle') { <p>Preparando la vista local…</p> }
       @case ('calculating') { <p>{{ state().metadata() ? 'Recalculando. La hoja visible es una copia anterior, no vigente.' : 'Calculando todos los registros localmente…' }}</p><button (click)="state().cancel()">Cancelar vista previa</button> }
       @case ('cancelled') { <p>Vista previa cancelada. La copia anterior no está vigente; los originales se conservan.</p><button (click)="state().retry()">Reintentar vista previa</button> }
       @case ('error') { <p role="alert">{{ state().error() }} La copia anterior no está vigente.</p><button (click)="state().retry()">Reintentar vista previa</button> }
-      @case ('ready') { @if (state().metadata(); as metadata) { <p>{{ metadata.totalRows }} registros · {{ metadata.changedCells }} celdas cambiadas en {{ metadata.changedRows }} registros · {{ state().visibleColumns().length }} de {{ metadata.totalColumns }} columnas visibles</p> } }
+      @case ('ready') { }
     }
     @if (state().paging()) { <p>Cargando ventana… La hoja visible corresponde a la ventana anterior.</p> }
+    @if (state().metadata(); as metadata) {
+      <p class="normalization-range">{{ viewName() }} · {{ range() }} · {{ metadata.totalRows }} registros en total</p>
+    }
   </div>
   @if (state().metadata(); as metadata) {
     @if (state().status() === 'ready') {
-      <section class="normalization-duplicates" aria-label="Avisos de duplicados">
+      <details class="normalization-duplicates workbench-help" aria-label="Avisos de duplicados">
+        <summary>Duplicados · {{ metadata.duplicates.equalRows.groups.length }} grupos de filas · {{ metadata.duplicates.occurrenceIds.groups.length }} grupos de ID</summary>
         @if (!metadata.duplicates.enabled) { <p>Comprobación de duplicados desactivada.</p> }
         @else {
           <p>Filas completas iguales: {{ metadata.duplicates.equalRows.groups.length }} grupos · {{ metadata.duplicates.equalRows.affectedRows }} registros.</p>
@@ -62,7 +66,10 @@
             </details>
           }
         }
-      </section>
+      </details>
+    }
+    @if (state().ready() && state().window().rowFilter === 'changed' && state().viewTotal() === 0) {
+      <div class="normalization-empty" role="status"><p>Sin cambios</p><button type="button" (click)="showAll()">Mostrar todos</button></div>
     }
     @if (state().visibleColumns().length === 0) { <p>Todas las columnas están ocultas. Los {{ metadata.totalRows }} registros siguen presentes. Desactive «Ocultar columnas sin datos» para restaurarlas.</p> }
     @if (state().visibleColumns().length > 50) {
@@ -72,8 +79,8 @@
         <button [disabled]="!state().ready() || !state().canMoveColumns(1)" (click)="state().moveColumns(1)">Columnas siguientes</button>
       </div>
     }
-    <p id="normalization-grid-help">Flechas: recorrer celdas. Tab: salir hacia los controles de página. Active una celda cambiada para consultar el original; Escape cierra. ␠ espacio · ⇥ tabulación · ↵ salto de línea · ∅ vacío.</p>
-    <div class="normalization-scroll" tabindex="0" role="region" aria-label="Todos los registros" [attr.aria-busy]="!state().ready()">
+    <p id="normalization-grid-help">Flechas: recorrer celdas · Tab: salir · Activar: ver original · Escape: cerrar · ∅ vacío.</p>
+    <div class="normalization-scroll" tabindex="0" role="region" [attr.aria-label]="viewName()" [attr.aria-busy]="!state().ready()">
       <table class="normalization-grid" aria-describedby="normalization-grid-help">
         <thead><tr><th scope="col">Fila de origen</th>
           @for (column of state().columns(); track column.columnIndex) {
@@ -95,7 +102,7 @@
                   (focus)="focusKey.set(key(row.sourceRow, cell.columnIndex)); open(cell, row.sourceRow, $event)"
                   (mouseenter)="open(cell, row.sourceRow, $event)" (mouseleave)="release($event)" (blur)="release($event)"
                   (click)="open(cell, row.sourceRow, $event, true)" (keydown)="navigate($event, row.sourceRow, cell.columnIndex)">
-                  <span class="literal">{{ visible(cell.after) }}</span>
+                  <span class="literal">{{ cell.after === '' ? '∅' : cell.after }}</span>
                   @for (kind of cell.kinds; track kind) { <small class="normalization-rule">{{ ruleNames[kind] }}</small> }
                 </button></td>
               }
@@ -107,9 +114,12 @@
     <nav class="normalization-pager" aria-label="Páginas de registros">
       <button [disabled]="!state().ready() || state().window().offset === 0" (click)="state().page({offset: 0})">Primera página</button>
       <button [disabled]="!state().ready() || state().window().offset === 0" (click)="state().page({offset: state().window().offset - state().window().limit})">Página anterior</button>
-      <span>{{ metadata.totalRows ? state().window().offset + 1 : 0 }}–{{ state().window().offset + state().window().limit < metadata.totalRows ? state().window().offset + state().window().limit : metadata.totalRows }} de {{ metadata.totalRows }} registros</span>
-      <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= metadata.totalRows" (click)="state().page({offset: state().window().offset + state().window().limit})">Página siguiente</button>
-      <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= metadata.totalRows" (click)="state().page({offset: Math.floor((metadata.totalRows - 1) / state().window().limit) * state().window().limit})">Última página</button>
+      <span>{{ range() }}</span>
+      <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= state().viewTotal()" (click)="state().page({offset: state().window().offset + state().window().limit})">Página siguiente</button>
+      <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= state().viewTotal()" (click)="state().page({offset: Math.floor(Math.max(0, state().viewTotal() - 1) / state().window().limit) * state().window().limit})">Última página</button>
+      <label>Registros por página<select aria-label="Registros por página" [value]="state().window().limit" [disabled]="!state().ready()" (change)="pageSize($event)">
+        <option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
+      </select></label>
     </nav>
   }
   @if (detail(); as selected) {
