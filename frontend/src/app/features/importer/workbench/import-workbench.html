@@ -265,7 +265,7 @@
       </div>
     }
     @case (4) {
-      <app-normalization-preview [state]="previewState" [options]="options()" [active]="active()" (optionsChanged)="options.set($event)" />
+      <app-normalization-preview [state]="previewState" [options]="options()" [active]="active()" (optionsChanged)="formats.set($event)" />
       <div class="wizard-footer normalization-footer">
         <button [disabled]="!canVisit(3)" (click)="visit(3)">Ver diagnóstico</button>
         <p-button label="Aplicar normalización y validar" [disabled]="busy() || !previewState.ready()" (onClick)="validate(true)" />

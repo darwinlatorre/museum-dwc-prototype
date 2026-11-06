@@ -4,13 +4,13 @@
   <details class="workbench-help">
     <summary>Qué cambia al normalizar</summary>
     <p>Las reglas usan el destino Darwin Core mapeado, no la apariencia del valor. No convierten identificadores ni texto libre a números. No convierten DMS ni inventan datum, unidades o componentes de fecha. Los formatos no reconocidos se conservan.</p>
-    <p>NULL y N/A siguen siendo datos salvo aprobación explícita. Aplicar actualiza únicamente el diagnóstico. JSON y CSV son informes de incidencias, no descargas de registros.</p>
+    <p>Las seis reglas están siempre activas en esta copia, incluidos NULL y N/A como vacíos. Aplicar actualiza únicamente el diagnóstico. JSON y CSV son informes de incidencias, no descargas de registros.</p>
   </details>
-  <div class="checks normalization-rules">
+  <ul class="normalization-rules" aria-label="Reglas siempre activas">
     @for (rule of rules; track rule.key) {
-      <label><input type="checkbox" role="switch" [checked]="options()[rule.key]" (change)="toggle(rule.key, $event)" />{{ rule.label }}</label>
+      <li>{{ rule.label }}</li>
     }
-  </div>
+  </ul>
   <div class="normalization-formats">
     @if (options().dates) {
       <label>Interpretación de fechas<select [value]="options().dateOrder || 'safe'" (change)="dateOrder($event)">

@@ -8,7 +8,13 @@ La normalización crea una copia reversible **desde el original**, nunca desde l
 
 `normalizeCell(before, effectiveField, options)` es la regla compartida entre aplicación, preview y proyección de requeridos. El destino se resuelve por propiedad **propia** de mapping con fallback al encabezado literal: no se traducen nombres ni se infieren tipos de `rdf_type`. `toString` y `__proto__` no consultan propiedades heredadas. Encabezados, valores, filas físicas y originales no se modifican.
 
-## Reglas y consentimiento
+## Política de Normalizar y compatibilidad del motor
+
+El pedido explícito S1 de `odd/tasks/normalization-simplification.md` y el [contrato vigente](../design/normalization-live-preview/simplification-contract.md) sustituyen el opt-in anterior **solo en Normalizar y Aplicar**: trim, emptyMarkers, dates, coordinates, numbers y duplicates siempre son true; no hay seis interruptores de reglas. El workbench deriva las opciones únicamente de los modos de fecha/separador, inicialmente `safe`. Los selects nativos siguen permitiendo DMY/MDY y coma explícitos sin poder desactivar reglas. La hoja conserva por ahora todos los registros y su ocultación visual de columnas vacías; la integración de vistas filtradas es una unidad posterior.
+
+El diagnóstico inicial y su resumen/detalle de obligatorios usan originales con `{ trim: false, emptyMarkers: false }`. Entrar en Normalizar o cambiar formatos no aplica ni valida automáticamente: solo **Aplicar normalización y validar** captura las seis reglas y los modos actuales. Originales, precisión, rangos, registro cerrado DwC e identificadores permanecen protegidos. Los defaults compartidos del motor no cambian; la tabla siguiente describe sus opciones de bajo nivel.
+
+## Reglas del motor
 
 | Opción | Cobertura | Conservación |
 |---|---|---|
@@ -52,4 +58,4 @@ El cálculo usa un generador compartido y tareas de event loop entre lotes acota
 - `enabled: false` significa no comprobado. `occurrenceIdColumnIndex: null` permite informar «Sin occurrenceID mapeado; se comprobaron las filas completas» sin desactivar el criterio de fila.
 - Aplicar usa el mismo detector y añade WARNING por miembro/criterio con tamaño y primera fila, no listas gigantes repetidas. Conserva claves y límite `LIMITS.issues` del informe JSON/CSV; superar100.000 produce el mismo error existente, no un resultado parcial. Los informes siguen siendo diagnósticos, no exportaciones biológicas.
 
-La integración debe conservar **todas** las opciones en diagnosticOptions, capturar mapping/contexto/revisión al aplicar y mantener separadas las invalidaciones de preview y diagnóstico. No ejecutar validación automáticamente al mover switches. La gestión de busy, foco, detalle original y errores del navegador pertenece a T3/T4.
+La integración debe conservar **todas** las opciones en diagnosticOptions, capturar mapping/contexto/revisión al aplicar y mantener separadas las invalidaciones de preview y diagnóstico. No ejecutar validación automáticamente al elegir formatos ni al ocultar columnas. La gestión de busy, foco, detalle original y errores del navegador pertenece a T3/T4.

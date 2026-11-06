@@ -107,6 +107,7 @@ describe('Evolución de los controles públicos', () => {
     await click(f, 'Mapear columnas'); await click(f, 'Validar localmente');
     expect(requests.at(-1)).toMatchObject({ kind: 'validate', context: 'other', configuration,
       options: { trim: false, emptyMarkers: false }, data: { rows: [{ row: 2, values: ['  original  ', 'N/A', ''] }] } });
+    expect((requests.at(-1) as Extract<WorkerRequest, { kind: 'validate' }>).options).toEqual({ trim: false, emptyMarkers: false });
   });
 
   it('resalta el origen, sincroniza sugerencias con selector y limpiar, y conserva destinos únicos', async () => {

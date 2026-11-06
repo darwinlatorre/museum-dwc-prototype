@@ -49,7 +49,11 @@ export class ImportWorkbench implements OnDestroy {
   sheetForm = form(this.sheet);
   data = signal<Dataset | undefined>(undefined);
   mapping = signal<Record<string, string>>({});
-  options = signal<Normalization>({ trim: false, emptyMarkers: false, dates: false, coordinates: false, numbers: false, duplicates: false, dateOrder: 'safe', decimalMode: 'safe' });
+  formats = signal<Pick<Normalization, 'dateOrder' | 'decimalMode'>>({ dateOrder: 'safe', decimalMode: 'safe' });
+  readonly options = computed<Normalization>(() => ({
+    dateOrder: this.formats().dateOrder, decimalMode: this.formats().decimalMode,
+    trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true,
+  }));
   context = signal<Context | undefined>(undefined);
   setContext(context: Context) {
     this.context.set(context);

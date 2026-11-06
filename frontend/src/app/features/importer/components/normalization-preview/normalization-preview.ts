@@ -13,7 +13,7 @@ export class NormalizationPreview {
   readonly state = input.required<NormalizationPreviewState>();
   readonly options = input.required<Normalization>();
   readonly active = input(true);
-  readonly optionsChanged = output<Normalization>();
+  readonly optionsChanged = output<Pick<Normalization, 'dateOrder' | 'decimalMode'>>();
   readonly Math = Math;
   chunks(length: number) { return Array.from({ length: Math.ceil(length / 100) }, (_, i) => i * 100); }
   readonly panelId = `normalization-original-${++nextPanel}`;
@@ -52,16 +52,13 @@ export class NormalizationPreview {
       this.suppressed = undefined;
     });
   }
-  toggle(key: 'trim' | 'emptyMarkers' | 'dates' | 'coordinates' | 'numbers' | 'duplicates', event: Event) {
-    this.optionsChanged.emit({ ...this.options(), [key]: (event.target as HTMLInputElement).checked });
-  }
   dateOrder(event: Event) {
     const value = (event.target as HTMLSelectElement).value;
-    if (value === 'safe' || value === 'DMY' || value === 'MDY') this.optionsChanged.emit({ ...this.options(), dateOrder: value });
+    if (value === 'safe' || value === 'DMY' || value === 'MDY') this.optionsChanged.emit({ dateOrder: value, decimalMode: this.options().decimalMode });
   }
   decimalMode(event: Event) {
     const value = (event.target as HTMLSelectElement).value;
-    if (value === 'safe' || value === 'comma') this.optionsChanged.emit({ ...this.options(), decimalMode: value });
+    if (value === 'safe' || value === 'comma') this.optionsChanged.emit({ dateOrder: this.options().dateOrder, decimalMode: value });
   }
   pageSize(event: Event) {
     const limit = Number((event.target as HTMLSelectElement).value);

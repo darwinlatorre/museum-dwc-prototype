@@ -85,7 +85,12 @@ async function normalization(data: Dataset) {
     expect(label, text).toBeTruthy();
     (label!.querySelector('input') as HTMLInputElement).click(); await view.f.whenStable();
   };
-  return { ...view, preview, toggle };
+  const mode = async (label: string, value: string) => {
+    const select = [...view.root.querySelectorAll('label')].find(item => item.textContent?.startsWith(label))?.querySelector('select');
+    expect(select, label).toBeTruthy();
+    select!.value = value; select!.dispatchEvent(new Event('change')); await view.f.whenStable();
+  };
+  return { ...view, preview, toggle, mode };
 }
 
 describe('Preservación pública del análisis local', () => {
@@ -116,10 +121,8 @@ describe('Preservación pública del análisis local', () => {
     await respond();
     expect(root.querySelector('h3')?.textContent).toBe('Diagnóstico');
     await click('Normalizar');
-    (root.querySelector('.checks input') as HTMLInputElement).click();
-    await f.whenStable();
     await click('Aplicar normalización y validar');
-    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: false } });
+    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
     await respond();
     expect(root.querySelector('h3')?.textContent).toContain('Normalice');
     await click('Finalizar');
@@ -127,15 +130,41 @@ describe('Preservación pública del análisis local', () => {
     expect(root.textContent).toContain('original.csv');
   });
 
-  it('ofrece seis reglas reversibles y ocultación visual con interruptores públicos', async () => {
+  it('ofrece seis reglas fijas y solo un interruptor público de ocultación visual', async () => {
     const { root, click, chooseContext, respond } = await setup();
     await chooseContext(); await click('Mapear columnas'); await click('Validar localmente'); await respond();
     await click('Normalizar');
     const switches = [...root.querySelectorAll<HTMLInputElement>('input[role=switch]')];
-    expect(switches).toHaveLength(7);
+    expect(switches).toHaveLength(1);
+    expect(switches[0].closest('label')?.textContent).toContain('Ocultar columnas sin datos');
+    expect(root.querySelectorAll('.normalization-rules input')).toHaveLength(0);
+    const init = DelayedWorker.all.find(worker => worker.previewRole)!.requests[0];
+    expect(init).toMatchObject({ kind: 'preview-init', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
     expect(switches.every(control => !control.checked)).toBe(true);
     expect(root.textContent).toContain('Todos los registros');
     expect(root.textContent).not.toContain('primeros 20');
+  });
+
+  it('mantiene las seis reglas activas al elegir formatos sin validar automáticamente ni alterar originales', async () => {
+    const data = { headers: ['eventDate', 'decimalLatitude', 'sampleSizeValue', 'occurrenceID', 'scientificName', 'vacío'], rows: [2, 19].map(row => ({ row, values: ['03/04/2024', '1,234', '2,500', '0007', ' Aus bus ', ' n/A '] })) };
+    const original = JSON.stringify(data);
+    const { root, preview, mode, click } = await normalization(data);
+    const analyses = () => DelayedWorker.all.filter(worker => !worker.previewRole);
+    const count = analyses().length;
+    expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('03/04/2024');
+    expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('1,234');
+    for (const [label, value] of [['Interpretación de fechas', 'DMY'], ['Interpretación de fechas', 'MDY'], ['Separador decimal', 'comma'], ['Separador decimal', 'safe'], ['Separador decimal', 'comma']]) {
+      await mode(label, value);
+      expect(preview.request).toMatchObject({ kind: 'preview-update', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true } });
+      expect(preview.request).not.toHaveProperty('original');
+      expect(analyses()).toHaveLength(count);
+    }
+    const cells = [...root.querySelectorAll('.normalization-grid tbody tr:first-child td .literal')].map(cell => cell.textContent);
+    expect(cells).toEqual(['2024-03-04', '1.234', '2.500', '0007', 'Aus␠bus', '∅']);
+    expect(root.textContent).toContain('occurrenceID repetido: 1 grupos · 2 registros');
+    await click('Aplicar normalización y validar');
+    expect(analyses().at(-1)!.request).toMatchObject({ kind: 'validate', data, options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'MDY', decimalMode: 'comma' } });
+    expect(JSON.stringify(data)).toBe(original);
   });
 
   it('solicita la hoja completa al worker persistente sin normalizar en la vista', async () => {
@@ -240,7 +269,7 @@ describe('Preservación pública del análisis local', () => {
     expect(JSON.stringify(data)).toBe(original);
   });
 
-  it('localiza NULL y N/A solo con aprobación y elimina el detalle al invalidar', async () => {
+  it('mantiene faltantes crudos hasta Aplicar las seis reglas y elimina el detalle al invalidar', async () => {
     const data = { headers: ['subfamily'], rows: ['', 'NULL', 'N/A', ' n/a '].map((value, i) => ({ row: i * 7 + 3, values: [value] })) };
     const original = JSON.stringify(data);
     const { f, root, click, chooseContext, respond } = await setup(['subfamily'], data);
@@ -251,23 +280,16 @@ describe('Preservación pública del análisis local', () => {
     await click('Ver valores vacíos de subfamily');
     expect(root.querySelectorAll('#missing-cell-detail tbody tr')).toHaveLength(1);
     await click('Normalizar');
-    (root.querySelectorAll('.checks input')[1] as HTMLInputElement).click();
-    await f.whenStable();
-    await click('Aplicar normalización y validar');
-    await respond();
+    expect(root.querySelector('.normalization-grid tbody')?.textContent).not.toContain('NULL');
     await click('Ver diagnóstico');
-    expect(root.querySelector('#missing-cell-detail')).toBeNull();
-    await click('Ver valores vacíos de subfamily');
-    expect([...root.querySelectorAll('#missing-cell-detail tbody tr')].map(row => row.textContent)).toEqual([
-      expect.stringContaining('3'), expect.stringContaining('NULL'), expect.stringContaining('N/A'),
-    ]);
-    expect(root.querySelectorAll('#missing-cell-detail tbody tr')).toHaveLength(3);
+    expect(root.querySelector('.missing-summary')?.textContent).toContain('1 de 4');
+    expect(root.querySelectorAll('#missing-cell-detail tbody tr')).toHaveLength(1);
     await click('Normalizar');
-    (root.querySelectorAll('.checks input')[0] as HTMLInputElement).click();
-    await f.whenStable();
     await click('Aplicar normalización y validar');
+    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', data, options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true } });
     await respond();
     await click('Ver diagnóstico');
+    expect(root.querySelector('.missing-summary')?.textContent).toContain('4 de 4');
     await click('Ver valores vacíos de subfamily');
     const rows = [...root.querySelectorAll('#missing-cell-detail tbody tr')];
     expect(rows).toHaveLength(4);
@@ -366,8 +388,6 @@ describe('Preservación pública del análisis local', () => {
     await click('Normalizar');
     expect(root.querySelector('.normalization-pager')).toBeTruthy();
     expect([...root.querySelectorAll('button')].find(button => button.textContent === 'Página siguiente')?.disabled).toBe(false);
-    (root.querySelector('.checks input') as HTMLInputElement).click();
-    await f.whenStable();
     expect(root.querySelectorAll('tbody tr')).toHaveLength(10);
     expect(root.querySelector('select[aria-label="Registros por página"]')).toBeTruthy();
   });
@@ -483,37 +503,49 @@ describe('Preservación pública del análisis local', () => {
   it('alcanza la última fila, cambia tamaños y pagina con mensajes pequeños sobre un único original', async () => {
     const data = { headers: ['eventDate'], rows: Array.from({ length: 31 }, (_, i) => ({ row: i * 3 + 7, values: ['2024/02/29'] })) };
     const original = JSON.stringify(data);
-    const { f, root, click, preview, toggle } = await normalization(data);
+    const { f, root, click, preview, mode } = await normalization(data);
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(10);
-    expect(root.textContent).toContain('Comprobación de duplicados desactivada');
+    expect(root.textContent).toContain('Filas completas iguales: 1 grupos · 31 registros');
     await click('Última página');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
-    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('97');
+    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('97 Fila igual · row:1');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { offset: 30, limit: 10 } });
     const size = root.querySelector<HTMLSelectElement>('select[aria-label="Registros por página"]')!;
     for (const limit of [25, 50, 100, 10]) {
       size.value = String(limit); size.dispatchEvent(new Event('change')); await f.whenStable();
       expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(Math.min(limit, 31));
     }
-    await toggle('Fechas Darwin Core');
+    await mode('Interpretación de fechas', 'DMY');
     expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('2024-02-29');
-    await toggle('Fechas Darwin Core');
-    expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('2024/02/29');
+    await mode('Interpretación de fechas', 'safe');
+    expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('2024-02-29');
     expect(preview.requests.filter(request => request.kind === 'preview-init')).toHaveLength(1);
     expect(preview.requests.slice(1).every(request => !('original' in request) && !('data' in request) && !('mapping' in request))).toBe(true);
     expect(JSON.stringify(data)).toBe(original);
   });
 
   it('filtra las 500 columnas por metadata actual sin perder índices ni registros totalmente ocultos', async () => {
-    const data = { headers: Array.from({ length: 500 }, (_, i) => `col${i}`), rows: [{ row: 42, values: Array.from({ length: 500 }, (_, i) => i === 499 ? 'NULL' : ' ') }] };
-    const { root, preview, toggle, click } = await normalization(data);
+    const data = { headers: Array.from({ length: 500 }, (_, i) => i === 499 ? 'eventDate' : `col${i}`), rows: [{ row: 42, values: Array.from({ length: 500 }, (_, i) => i === 499 ? '03/04/2024' : ' ') }] };
+    const { root, preview, toggle, click, mode } = await normalization(data);
     await click('Columnas siguientes');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { columnIndices: Array.from({ length: 50 }, (_, i) => i + 50) } });
     await toggle('Ocultar columnas sin datos (solo vista)');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { columnIndices: [499] } });
     expect(root.querySelectorAll('.normalization-grid thead th')).toHaveLength(2);
     expect(root.querySelector('.normalization-grid thead')?.textContent).toContain('Columna 500');
-    await toggle('Tratar NULL y N/A como vacíos (sin distinguir mayúsculas)');
+    await mode('Interpretación de fechas', 'DMY');
+    expect(preview.requests).toContainEqual(expect.objectContaining({ kind: 'preview-update', options: expect.objectContaining({ emptyMarkers: true, dateOrder: 'DMY' }) }));
+    expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('2024-04-03');
+    expect(root.querySelectorAll('.normalization-grid td')).toHaveLength(1);
+    await toggle('Ocultar columnas sin datos (solo vista)');
+    expect(root.querySelectorAll('.normalization-grid td')).toHaveLength(50);
+    expect(data.rows[0].values[499]).toBe('03/04/2024');
+  });
+
+  it('conserva filas físicas cuando las 500 columnas quedan ocultas por las reglas fijas', async () => {
+    const data = { headers: Array.from({ length: 500 }, (_, i) => `col${i}`), rows: [{ row: 42, values: Array.from({ length: 500 }, (_, i) => i === 499 ? 'NULL' : ' ') }] };
+    const { root, preview, toggle } = await normalization(data);
+    await toggle('Ocultar columnas sin datos (solo vista)');
     expect(root.textContent).toContain('Todas las columnas están ocultas');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
     expect(root.querySelectorAll('.normalization-grid td')).toHaveLength(0);
@@ -526,21 +558,20 @@ describe('Preservación pública del análisis local', () => {
   it('muestra índices no contiguos y dos avisos superpuestos con sus filas físicas fuera de página', async () => {
     const data = { headers: ['occurrenceID', 'vacía', 'eventDate'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i * 4 + 2, values: ['ID', '', '2024'] })) };
     const { root, preview, toggle } = await normalization(data);
-    await toggle('Comprobar duplicados'); await toggle('Ocultar columnas sin datos (solo vista)');
+    await toggle('Ocultar columnas sin datos (solo vista)');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { columnIndices: [0, 2] } });
     expect(root.textContent).toContain('Filas completas iguales: 1 grupos · 12 registros');
     expect(root.textContent).toContain('occurrenceID repetido: 1 grupos · 12 registros');
     expect(root.textContent).toContain('no se suman como registros únicos');
     expect(root.querySelector('.normalization-duplicates')?.textContent).toContain('46');
-    await toggle('Comprobar duplicados');
-    expect(root.querySelector('.normalization-duplicates')?.textContent).toContain('desactivada');
-    expect(root.querySelector('.normalization-duplicates')?.textContent).not.toContain('0 grupos');
+    await toggle('Ocultar columnas sin datos (solo vista)');
+    expect(root.querySelector('.normalization-duplicates')?.textContent).toContain('1 grupos · 12 registros');
+    expect(root.querySelector('.normalization-duplicates')?.textContent).not.toContain('desactivada');
   });
 
   it('presenta reglas y espacios visibles, texto exacto seguro y un panel por foco, hover y toque con Escape', async () => {
     const before = ' <img src=x>\t\n ';
-    const { f, root, toggle, click } = await normalization({ headers: ['a', 'b'], rows: [{ row: 19, values: [before, 'x'] }] });
-    await toggle('Eliminar espacios al inicio y al final');
+    const { f, root, mode, click } = await normalization({ headers: ['a', 'b'], rows: [{ row: 19, values: [before, 'x'] }] });
     const cell = root.querySelector<HTMLButtonElement>('.normalization-changed button')!;
     expect(cell.textContent).toContain('Espacios exteriores');
     cell.dispatchEvent(new MouseEvent('mouseenter')); await f.whenStable();
@@ -563,14 +594,13 @@ describe('Preservación pública del análisis local', () => {
     cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); await f.whenStable();
     expect(root.querySelectorAll('.normalization-grid button[tabindex="0"]')).toHaveLength(1);
     expect((document.activeElement as HTMLElement).dataset['cell']).toBe('19:1');
-    await toggle('Eliminar espacios al inicio y al final');
+    await mode('Interpretación de fechas', 'DMY');
     expect(root.querySelector('.normalization-original')).toBeNull();
-    expect(root.querySelectorAll('.normalization-changed')).toHaveLength(0);
+    expect(root.querySelectorAll('.normalization-changed')).toHaveLength(1);
   });
 
   it('F1 cierra el original con Escape desde Aplicar sin robar foco y respeta la vista inactiva', async () => {
-    const { f, root, toggle, button } = await normalization({ headers: ['scientificName'], rows: [{ row: 2, values: [' Aus bus '] }] });
-    await toggle('Eliminar espacios al inicio y al final');
+    const { f, root, button } = await normalization({ headers: ['scientificName'], rows: [{ row: 2, values: [' Aus bus '] }] });
     const apply = button('Aplicar normalización y validar');
     const cell = root.querySelector<HTMLButtonElement>('.normalization-changed button')!;
     apply.focus();
@@ -619,11 +649,11 @@ describe('Preservación pública del análisis local', () => {
   });
 
   it('descarta ready y páginas atrasadas, ignora respuestas desconocidas y etiqueta la copia anterior', async () => {
-    const { f, root, preview, toggle, button } = await normalization({ headers: ['a'], rows: [{ row: 2, values: [' x '] }] });
+    const { f, root, preview, mode, button } = await normalization({ headers: ['a'], rows: [{ row: 2, values: [' x '] }] });
     DelayedWorker.previewAutomatic = false;
-    await toggle('Eliminar espacios al inicio y al final');
+    await mode('Interpretación de fechas', 'DMY');
     const older = preview.request as PreviewRequest;
-    await toggle('Eliminar espacios al inicio y al final');
+    await mode('Interpretación de fechas', 'MDY');
     const current = preview.request as PreviewRequest;
     expect(root.textContent).toContain('copia anterior, no vigente');
     expect(button('Aplicar normalización y validar').disabled).toBe(true);
@@ -638,8 +668,7 @@ describe('Preservación pública del análisis local', () => {
   });
 
   it('no invalida el análisis al paginar u ocultar; las opciones sí cancelan y Apply captura todos los flags', async () => {
-    const { f, root, preview, toggle, click } = await normalization({ headers: ['a'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i + 2, values: [' x '] })) });
-    for (const name of ['Eliminar espacios al inicio y al final', 'Tratar NULL y N/A como vacíos (sin distinguir mayúsculas)', 'Fechas Darwin Core', 'Coordenadas decimales', 'Valores numéricos Darwin Core', 'Comprobar duplicados']) await toggle(name);
+    const { f, root, preview, toggle, click, mode } = await normalization({ headers: ['a'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i + 2, values: [' x '] })) });
     for (const [label, value] of [['Interpretación de fechas', 'DMY'], ['Separador decimal', 'comma']]) {
       const select = [...root.querySelectorAll('label')].find(item => item.textContent?.startsWith(label))!.querySelector('select')!;
       select.value = value; select.dispatchEvent(new Event('change')); await f.whenStable();
@@ -650,7 +679,7 @@ describe('Preservación pública del análisis local', () => {
     await click('Página siguiente'); await toggle('Ocultar columnas sin datos (solo vista)');
     expect(analysis.terminated).toBe(false);
     expect(preview.terminated).toBe(false);
-    await toggle('Fechas Darwin Core');
+    await mode('Interpretación de fechas', 'MDY');
     expect(analysis.terminated).toBe(true);
     analysis.respond({ kind: 'result', issues: [], changes: [] }); await f.whenStable();
     expect(root.querySelector('.wizard-final')).toBeNull();
@@ -659,7 +688,7 @@ describe('Preservación pública del análisis local', () => {
 
   it.each(['contexto', 'revisión', 'configuración', 'disponibilidad', 'términos'])('frontera metadatos-preview: %s invalida solo el diagnóstico y las opciones sí recalculan', async (change) => {
     const data = { headers: ['a'], rows: [{ row: 19, values: [' original '] }] };
-    const { f, root, preview, toggle, click, chooseContext, button, respond } = await normalization(data);
+    const { f, root, preview, mode, click, chooseContext, button, respond } = await normalization(data);
     const snapshotText = root.querySelector('.normalization-grid')!.textContent;
     const initialRequest = structuredClone(preview.request);
     const previewMessages = preview.requests.length;
@@ -699,7 +728,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.textContent).not.toContain('copia anterior, no vigente');
     await click('Aplicar normalización y validar');
     const pending = DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!;
-    await toggle('Eliminar espacios al inicio y al final');
+    await mode('Separador decimal', 'comma');
     expect(pending.terminated).toBe(true);
     expect(preview.requests).toHaveLength(previewMessages + 1);
     expect(preview.request).toMatchObject({ kind: 'preview-update', options: { trim: true } });
@@ -717,7 +746,6 @@ describe('Preservación pública del análisis local', () => {
 
   it('rechaza una página atrasada de la misma generación y cierra el original al cambiar ventana', async () => {
     const { f, root, preview, toggle, click } = await normalization({ headers: ['a', 'vacía'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i + 2, values: [' x ', ''] })) });
-    await toggle('Eliminar espacios al inicio y al final');
     root.querySelector<HTMLButtonElement>('.normalization-changed button')!.click(); await f.whenStable();
     expect(root.querySelector('.normalization-original')).toBeTruthy();
     DelayedWorker.previewAutomatic = false;
@@ -746,19 +774,19 @@ describe('Preservación pública del análisis local', () => {
     expect(headers[1].querySelector('small.literal')?.textContent).toBe('Fecha');
     expect(headers[1].getAttribute('title')).toBe('Columna 1: Fecha');
     expect(headers[2].querySelector('small.literal')).toBeNull();
-    (root.querySelectorAll('.checks input')[5] as HTMLInputElement).click(); await f.whenStable();
+    expect(root.querySelectorAll('.normalization-rules input')).toHaveLength(0);
     expect(root.textContent).toContain('Sin occurrenceID mapeado; se comprobaron las filas completas');
   });
 
   it('conserva originales ante onerror, no reintenta automáticamente y reinicia init fallido con tokens nuevos', async () => {
     DelayedWorker.previewAutomatic = false;
     const data = { headers: ['a'], rows: [{ row: 2, values: [' x '] }] };
-    const { f, root, preview, click, toggle, button } = await normalization(data);
+    const { f, root, preview, click, mode, button } = await normalization(data);
     const failed = preview.request as PreviewRequest;
     preview.onerror?.(); await f.whenStable();
     expect(root.textContent).toContain('Los originales se conservan');
     expect(button('Aplicar normalización y validar').disabled).toBe(true);
-    await toggle('Eliminar espacios al inicio y al final');
+    await mode('Interpretación de fechas', 'DMY');
     expect(preview.requests).toHaveLength(1);
     await click('Reintentar vista previa');
     const next = DelayedWorker.all.filter(worker => worker.previewRole).at(-1)!;
@@ -774,9 +802,9 @@ describe('Preservación pública del análisis local', () => {
   });
 
   it('cancela, reintenta y termina el worker al cambiar archivo sin aceptar eventos viejos', async () => {
-    const { f, root, preview, toggle, click } = await normalization({ headers: ['a'], rows: [{ row: 2, values: [' x '] }] });
+    const { f, root, preview, mode, click } = await normalization({ headers: ['a'], rows: [{ row: 2, values: [' x '] }] });
     DelayedWorker.previewAutomatic = false;
-    await toggle('Eliminar espacios al inicio y al final');
+    await mode('Interpretación de fechas', 'DMY');
     const stale = preview.request as PreviewRequest;
     await click('Cancelar vista previa');
     expect(preview.request.kind).toBe('preview-cancel');
@@ -821,7 +849,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('main')?.classList.contains('normalization-wide')).toBe(true);
     const workbench = root.querySelector('app-import');
     const preview = DelayedWorker.all.filter(worker => worker.previewRole).at(-1)!;
-    (root.querySelector('.checks input') as HTMLInputElement).click(); await f.whenStable();
+    expect(root.querySelectorAll('.normalization-rules input')).toHaveLength(0);
     root.querySelector<HTMLButtonElement>('.normalization-changed button')!.click(); await f.whenStable();
     expect(root.querySelector('.normalization-original')).toBeTruthy();
     await click('▦ Catálogo Darwin Core');
