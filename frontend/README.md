@@ -4,17 +4,24 @@ Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten r
 
 ## Ejecución
 
-Flujo principal: ejecutar `./start.sh` desde la raíz, con Node.js 24 y los requisitos del [README principal](../README.md#ejecución-local). Valida el único `.env` raíz, instala con `npm ci --no-audit --no-fund`, compila Angular y Spring y despliega `docker-compose.yml` esperando salud. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
+Flujo principal: desde la raíz, ejecutar `docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180`; ver [modos y requisitos](../README.md#ejecución-local). Compose construye y despliega los servicios esperando salud. Node.js 24 y `npm ci --no-audit --no-fund` se ejecutan dentro de la imagen, no en el host. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
+
+Para desarrollo en contenedor: `docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait`. El manifiesto es autónomo e incluye PostgreSQL con volumen propio; `--env-file` sigue siendo necesario para interpolar el manifiesto, aunque el backend también use `env_file`. Angular CLI sirve el puerto `FRONTEND_PORT` (4200), con fuentes montadas y polling para hot reload. `proxy.docker.conf.json` dirige `/api/**` a `backend:8080`; se preserva el proxy del modo host. El frontend pertenece a `app` y, solo con el overlay Traefik, también a `proxy` (red externa `proxy` por defecto, configurable con `TRAEFIK_NETWORK`). Desarrollo con proxy añade `-f compose.traefik.yml` después de `-f compose.dev.yml`; su perfil opcional publica siempre `127.0.0.1:80:80`. Ambos modos usan el router/servicio fijo `museum`, hacia 80 en producción y 4200 en desarrollo: son alternativas, no rutas simultáneas en un mismo Traefik sin configuración manual. Ver el README principal.
+
+El servicio Docker configura un único hostname adicional con `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${TRAEFIK_HOST:-localhost}`. Se conservan los hosts locales nativos y se rechazan otros hosts; no se desactiva la validación. Angular CLI 21.2.27 expone `--allowed-hosts` solo como booleano: ni separar el hostname ni usar `=hostname` configura la lista deseada. La variable solo pertenece al servicio Docker, no a la aplicación ni al modo host.
 
 Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
 
 ```bash
+npm run lint
 node scripts/check-architecture.mjs
 npm test -- --watch=false
 npm run build
 ```
 
-El build genera `dist/frontend/browser`. El Dockerfile runtime `nginx:1.28-alpine` copia esa carpeta y el archivo hermano `dist/frontend/3rdpartylicenses.txt` sin recompilar fuentes. Las licencias quedan en `/usr/share/nginx/html/3rdpartylicenses.txt`, incluidas en la lista de permitidos del contexto. `nginx.conf` conserva `/api/` al enviar solicitudes a `backend:8080` y usa `index.html` como fallback SPA; el puerto publicado es solo `127.0.0.1:4200`. Su healthcheck usa wget y el inicio depende de la salud del backend. El contexto Docker excluye dotenv, fuentes y `node_modules`.
+`npm run lint` ejecuta ESLint directamente (no `ng lint`) sobre `src/**/*.ts` y `src/**/*.html`, incluidas las pruebas y plantillas inline de componentes. `eslint.config.mjs` usa flat config con las reglas recomendadas de ESLint, typescript-eslint y Angular ESLint, sin reglas de formato ni análisis que requiera información de tipos. Cualquier error o advertencia hace fallar el comando. Se ignoran `node_modules`, `dist`, `.angular`, `.cache` y `coverage`; los scripts JavaScript y estilos no forman parte de este lint. Prettier se mantiene separado para formato.
+
+El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. `nginx.conf` conserva `/api/` hacia `backend:8080` y el fallback SPA; producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
 
 El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
 

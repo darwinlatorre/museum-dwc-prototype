@@ -10,36 +10,77 @@ Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Pe
 
 ## Ejecución local
 
-Requisitos del host: Bash, Node.js **24**, npm, Java **27** y Docker con Compose que admita `up --wait --wait-timeout`. Se incluye Maven Wrapper. La instalación de dependencias, el wrapper y las imágenes requieren acceso a Internet; no se agregan plugins ni se cambian versiones.
+Para contenedores: Docker con Compose **2.24.4 o posterior** (`up --wait --wait-timeout`). Las imágenes compilan las aplicaciones: el host no necesita Node, npm, Java ni Maven. Los builds requieren Internet. Para ejecutar fuera de Docker se mantienen Node.js **24**, npm y Java **27**, con Maven Wrapper incluido.
 
-1. Gestionar manualmente un único `.env` en la raíz. La plantilla `.env.example` puede ser revisada, editada y versionada por el agente, usando exclusivamente valores ficticios o placeholders y sin leer ni copiar los `.env` reales. La excepción en `.gitignore` permite versionarla tras comprobar que no contiene datos sensibles; publicarla requiere autorización y esto **no implica que ya esté publicada**. Completar `DB_NAME`, `DB_USER` y `DB_PASSWORD` con valores no vacíos. Las otras variables son `DB_HOST=localhost`, `DB_PORT=5432` y `SERVER_PORT=8080`. No guardar credenciales reales en Git ni compartir la salida de `docker compose config` sin `--quiet`.
-2. Ejecutar desde la raíz (o invocar su ruta absoluta desde cualquier directorio):
+1. Gestionar manualmente los archivos raíz `.env` (producción) y `.env.dev` (desarrollo), usando sus plantillas existentes. Las plantillas y los dotenv se dejan intactos en este cambio. Completar `DB_NAME`, `DB_USER` y `DB_PASSWORD` con valores no vacíos. No guardar credenciales reales en Git ni compartir `docker compose config` sin `--quiet`.
+2. Ejecutar directamente Compose desde la raíz:
 
    ```bash
-   ./start.sh
+   docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180
    ```
 
-3. Abrir http://localhost:4200. Nginx sirve Angular y dirige `/api/` al backend conservando el prefijo. Flyway crea el esquema; la primera ejecución carga el catálogo y la configuración global de los cinco contextos. Los reinicios no sobrescriben ajustes guardados.
+3. Abrir http://localhost:8081 (o `FRONTEND_HTTP_PORT`). Nginx sirve Angular y dirige `/api/` al backend conservando el prefijo. Flyway crea el esquema; la primera ejecución carga el catálogo y la configuración global de los cinco contextos. Los reinicios no sobrescriben ajustes guardados.
 
-`./start.sh --help` muestra el uso sin ejecutar comandos; otros argumentos se rechazan con código 2. El script comprueba herramientas y presencia del `.env`, valida el modelo con `docker compose --env-file ... -f ... config --quiet`, ejecuta `npm ci --no-audit --no-fund` y `npm run build` en `frontend`, luego `bash ./mvnw package -DskipTests` en `backend` y finalmente `docker compose up --build -d --wait --wait-timeout 180`. Usa rutas explícitas y Compose como intérprete dotenv: no ejecuta `source`, `eval` ni un parser casero. Las variables ya exportadas en la terminal tienen la precedencia normal de Compose; evitar valores antiguos exportados.
+Compose interpreta dotenv; no ejecutar `source` ni `eval` sobre esos archivos. Las variables ya exportadas en la terminal tienen la precedencia normal de Compose; evitar valores antiguos exportados. Los Dockerfiles instalan dependencias y compilan Angular y Spring dentro de etapas de build.
 
-Ante cualquier error se detiene con estado no cero, no continúa ni anuncia éxito antes de la salud de los tres servicios. La espera de salud está limitada a 180 segundos; compilaciones y descargas pueden tardar más. No revierte compilados ni elimina contenedores parcialmente iniciados: revisar el fallo antes de repetir. El empaquetado omite pruebas; no reemplaza las comprobaciones de abajo. No imprime el contenido del `.env` ni activa trazas de shell.
+`--wait` espera la salud de los tres servicios, con un límite de 180 segundos; compilaciones y descargas pueden tardar más. Ante un error, revisar el fallo antes de repetir: Compose no revierte compilados ni elimina contenedores parcialmente iniciados. El empaquetado omite pruebas; no reemplaza las comprobaciones de abajo.
 
 ### Red, configuración y almacenamiento
 
-`docker-compose.yml` es el único manifiesto principal; el antiguo `compose.mvp.yml` se retira. Publica exclusivamente `127.0.0.1`: PostgreSQL `${DB_PORT:-5432}` → 5432, API `${SERVER_PORT:-8080}` → 8080 y frontend 4200 → 80. Si 5432 está ocupado, elegir otro `DB_PORT` libre en el `.env`, **sin detener otro PostgreSQL**. El backend en contenedor siempre usa `museum-db:5432`, escucha internamente en `0.0.0.0:8080` y no consume `DB_HOST=localhost`; este último sirve para un arranque opcional en el host. La API sigue sin autenticación y no debe exponerse a otras interfaces.
+`compose.yml` es el manifiesto principal de producción (artefactos compilados, no una habilitación para Internet). `compose.dev.yml` es un manifiesto autónomo con su propio servicio PostgreSQL; `compose.traefik.yml` es un overlay explícito para cualquiera de los dos modos; el antiguo `compose.mvp.yml` no se usa. Todos los puertos publicados escuchan exclusivamente en `127.0.0.1`: PostgreSQL `${DB_PORT:-5432}` → 5432, API `${SERVER_PORT:-8080}` → 8080 y Nginx `${FRONTEND_HTTP_PORT:-8081}` → 80. Si 5432 está ocupado, elegir otro `DB_PORT` libre en el `.env`, **sin detener otro PostgreSQL**. El backend en contenedor siempre usa `museum-db:5432`, escucha internamente en `0.0.0.0:8080` y no consume `DB_HOST=localhost`; este último sirve para un arranque opcional en el host. La API sigue sin autenticación y no debe exponerse a otras interfaces.
 
-Se conserva el proyecto `universidad`, servicio `museum-db` y volumen `museum_mvp_data`, cuyo nombre durable es **`universidad_museum_mvp_data`**. Nunca se reutiliza `universidad_postgres_data` ni el servicio original `postgres`. Antes de arrancar, confirmar que ese volumen MVP es el deseado: si existe, usar sus credenciales vigentes. Cambiar `DB_NAME`, `DB_USER` o `DB_PASSWORD` en dotenv **no renombra ni rota** una base ya inicializada; no borrar el volumen para resolver discrepancias. El arranque puede aplicar las migraciones existentes al volumen MVP, por lo que debe elegirse conscientemente.
+Se conserva el proyecto fijo `universidad`, servicio `museum-db` y clave de volumen `museum_mvp_data`. Compose genera automáticamente el mismo nombre durable **`universidad_museum_mvp_data`** (`proyecto_clave`), sin un `name` explícito ni migración de datos. No cambiar el proyecto ni la clave para simplificar ese nombre. Nunca se reutiliza `universidad_postgres_data` ni el servicio original `postgres`. Antes de arrancar, confirmar que ese volumen MVP es el deseado: si existe, usar sus credenciales vigentes. Cambiar `DB_NAME`, `DB_USER` o `DB_PASSWORD` en dotenv **no renombra ni rota** una base ya inicializada; no borrar el volumen para resolver discrepancias. El arranque puede aplicar las migraciones existentes al volumen MVP, por lo que debe elegirse conscientemente.
 
-Solo Compose consume el `.env` raíz y entrega la configuración al backend. Spring no carga dotenv por sí mismo. El histórico `backend/.env` deja de utilizarse, permanece ignorado y sin modificaciones; el humano puede retirarlo manualmente cuando ya no lo necesite. Para desarrollo host, exportar explícitamente las variables de conexión en la terminal, sin duplicar archivos ni ejecutar dotenv como código, y usar `bash ./mvnw spring-boot:run` desde `backend`; `DB_URL` sigue disponible como override JDBC avanzado para ese modo, no para el stack Compose.
+El backend recibe el dotenv raíz mediante `env_file`: `.env` en `compose.yml` y `.env.dev` en `compose.dev.yml`, incluidas las variables adicionales de cada archivo. `env_file` configura el entorno del contenedor, **no** la interpolación `${...}` del manifiesto: para desarrollo sigue siendo obligatorio `--env-file .env.dev`; producción selecciona `.env` mediante `--env-file .env`. Los valores explícitos de `environment` fijan `DB_HOST=museum-db`, `DB_PORT=5432` y `SERVER_PORT=8080`, por encima de los valores host del dotenv. El frontend no usa `env_file` ni recibe credenciales de base. `application.yaml` conserva `SERVER_PORT=8080` como default y exige las credenciales de base, sin una contraseña predeterminada. Spring no carga dotenv por sí mismo. El histórico `backend/.env` deja de utilizarse, permanece ignorado y sin modificaciones; el humano puede retirarlo manualmente cuando ya no lo necesite. Para desarrollo host, exportar explícitamente las variables de conexión en la terminal, sin duplicar archivos ni ejecutar dotenv como código, y usar `bash ./mvnw spring-boot:run` desde `backend`; `DB_URL` sigue disponible como override JDBC avanzado para ese modo, no para el stack Compose.
 
 Para detener el stack sin eliminar datos, desde la raíz:
 
 ```bash
-docker compose --project-name universidad --env-file .env -f docker-compose.yml stop
+docker compose --project-name universidad --env-file .env -f compose.yml stop
 ```
 
-No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Las imágenes runtime copian el JAR y `dist/frontend/browser` ya compilados; los contextos Docker permiten solo esos artefactos y sus configuraciones, nunca dotenv, Git o `node_modules`.
+No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Los Dockerfiles tienen etapas `base`, `development`, `build` y `production`. Producción usa la última etapa por defecto, sin repetir `build.target`; desarrollo selecciona `development` explícitamente. Los runtimes reciben únicamente el JAR o Angular compilado, incluida `3rdpartylicenses.txt`; las listas de permitidos de `.dockerignore` excluyen dotenv, Git, artefactos host y `node_modules`.
+
+### Desarrollo con código montado
+
+```bash
+docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait
+```
+
+Abrir http://localhost:4200 (`FRONTEND_PORT`). Angular CLI escucha dentro del contenedor en 4200, observa las fuentes con polling y dirige `/api/**` a `backend:8080` mediante `proxy.docker.conf.json`. `proxy.conf.json`, seleccionado por `angular.json` para `npm start` en el host, apunta a `localhost:8080`. No son configuraciones duplicadas: el proxy Docker resuelve el servicio `backend`, mientras el host usa localhost. Solo se montan fuentes y configuraciones seleccionadas, no carpetas completas con dotenv ni dependencias del host. Cambios en dependencias requieren reconstruir la imagen.
+
+El servicio frontend añade exclusivamente `${TRAEFIK_HOST:-localhost}` mediante `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS`, opción de Vite usada por Angular. No se pasa `--allowed-hosts`: en CLI 21.2.27 es booleano, no una lista CLI de nombres. Se mantiene la validación de hosts (incluidos los permisos locales nativos de Vite), sin permitir hosts arbitrarios. Este ajuste no cambia `npm start` fuera de Docker ni entrega dotenv al frontend.
+
+El proyecto declarado es `universidad-dev`, con base `museum_dev_data` propia y `target` Java en volumen separado. El backend ejecuta `mvn spring-boot:run`: tras editar Java, ejecutar el mismo comando Compose con `restart backend` en lugar de `up ...`; **no tiene recarga Java automática**. Angular sí dispone de hot reload. Desarrollo y producción comparten los defaults de puertos de base/API: para mantener ambos activos, asignar puertos distintos en `.env.dev` antes de arrancar. No reutilizar el volumen MVP ni parar servicios ajenos para liberar puertos.
+
+### Traefik opcional
+
+Flujos: **Traefik → Nginx → Spring Boot → PostgreSQL** en producción; **Traefik opcional → Angular CLI → Spring Boot → PostgreSQL** en desarrollo. Base, backend y frontend siempre pertenecen a `app`, con nombre acotado al proyecto (`universidad_app` o `universidad-dev_app`), sin red `default`. Solo el frontend añade `proxy`; la API y la base nunca se conectan a ella. `app` no usa `internal: true`: el backend necesita salida a las fuentes TDWG.
+
+El overlay usa una red **externa** compartida: el operador debe crearla una vez si no existe (`docker network create proxy`, o el nombre de `TRAEFIK_NETWORK`). El default es `proxy`; un `TRAEFIK_NETWORK` configurado previamente, incluido el nombre antiguo, lo sobrescribe. Revisarlo manualmente si se desea adoptar el nuevo default; las plantillas permanecen intactas. Un Traefik existente debe estar conectado a esa red, tener proveedor Docker y el entrypoint indicado. No arrancar el incluido si otro proxy ocupa el puerto.
+
+```bash
+# Producción, con Traefik existente:
+docker compose --env-file .env -f compose.yml -f compose.traefik.yml up --build -d --wait
+# Producción, ejecutando también el Traefik incluido:
+docker compose --env-file .env -f compose.yml -f compose.traefik.yml --profile local-traefik up --build -d --wait
+# Desarrollo, con Traefik incluido (omitir el perfil para uno existente):
+docker compose --env-file .env.dev -f compose.dev.yml -f compose.traefik.yml --profile local-traefik up --build -d --wait
+```
+
+Abrir http://localhost (`TRAEFIK_HOST`, por defecto `localhost`; un valor explícito existente prevalece, sin modificar dotenv ni plantillas). El Traefik incluido publica siempre `127.0.0.1:80:80`, sin variable de puerto. Se conservan también los accesos directos locales. El router y servicio Traefik se llaman **`museum`** en ambos modos; producción apunta a 80 y desarrollo a 4200. Son alternativas para el mismo router/servicio/host: no publicar ambos simultáneamente en un mismo Traefik sin configuración manual de rutas distintas. El Traefik incluido publica solo HTTP local, sin dashboard ni TLS. Se omite su etiqueta de deshabilitación porque `exposedbydefault=false` ya lo excluye; solo el frontend se habilita explícitamente. Un proxy externo también debe limitarse a localhost mientras no haya autenticación.
+
+**Límite de confianza:** el proveedor Docker necesita `/var/run/docker.sock`, montado `:ro`. Esto no restringe los métodos de la API Docker: el proxy tiene acceso privilegiado al daemon. Usar únicamente en un host local confiable; no exponer el socket, el dashboard ni la API a la red.
+
+| Variable | Default / función |
+|---|---|
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Obligatorias; `museum`, `museum` y un secreto propio, nunca el placeholder |
+| `DB_PORT`, `SERVER_PORT` | 5432 y 8080 publicados; conexión interna fija `museum-db:5432`, backend 8080 |
+| `FRONTEND_PORT`, `FRONTEND_HTTP_PORT` | 4200 para CLI y 8081 para Nginx |
+| `TRAEFIK_HOST`, `TRAEFIK_ENTRYPOINT` | `localhost`, `web`; un valor explícito prevalece |
+| `TRAEFIK_NETWORK` | `proxy`, externa y preexistente; un valor explícito prevalece |
+
+No se leen ni modifican los dotenv reales para verificar estos contratos. `SERVER_PORT` del dotenv elige el puerto del host; Compose fija el interno en 8080 para conservar los proxies y la salud.
 
 ## Análisis de un archivo
 
@@ -108,8 +149,9 @@ Reconstruir los recursos no sobrescribe la configuración ya guardada ni ejecuta
 
 ```bash
 python3 scripts/test_seeds.py
-python3 -B scripts/test_start.py
+python3 -B scripts/test_compose.py
 cd frontend
+npm run lint
 npm test -- --watch=false
 npm run build
 cd ../backend

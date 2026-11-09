@@ -1,0 +1,104 @@
+# Standalone: docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait
+name: universidad-dev
+
+services:
+  museum-db:
+    image: postgres:17
+    networks:
+      - app
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env.dev}
+      POSTGRES_USER: ${DB_USER:?Set DB_USER in .env.dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.dev}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - museum_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      target: development
+    networks:
+      - app
+    env_file:
+      - .env.dev
+    environment:
+      DB_HOST: museum-db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:?Set DB_NAME in .env.dev}
+      DB_USER: ${DB_USER:?Set DB_USER in .env.dev}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.dev}
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_PORT: "8080"
+    ports:
+      - "127.0.0.1:${SERVER_PORT:-8080}:8080"
+    depends_on:
+      museum-db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/pom.xml:/app/pom.xml:ro
+      - backend_dev_target:/app/target
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'test "$$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --connect-timeout 2 --max-time 3 http://127.0.0.1:8080/api/catalog/status)" = 200'
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
+      retries: 24
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    networks:
+      - app
+    command:
+      - npx
+      - ng
+      - serve
+      - --host
+      - 0.0.0.0
+      - --port
+      - "4200"
+      - --poll
+      - "1000"
+      - --proxy-config
+      - proxy.docker.conf.json
+    # La CLI expone allowed-hosts como booleano; Vite admite un hostname adicional.
+    environment:
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: ${TRAEFIK_HOST:-localhost}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-4200}:4200"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/angular.json:/app/angular.json:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:ro
+      - ./frontend/proxy.docker.conf.json:/app/proxy.docker.conf.json:ro
+    labels:
+      - "traefik.http.services.museum.loadbalancer.server.port=4200"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "3", "-O", "/dev/null", "http://127.0.0.1:4200/"]
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+
+networks:
+  app:
+
+volumes:
+  museum_dev_data:
+  backend_dev_target:

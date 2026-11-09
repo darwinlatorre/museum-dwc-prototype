@@ -1,14 +1,14 @@
 import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/testing';
-import { App } from '../../../app';
-import { Api } from '../../../core/api/api';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { ImportWorkbench } from './import-workbench';
+import { App } from '../../../app';
+import { Api } from '../../../core/api/api';
 import { configurationFixture } from '../../../testing/validation-fixture';
-import type { Dataset } from '../models/dataset';
-import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
-import type { PreviewRequest, PreviewResponse } from '../models/normalization-preview';
 import { buildNormalizationPreview, readPreviewPage, type PreviewSnapshot } from '../engine/normalization-preview';
+import type { Dataset } from '../models/dataset';
+import type { PreviewRequest, PreviewResponse } from '../models/normalization-preview';
+import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
+import { ImportWorkbench } from './import-workbench';
 
 type ResponseBody<T = WorkerResponse> = T extends WorkerResponse ? Omit<T, 'id'> : never;
 class DelayedWorker {
@@ -23,7 +23,7 @@ class DelayedWorker {
   private original?: Dataset;
   private mapping: Record<string, string> = {};
   private snapshot?: PreviewSnapshot;
-  constructor(_url: URL) { DelayedWorker.all.push(this); }
+  constructor() { DelayedWorker.all.push(this); }
   postMessage(request: WorkerRequest | PreviewRequest) {
     this.previewRole = request.kind.startsWith('preview-');
     this.request = request;
@@ -105,7 +105,7 @@ describe('Preservación pública del análisis local', () => {
   afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
   it('ordena seis pasos, exige un contexto único, valida antes de normalizar y deja Finalizar vacío', async () => {
-    const { f, root, button, click, chooseContext, respond } = await setup();
+    const { root, button, click, chooseContext, respond } = await setup();
     expect([...root.querySelectorAll('.steps button')].map(b => b.textContent?.replace(/^\s*\d+\s*/, '').trim())).toEqual([
       'Seleccionar archivo', 'Contexto', 'Mapear columnas', 'Diagnóstico', 'Normalizar', 'Finalizar',
     ]);
@@ -274,7 +274,7 @@ describe('Preservación pública del análisis local', () => {
   it('mantiene faltantes crudos hasta Aplicar las seis reglas y elimina el detalle al invalidar', async () => {
     const data = { headers: ['subfamily'], rows: ['', 'NULL', 'N/A', ' n/a '].map((value, i) => ({ row: i * 7 + 3, values: [value] })) };
     const original = JSON.stringify(data);
-    const { f, root, click, chooseContext, respond } = await setup(['subfamily'], data);
+    const { root, click, chooseContext, respond } = await setup(['subfamily'], data);
     await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
@@ -377,7 +377,7 @@ describe('Preservación pública del análisis local', () => {
 
   it('pagina ubicaciones grandes y oculta controles en listas pequeñas o vacías', async () => {
     const data = { headers: ['a'], rows: Array.from({ length: 11 }, (_, i) => ({ row: i + 2, values: [' '] })) };
-    const { f, root, click, chooseContext, respond } = await setup(['a'], data);
+    const { root, click, chooseContext, respond } = await setup(['a'], data);
     await chooseContext();
     await click('Mapear columnas');
     await click('Validar localmente');
