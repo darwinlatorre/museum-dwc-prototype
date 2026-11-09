@@ -1,9 +1,13 @@
 **
-!dist/
-!dist/frontend/
-!dist/frontend/3rdpartylicenses.txt
-!dist/frontend/browser/
-!dist/frontend/browser/**
+!package.json
+!package-lock.json
+!angular.json
+!tsconfig*.json
+!src/
+!src/**
+!public/
+!public/**
+!proxy.docker.conf.json
 !nginx.conf
 !Dockerfile
 !.dockerignore
@@ -11,3 +15,6 @@
 **/.env.*
 **/.git
 **/node_modules
+.angular
+dist
+coverage

@@ -1,6 +1,10 @@
 **
-!target/
-!target/backend-0.0.1-SNAPSHOT.jar
-!docker-healthcheck.sh
+!pom.xml
+!src/
+!src/**
 !Dockerfile
 !.dockerignore
+**/.env
+**/.env.*
+**/.git
+**/target
