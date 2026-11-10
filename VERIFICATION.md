@@ -977,3 +977,16 @@ los componentes de funcionalidades conservan sus carpetas propias.
 (o evidencia externa equivalente) que resuelva los dos timeouts. PR pendiente por
 la decisión explícita del usuario y ausencia de issue aprobado requerido por el
 flujo de PR del entorno; no es una protección GitHub comprobada.
+
+
+### Cierre de seguimiento por aceptación manual del usuario
+
+Usuario: «Cierra la verificacion, ya lo mire yo en persona y funciona.»
+Se acepta su comprobación personal como disposición para detener el seguimiento,
+no como sustituto de pruebas automatizadas o de verificación técnica independiente.
+No se repiten suites ni navegador. Se conserva el resultado observado de la última
+suite:231 aprobadas y dos timeouts de5000ms; checker, lint y build aprobados.
+La verificación independiente anterior sigue sin resultado. No afirmar suite verde
+ni aprobación independiente/nativa. T4 se retira del seguimiento sin marcarla como
+pruebas aprobadas. El PR permanece pendiente por la decisión explícita anterior
+«No crear issue; dejar el PR pendiente». Este cierre no publica ni integra nada.
