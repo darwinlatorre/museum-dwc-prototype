@@ -932,3 +932,19 @@ relanzó el verificador ni se sustituyó su aprobación inexistente.
   horizontal contenida, no overflow del documento. No auditoría exhaustiva a11y.
 - Sesión de navegador cerrada y servidor propio detenido. No se modificó ni
   limpió ningún caché externo. Revisión nativa pendiente en la siguiente etapa.
+
+
+### Cierre del refactor por funcionalidades
+
+Commits locales: d694c19 (co-location) y efb0396 (layout/rutas/servicios con pruebas
+y evidencia). Se conserva unidad coherente de navegación, mayor que400 líneas;
+la estrategia aceptada es cadena sobre rama de trabajo, sin publicar PR.
+Assess del rango d694c199b5e89375b0568859555662cb8c33fe55..efb0396 devolvió
+nativeRisk=medium, reviewDue=false, reviewDueReason=under_budget. La escalación
+item3 conserva la necesidad de verificación independiente, cuya indisponibilidad
+aceptó el usuario; no activa una revisión nativa no ofrecida. No se inició
+INSPECT/START, no existe nueva aprobación nativa y no se afirma lo contrario.
+
+Las pruebas funcionales y de navegador quedaron observadas por el padre con los
+límites anteriores. Backend/Testcontainers/Compose no se ejecutaron porque no
+se modificaron. Auditoría npm no repetida. No se publicó ni integró nada.
