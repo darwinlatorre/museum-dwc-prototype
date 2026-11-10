@@ -1,6 +1,6 @@
 # Arquitectura Angular por funcionalidad
 Objetivo: refactorizar desde `dev` (ebcf020), sin incorporar cambios de otras ramas. Rama: `refactor/feature-architecture`.
-Entrega actual: `single-pr` hacia `dev`, autorizada por el usuario en L14; commits y publicación del PR permitidos, sin aprobar ni integrar. Comprobaciones: Node checker, lint, Angular tests/build y navegador propio. Previsión: 900–1400 líneas editadas, además de movimientos.
+Entrega actual: `single-pr` hacia `dev`; commits locales autorizados, PR pendiente por decisión L16 (sin crear issue, publicar, aprobar ni integrar). Comprobaciones: Node checker, lint, Angular tests/build y navegador propio. Previsión: 900–1400 líneas editadas, además de movimientos.
 
 ## Specs
 S1. «Implementa Feature-Based Architecture con Component Co-location, siguiendo los principios de Screaming Architecture. Refactoriza lo existente.» «Organizar el código por funcionalidades del negocio.» «Priorizar la organización por funcionalidad sobre una estructura global por tipo de archivo.»
@@ -15,8 +15,8 @@ T1 | S1–S4 | inline | done | Co-localizar páginas/componentes/plantillas y ad
 T2 | S1–S5 | delegated + contraste inline | done | Layout, servicios y rutas; padre contrastó checker/lint/233 pruebas/build/diferencial/navegador. Commit: efb0396. Limitación independiente aceptada por «Avanza.». Risk: item 3 (contratos compartidos).
 T3 | S1–S5 | inline, verificador indisponible aceptado | done | Checks y navegador observados, evidencia en efb0396 y cierre documental. Assess medium nativo, reviewDue=false/under_budget: no iniciar review. Limitación independiente y timeout de automatización registrados.
 
-T4 | S6 | inline | in_progress | Mover archivos raíz App a src/app, adaptar imports/checker/docs y verificar. Commit: pendiente.
-T5 | S6 | inline delivery | pending | Publicar rama y abrir un PR hacia dev, sin aprobar ni integrar; requiere issue aprobado según skill de PR. Commit/PR: pendiente.
+T4 | S6 | inline | blocked | Movimiento en 48218c5; checker/lint/build aprobados, suite231 pass/2 timeout5000ms. Espera autorización para nueva ejecución o prueba externa equivalente. Sin repetir automáticamente. Risk: none para esta unidad.
+T5 | S6 | inline delivery | blocked | Usuario eligió «No crear issue; dejar el PR pendiente». Espera issue aprobado/decisión nueva; sin push/PR, aprobación ni integración.
 
 ## Log
 L1. Solicitud original:
@@ -51,3 +51,6 @@ L12. Assess cometido T2 desde d694c199b5e89375b0568859555662cb8c33fe55: nativeRi
 L13. Cierre: S1–S5 implementadas y contrastadas con límites aceptados. Pruebas backend/Compose no aplicables a este diff, npm audit no repetida. Revisión nativa no debida, no aprobación inventada. Backend ajeno permanece intacto en worktree original. Siguiente paso humano: revisar unidades locales antes de cualquier publicación o integración en dev.
 L14. Usuario: «Cierralo pero antes los archivos de app/app dentro del front dejalos en app/, luego de esto has los commits y el pr a dev.» Autoriza ajuste acotado, commits y un PR único a dev; no autoaprobación/merge. La nueva indicación de ubicación raíz prevalece sobre co-location previa para App. Sin relanzar verificador indisponible; describir falta de prueba independiente en PR.
 L15. Origin confirmado: github.com/darwinlatorre/museum-dwc-prototype, default main; base humana dev. No hay issues abiertos ni PR abiertos; existe label type:refactor y status:approved. Falta vincular issue aprobado, exigido por skill de PR; no inventar aprobación ni crear issue sin autorización.
+L16. Usuario eligió «No crear issue; dejar el PR pendiente», con consecuencia explícita «Conservar el ajuste verificado y los commits locales; no publicar hasta disponer de un issue aprobado». No crear issue ni hacer push/PR. La palabra verificado de la opción no convierte la nueva suite fallida en verde.
+L17. T4 RED: checker Falta app.ts; GREEN checker tras mover los cinco archivos a src/app y ajustar imports/contrato/docs. Lint aprobado. Suite nueva:231 pass/2 timeout5000ms en routes.spec (catálogo/importador persistente) y museum-layout.spec (carga/error/reintento), sin repetir ni aumentar límites. Build omitido por &&; ejecutado por separado como check distinto: salida0, diff-check0 y warning658.86kB. No navegador nuevo para movimiento sin cambios de UI. Commit local 48218c5; no afirmar suite verde. Needs your decision: autorización de nueva ejecución o prueba externa equivalente para cerrar T4.
+L18. Assess rango fa0d95f7a76ba1993dc8412d13ceec77220e1a5e..48218c5: medium, reviewDue=false/under_budget, independentVerifier=false; sin START. Esto no sustituye prueba funcional faltante. Limitación independiente anterior intacta; no relanzar aquel verificador.
