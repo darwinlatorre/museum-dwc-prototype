@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { afterEach, vi } from 'vitest';
 import { Catalog } from './catalog';
-import { BASE_URL } from '../../core/api/api';
+import { BASE_URL } from '../../../../core/api/api';
 
 const term = { name: 'eventDate', uri: 'http://rs.tdwg.org/dwc/terms/eventDate', definition: 'Official text', category: '', status: 'current' };
 const status = { active: { revision: 'a'.repeat(40), hash: 'hash', snapshotVersion: 1, activatedAt: '2026-01-01T00:00:00Z', termCount: 1, added: 0, modified: 0, deprecated: 0, sourceHashes: {} }, attempts: 1, lastAttempt: '2026-01-01T00:00:00Z', lastFailure: null };

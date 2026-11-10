@@ -94,7 +94,7 @@ La URL del backend se configura mediante **application environments de Angular**
 
 Ambos exportan `baseUrl: 'http://localhost:8080/api'`. Editar el archivo del modo deseado: `angular.json` selecciona el de desarrollo con `fileReplacements`. La URL debe ser accesible desde el navegador, no `http://backend:8080`; nunca incluir secretos. HttpClient usa esa base y Query conserva la caché de metadatos y la cancelación. Cambiarla exige recompilar; en producción Docker, reconstruir la imagen y recrear el contenedor. Una variable del contenedor ya compilado no modifica el bundle. Ver [configuración frontend](frontend/README.md#url-pública-de-la-api).
 
-No hay JSON runtime, generador ni proxy API. Nginx mantiene su configuración estática predeterminada: no se necesita configuración propia porque la aplicación no declara rutas y cambia de sección mediante estado local.
+No hay JSON runtime, generador ni proxy API. Nginx usa la configuración estática `frontend/nginx.conf`, con fallback SPA a `index.html` para las rutas `/analisis`, `/fuentes-de-registros` y `/catalogo`; no proxifica la API.
 
 El backend obtiene `CORS_ALLOWED_ORIGINS` del dotenv seleccionado mediante su `env_file`; sin valor usa el default de `application.yaml`, no una segunda lista en Compose. Para esta variable adicional, una exportación de shell por sí sola no sustituye `env_file`: configurarla manualmente en el archivo seleccionado. La lista contiene orígenes exactos (sin `/api`), sin wildcard ni credenciales. CORS no autentica usuarios ni oculta la API a clientes no navegador.
 

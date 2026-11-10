@@ -2,24 +2,10 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { ValidationConfiguration } from '../../features/record-sources/models/validation-configuration';
-import type { Term } from '../../features/catalog/models/catalog-term';
 
 export const BASE_URL = new InjectionToken<string>('baseUrl', {
   providedIn: 'root', factory: () => environment.baseUrl,
 });
-
-export interface CatalogSyncResult {
-  outcome: 'SUCCESS' | 'FAILED' | 'SUPERSEDED';
-  status: {
-    active: {
-      revision: string; hash: string; snapshotVersion: number; activatedAt: string;
-      termCount: number; added: number; modified: number; deprecated: number;
-      sourceHashes: Record<string, string>;
-    };
-    attempts: number; lastAttempt: string | null; lastFailure: string | null;
-  };
-}
 
 function apiError(error: unknown): Error {
   if (!(error instanceof HttpErrorResponse) || error.status === 0) {
@@ -54,10 +40,4 @@ export class Api {
       }));
     });
   }
-  catalog = (signal?: AbortSignal) => this.request<Term[]>('catalog', 'GET', undefined, signal);
-  syncCatalog = () => this.request<CatalogSyncResult>('catalog/sync', 'POST');
-  validationConfiguration = (signal?: AbortSignal) =>
-    this.request<ValidationConfiguration>('validation-configuration', 'GET', undefined, signal);
-  updateValidationConfiguration = (body: ValidationConfiguration) =>
-    this.request<ValidationConfiguration>('validation-configuration', 'PUT', body);
 }

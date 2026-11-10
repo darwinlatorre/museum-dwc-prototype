@@ -860,3 +860,232 @@ Las capturas, descargas y HAR permanecen en `.browser/`, excluido de Git. Los pe
 - GREEN: `python3 -B scripts/test_start.py` (9 pruebas), `bash -n start.sh` y `git diff --check` aprobados. Comparación byte a byte contra el manifiesto anterior y archivo de desarrollo vacío comprobados. Sin arrancar servicios ni leer dotenv reales.
 - Evaluación nativa no disponible: requiere declarar los archivos no rastreados; no produjo aprobación.
 - Verificación independiente posterior (`gentle-ai-verify`): PASS. Confirmó identidad byte a byte del manifiesto, ausencia de la ruta anterior, `compose.dev.yml` de 0 bytes, referencias activas y equivalencia del arranque salvo el nombre. Ejecutó 9 pruebas aisladas, `bash -n start.sh`, `git diff --check` y tres comprobaciones estructurales, todas aprobadas. Sin despliegue ni aprobación nativa. Informó scratch conservado en `/tmp/compose-verify-YU7z4F`; el padre no lo accedió ni lo retiró por estar fuera del proyecto.
+
+
+## Co-localización Angular desde dev (2026-11-10)
+
+Worktree propio `refactor/feature-architecture`, base `ebcf020`. No se modificó
+el backend ni se incorporó la rama de transporte HttpClient.
+- RED estructural: `node scripts/check-architecture.mjs` rechazó `Falta app/app.ts`.
+- Primer intento Angular falló con TS5097 por extensiones `.ts` añadidas al
+  recalcular imports con sufijos `.preset`/`.config`/`.routes`; corregidos.
+- GREEN: checker Node, `npm run lint`, `npm test -- --watch=false` (225 pruebas,
+  15 archivos), `npm run build`; comando integrado salió 0.
+- Build inicial 649.97 kB: advertencia sobre presupuesto de 500 kB, no resuelta.
+- Ambos workers se empaquetaron como módulos separados. Navegador pendiente de
+  la unidad de navegación, no se afirma comprobación visual nueva en esta unidad.
+
+
+## Rutas y servicios por funcionalidad: implementación sin cierre (2026-11-10)
+
+El writer `mwa0gpo1-2-381s` dejó T2 sin commit en el worktree aislado.
+Reportó RED de rutas (2 fallos previstos), GREEN focalizado (70 pruebas), checker,
+lint, suite (233 pruebas/17 archivos), build y diff-check aprobados. Corrigió un
+build inicial superior a 1 MB mediante `loadComponent`; queda advertencia de
+658.86 kB frente a 500 kB. Estos resultados son **delegados**, no nuevos checks
+observados por el padre. El padre leyó rutas, layout, salida del editor y transporte.
+
+Risk: item 3 — separación de contratos de metadatos compartidos. El assess
+pidió verificador independiente; nativeRisk no evaluable por archivos nuevos
+sin selección. No se inició revisión nativa ni existe aprobación.
+
+El único verificador `mwa0vany-3-vm8w` falló al preparar aislamiento: su copia
+conservó node_modules como enlace al workspace y su política exige dependencias
+copiadas sin enlaces. No ejecutó checker, pruebas, lint, build, diff-check ni
+comparación diferencial. Su lectura estructural no reemplaza esos checks.
+No se lo relanzó ni se intentó reparar su preparación. No se accedió ni limpió
+su scratch externo; requiere permiso específico si aún existe.
+
+**Pendiente de decisión humana:** aceptar explícitamente la limitación de prueba
+independiente o aportar evidencia independiente. Pendientes también contraste
+funcional del padre, navegador real (enlaces profundos, historial, borradores,
+importador persistente y escritorio/móvil), revisión nativa aplicable y commit T2.
+No se afirma cierre funcional ni visual, ni se publicó o integró el trabajo.
+
+
+## Contraste del padre tras «Avanza.» (2026-11-10)
+
+El usuario aceptó continuar con la limitación independiente ya explicada. No se
+relanzó el verificador ni se sustituyó su aprobación inexistente.
+
+- Comando del padre: `cd frontend && node scripts/check-architecture.mjs && npm run lint && npm test -- --watch=false && npm run build && git diff --check`: salida 0,
+  233 pruebas/17 archivos aprobados, build 658.86 kB; persiste warning de 500 kB.
+- Diferencial público único contra d694c199b5e89375b0568859555662cb8c33fe55,
+  script ignorado `.browser/feature-architecture/metadata-differential.cjs`:
+  GET catálogo, POST sincronización sin cuerpo, GET/PUT configuración, señal,
+  respuesta, texto arbitrario con espacios, error409 y desconexión idénticos.
+  Procesos base/candidato exit0, stderr vacío y stdout idéntico. Adaptador DI
+  mínimo en VM para ejecutar métodos reales transpilados; no prueba red real.
+- Permiso puntual del usuario para navegador/cache y sesión propia en
+  `/home/dark/.cache/ms-playwright` y `/home/dark/.agent-browser`; sin limpieza ajena.
+- Chromium con agent-browser, sesión propia `feature-arch-01`, build productivo
+  servido en `127.0.0.1:4387` con GET de metadatos ficticios. No se arrancaron
+  servicios de la aplicación ni base viva; PUT/POST del servidor de prueba
+  deshabilitados. No es evidencia de integración backend.
+- Apertura directa `/catalogo` y `/fuentes-de-registros`; raíz y desconocida
+  redirigen `/analisis`; títulos y aria-current correctos. Enlaces e historial
+  sin cambios pendientes conservaron la sesión y paso del importador.
+- CSV ficticio de dos filas leído mediante control público/worker; identificador
+  `001` conservado. Mapeo, diagnóstico y preview Normalizar realizados por UI.
+  Al visitar catálogo y volver siguieron archivo, paso y preview; `main` ancho
+  solo en Normalizar visible. Dos GET API200 y ningún POST/PUT en el tráfico
+  registrado: `.browser/feature-architecture/network-requests.txt`.
+- Entrada sin agregar y borrador agregado solicitaron confirmación; cancelar
+  conservó URL/entrada/lista, aceptar descartó y volver mostró editor limpio.
+- Incidente: `agent-browser back` con confirmación abierta hizo agotar el comando
+  compuesto a los30s (fallo de automatización registrado, sin reintento ni aumento
+  de límite). `dialog status` confirmó diálogo pendiente; `dialog dismiss`
+  resolvió la interacción y conservó `/fuentes-de-registros` y `atras-pendiente`.
+  No afirmar ejecución limpia del comando Atrás. Historial automatizado Angular
+  sí pasó en la suite. No se repitió la maniobra fallida.
+- Detalle original de Normalizar abrió por UI; Escape cerró y devolvió foco al
+  botón exacto, aria-expanded=false. Capturas abiertas e inspeccionadas en
+  `.browser/feature-architecture/screenshots/`: `catalog-desktop.png` (1440×1000),
+  `normalization-desktop.png` (1720×1080), `normalization-mobile.png` y
+  `sources-mobile.png` (390px). Ancho de documento390px en móvil; navegación
+  horizontal contenida, no overflow del documento. No auditoría exhaustiva a11y.
+- Sesión de navegador cerrada y servidor propio detenido. No se modificó ni
+  limpió ningún caché externo. Revisión nativa pendiente en la siguiente etapa.
+
+
+### Cierre del refactor por funcionalidades
+
+Commits locales: d694c19 (co-location) y efb0396 (layout/rutas/servicios con pruebas
+y evidencia). Se conserva unidad coherente de navegación, mayor que400 líneas;
+la estrategia aceptada es cadena sobre rama de trabajo, sin publicar PR.
+Assess del rango d694c199b5e89375b0568859555662cb8c33fe55..efb0396 devolvió
+nativeRisk=medium, reviewDue=false, reviewDueReason=under_budget. La escalación
+item3 conserva la necesidad de verificación independiente, cuya indisponibilidad
+aceptó el usuario; no activa una revisión nativa no ofrecida. No se inició
+INSPECT/START, no existe nueva aprobación nativa y no se afirma lo contrario.
+
+Las pruebas funcionales y de navegador quedaron observadas por el padre con los
+límites anteriores. Backend/Testcontainers/Compose no se ejecutaron porque no
+se modificaron. Auditoría npm no repetida. No se publicó ni integró nada.
+
+
+## Ajuste solicitado: App directamente en src/app (2026-11-10)
+
+Usuario: «Cierralo pero antes los archivos de app/app dentro del front dejalos en
+app/, luego de esto has los commits y el pr a dev.» Se movieron app.ts/html/scss,
+app.spec.ts y routes.spec.ts a `frontend/src/app/`; imports, checker y documento
+arquitectónico adaptados. La raíz App es la excepción explícitamente solicitada;
+los componentes de funcionalidades conservan sus carpetas propias.
+
+- RED checker: `Falta app.ts`; GREEN tras mover los archivos, con prohibición del
+  antiguo subdirectorio redundante. `npm run lint` aprobado.
+- `npm test -- --watch=false`: **falló**, 231 aprobadas y dos timeouts de5000ms:
+  `routes.spec.ts` → abre catálogo directamente y conserva la instancia de análisis;
+  `layouts/museum-layout/museum-layout.spec.ts` → carga/error/reintento de metadatos.
+  No se repitió, no se subieron límites ni se modificaron aserciones para ocultarlo.
+  No se puede declarar suite verde ni reemplazarla por las233 pruebas históricas.
+- Build omitido por el && anterior; ejecutado como comprobación distinta mediante
+  `npm run build && git diff --check`, salida0. Warning bundle658.86kB/500kB persiste.
+- No navegador nuevo: esta unidad solo reubica archivos/imports, sin cambios de UI.
+  Verificación independiente previa sigue indisponible; no se relanzó.
+- Usuario eligió expresamente «No crear issue; dejar el PR pendiente». No se creó
+  issue aprobado ni se hizo push/PR. Commits locales autorizados, con los fallos
+  anteriores visibles. No se aprobó ni integró nada.
+
+**Needs your decision:** falta autorización para una nueva ejecución de la suite
+(o evidencia externa equivalente) que resuelva los dos timeouts. PR pendiente por
+la decisión explícita del usuario y ausencia de issue aprobado requerido por el
+flujo de PR del entorno; no es una protección GitHub comprobada.
+
+
+### Cierre de seguimiento por aceptación manual del usuario
+
+Usuario: «Cierra la verificacion, ya lo mire yo en persona y funciona.»
+Se acepta su comprobación personal como disposición para detener el seguimiento,
+no como sustituto de pruebas automatizadas o de verificación técnica independiente.
+No se repiten suites ni navegador. Se conserva el resultado observado de la última
+suite:231 aprobadas y dos timeouts de5000ms; checker, lint y build aprobados.
+La verificación independiente anterior sigue sin resultado. No afirmar suite verde
+ni aprobación independiente/nativa. T4 se retira del seguimiento sin marcarla como
+pruebas aprobadas. El PR permanece pendiente por la decisión explícita anterior
+«No crear issue; dejar el PR pendiente». Este cierre no publica ni integra nada.
+
+
+## Combinación con dev HttpClient y alojamiento SPA (T6, 2026-11-10)
+
+Issue15 creado y confirmado con status:approved y type:refactor tras permisos
+explícitos; actorADMIN y blank issues habilitados. El temporal privado autorizado
+se retiró. Base dev6410a3676a8fc81107371a17c36427e9f5677c13. Los cinco conflictos
+se resolvieron preservando HttpClient/environments/CORS, endpoints por feature,
+App directamente en src/app, rutas y estado del importador. Se mantienen borrados
+checker/QUERY_USAGE; el fallback estático de Nginx es solo SPA, sin proxyAPI.
+
+- Worker HTTP: baseline fetch compilable RED24fallos/11pases y19 rechazos de ese
+  baseline; GREEN35/35 focalizadas y lint. Promise/Subscription de dev conservados.
+- Alojamiento: RED nginx.conf ausente (13pass/1fail); GREEN14pruebas Compose.
+  Imagen exacta nginx:1.28-alpine no estaba instalada: preflight no llegó a HTTP.
+  Padre obtuvo la etiqueta del Dockerfile, sin cambiar versión. En sonda original,
+  fixture0700 produjo403; única corrección0755 del fixture propio y pruebaPASS.
+  Nginx real sirvió índice200 para raíz,/catalogo,/fuentes-de-registros,/analisis;
+  JS/licencias literales y MIME correctos; sin proxyAPI. Contenedores/fixtures
+  task-owned retirados, sin tocar servicios o datos existentes.
+- Padre: `npm run lint`, `npm test -- --watch=false --runner-config
+  ../.browser/feature-architecture/vitest.serial.config.mjs` (249 pruebas,
+  19archivos), build normal y development,14pruebas Compose con TMPDIR local,
+  diff-check del índice/worktree: comando integrado salida0. Build normal677.47kB,
+  warning500kB sin resolver. Sin alterar límites ni aserciones. No sumar suites
+  históricas: este resultado corresponde solo a la combinación nueva.
+- Assess nueva combinación: medium nativo, escalación item5 high,
+  reviewDue=false/under_budget e independentVerifier=true. No START nativo.
+- Verificador T6 único mwa4bttb-8-fg06 inspeccionó fuente y copia aislada con
+  dependencias materializadas. Comando focalizado no ejecutó pruebas: .bin/ng
+  copiado no encontró ./bootstrap, exit1 de infraestructura. No reparado ni
+  relanzado, sin fallback al workspace. No certifica GREEN independiente.
+  Su inspección estructural es favorable, no sustituye S5 funcional independiente.
+- La aceptación manual anterior corresponde al candidato previo, no crea esta
+  prueba faltante. Navegador de combinación no ejecutado. Ninguna prueba nueva
+  después del resultado indisponible. No se tocó scratch externo del runtime.
+
+**Needs your decision:** aportar evidencia independiente para esta combinación
+o aceptar explícitamente la limitación sin presentarla como aprobación técnica.
+Merge local en progreso, conflictos resueltos, sin commit; no se publicó el
+resultado combinado ni se creó PR o se integró en dev/main. Rama remota sigue
+hasta1e7d12a; backend ajeno del worktree original intacto.
+
+
+### Continuación aceptada y navegador de la combinación
+
+Usuario: «Si», aceptando continuar con la indisponibilidad independiente explícita
+ofrecida inmediatamente. No se reparó ni relanzó el verificador ni se lo marcó
+aprobado. La evidencia del padre y las limitaciones permanecen diferenciadas.
+
+Nginx1.28-alpine aislado, contenedor task-owned `museum-architecture-final-01a1c307`,
+binding dinámico127.0.0.1:44622, configuración SPA real y build Angular real
+**development** (el último de los dos builds). API absoluta simulada por
+agent-browser; no se contactó backend/base vivos ni se simularon datos en Angular.
+
+- Incidente de fixture: respuestas mock iniciales omitían el permiso CORS del
+  origen de prueba. La espera de catalogNumber agotó25s (fallo registrado, no
+  repetido ni convertido en éxito). Vista de error real observada y capturada.
+  Primera corrección agregó nuevas reglas permitiendo origen, pero las anteriores
+  seguían activas y Reintentar continuó fallando. Segunda corrección acotada del
+  mismo bloqueo: retirar reglas antiguas y registrar las nuevas con --allow-origin.
+  Reintentar recuperó catálogo. No cambios de producto ni límites/aserciones.
+- Rutas profundas /catalogo y /fuentes-de-registros servidas por Nginx real;
+  desconocida redirige /analisis, títulos y aria-current correctos. Móvil390px
+  conserva scroll horizontal contenido; ancho documento390px, sin overflow.
+- CSV ficticio2filas leído por worker mediante control público; contexto/mapeo,
+  archivo y paso preservados al cambiar de sección. Entrada sin agregar protegida:
+  cancelar conserva URL/texto, aceptar descarta. No guardar ni sincronizar.
+- HAR `.browser/feature-architecture/integration.har`:54requests; API solo GET
+  absolutos a http://localhost:8080/api/catalog y validation-configuration. Ocho
+  fallos de mock status0 antes de corregir fixture y seis respuestas mock200
+  posteriores; ningún POST/PUT. No prueba CORS/backend real ni transferencia de
+  registros. La API no pasó por Nginx ni por ruta relativa.
+- Capturas locales abiertas e inspeccionadas en
+  `.browser/feature-architecture/integration-screenshots/`: error inicial,
+  catálogo1440×1000 y fuentes390px. No certificación exhaustiva de accesibilidad.
+- Navegador propio cerrado y contenedor propio retirado; sin tocar servicios,
+  volúmenes ni archivos ajenos. Sin nuevas pruebas tras este contraste salvo
+  comprobaciones estructurales de documentación/entrega.
+
+
+Merge local de combinación:72e8eb0e08fdf603d909c4b6b0f867adb155deb5.
+Assess del slice contra dev6410a36:medium nativo, escalaciónitem5high,
+reviewDue=false/under_budget; no START ni aprobación nativa. La aceptación
+explícita de la limitación independiente se publica como límite, no como éxito.

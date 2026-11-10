@@ -43,9 +43,19 @@ npm run build
 
 `npm run lint` ejecuta ESLint directamente (no `ng lint`) sobre `src/**/*.ts` y `src/**/*.html`, incluidas las pruebas y plantillas inline de componentes. `eslint.config.mjs` usa flat config con las reglas recomendadas de ESLint, typescript-eslint y Angular ESLint, sin reglas de formato ni análisis que requiera información de tipos. Cualquier error o advertencia hace fallar el comando. Se ignoran `node_modules`, `dist`, `.angular`, `.cache` y `coverage`; los scripts JavaScript y estilos no forman parte de este lint. Prettier se mantiene separado para formato.
 
-El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx sirve los archivos con su configuración estática predeterminada, sin proxy API ni `nginx.conf` propio: `app.routes.ts` no declara rutas y las secciones se alternan mediante botones en la página raíz. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
+El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx carga el `nginx.conf` estático del frontend: sirve los archivos y aplica fallback a `index.html` para abrir o recargar `/analisis`, `/fuentes-de-registros` y `/catalogo`. No contiene proxy API ni configuración runtime. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
 
 El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
+
+## Navegación
+
+`/analisis`, `/fuentes-de-registros` y `/catalogo` son rutas directas con título y
+enlace activo accesible. `/` y las rutas desconocidas redirigen a `/analisis`.
+Atrás/adelante usa el router; los seis pasos siguen siendo navegación local.
+Un único layout mantiene el importador, archivo y workers al cambiar de sección.
+Fuentes protege tanto cambios del borrador como texto aún no agregado: cancelar
+conserva URL y entrada; aceptar descarta al salir. Cerrar la ventana conserva la
+protección nativa. No hay guardas de autenticación.
 
 ## Analizar una colección: seis pasos
 
@@ -129,11 +139,13 @@ Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNIN
 |---|---|
 | `features/catalog` | Catálogo y contrato `Term` |
 | `features/record-sources` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
-| `features/importer/workbench` | Navegación, generaciones, cancelación y worker |
+| `features/importer/pages/import-workbench` | Navegación, generaciones, cancelación y worker |
 | `features/importer/components` | Mapeo, contexto y presentación modular de normalización |
 | `features/importer/engine` | Parser, normalizador, validador y exportación locales |
 | `features/importer/models` | Dataset, límites, resultados y protocolo del worker |
-| `core/api`, `core/i18n` | Metadatos y presentación |
+| `features/*/services` | Operaciones de metadatos según su propietario de negocio |
+| `layouts/museum-layout` | Navegación enrutada, consultas y workbench persistente |
+| `core/api`, `core/i18n` | Transporte genérico y presentación |
 | `shared/ui/dwc-picker`, `shared/design-system` | Selector, paleta única, primitivas y preset |
 | `testing` | Composición y costuras entre funcionalidades |
 

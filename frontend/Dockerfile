@@ -35,6 +35,7 @@ RUN npm run build -- --configuration production
 # ========================================================================
 FROM nginx:1.28-alpine AS production
 
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/frontend/browser/ /usr/share/nginx/html/
 COPY --from=build /app/dist/frontend/3rdpartylicenses.txt /usr/share/nginx/html/3rdpartylicenses.txt
 

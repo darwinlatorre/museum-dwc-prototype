@@ -283,6 +283,24 @@ class ComposeTests(unittest.TestCase):
 
 
 class PackagingTests(unittest.TestCase):
+    def test_frontend_static_spa_fallback_without_api_proxy_or_runtime_config(self):
+        config_path = ROOT / "frontend/nginx.conf"
+        self.assertTrue(config_path.is_file(), "Las rutas SPA requieren fallback estático a index.html")
+        config = config_path.read_text()
+        dockerfile = (ROOT / "frontend/Dockerfile").read_text()
+        self.assertIn("COPY nginx.conf /etc/nginx/conf.d/default.conf", dockerfile)
+        self.assertRegex(config, r"listen\s+80\s*;")
+        self.assertRegex(config, r"root\s+/usr/share/nginx/html\s*;")
+        self.assertRegex(config, r"index\s+index\.html\s*;")
+        self.assertRegex(config, r"location\s+/\s*\{\s*try_files\s+\$uri\s+\$uri/\s+/index\.html\s*;\s*\}")
+        # El fallback solo sirve archivos: no restaura el proxy API retirado
+        # ni convierte los environments de compilación en configuración runtime.
+        for forbidden in ("proxy_pass", "upstream", "location /api", "envsubst",
+                          "API_URL", "BASE_URL", "templates", "docker-entrypoint.d"):
+            self.assertNotIn(forbidden, config + dockerfile)
+        for name in ("proxy.conf.json", "proxy.docker.conf.json"):
+            self.assertFalse((ROOT / "frontend" / name).exists())
+
     def test_frontend_image_retains_dependency_licenses(self):
         dockerfile = (ROOT / "frontend/Dockerfile").read_text()
         context = (ROOT / "frontend/.dockerignore").read_text().splitlines()

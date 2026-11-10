@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import type { ValidationConfiguration } from './models/validation-configuration';
+import type { ValidationConfiguration } from '../../models/validation-configuration';
 import { ValidationConfigurationEditor } from './validation-configuration';
-import { Api } from '../../core/api/api';
-import { configurationFixture, contextKeys } from '../../testing/validation-fixture';
+import { RecordSourcesMetadata } from '../../services/record-sources-metadata';
+import { configurationFixture, contextKeys } from '../../../../testing/validation-fixture';
 
 async function setup(original: ValidationConfiguration = configurationFixture(['customField'])) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -13,7 +13,7 @@ async function setup(original: ValidationConfiguration = configurationFixture(['
     validationConfiguration: vi.fn().mockResolvedValue(original),
     updateValidationConfiguration: vi.fn().mockImplementation(async body => ({ ...body, revision: 8 })),
   };
-  TestBed.configureTestingModule({ providers: [provideTanStackQuery(client), { provide: Api, useValue: api }] });
+  TestBed.configureTestingModule({ providers: [provideTanStackQuery(client), { provide: RecordSourcesMetadata, useValue: api }] });
   const f = TestBed.createComponent(ValidationConfigurationEditor);
   f.componentRef.setInput('configuration', original);
   f.componentRef.setInput('terms', [{ name: 'eventDate', uri: '', definition: '', category: '', status: 'recommended' }]);

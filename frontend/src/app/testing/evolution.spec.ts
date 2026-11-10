@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { Api } from '../core/api/api';
-import { Catalog } from '../features/catalog/catalog';
-import { ImportWorkbench } from '../features/importer/workbench/import-workbench';
+import { CatalogMetadata } from '../features/catalog/services/catalog-metadata';
+import { Catalog } from '../features/catalog/pages/catalog/catalog';
+import { ImportWorkbench } from '../features/importer/pages/import-workbench/import-workbench';
 import type { Term } from '../features/catalog/models/catalog-term';
 import type { WorkerRequest } from '../features/importer/models/worker-protocol';
 import type { PreviewRequest } from '../features/importer/models/normalization-preview';
@@ -83,7 +83,7 @@ describe('Evolución de los controles públicos', () => {
     requests = [];
     vi.stubGlobal('Worker', LocalWorker);
     vi.stubGlobal('matchMedia', (media: string) => ({ matches: false, media, addEventListener() {}, removeEventListener() {} }));
-    TestBed.configureTestingModule({ providers: [provideTanStackQuery(new QueryClient()), { provide: Api, useValue: {} }] });
+    TestBed.configureTestingModule({ providers: [provideTanStackQuery(new QueryClient()), { provide: CatalogMetadata, useValue: {} }] });
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
