@@ -7,6 +7,7 @@ import re
 import time
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -74,7 +75,9 @@ class ComposeTests(unittest.TestCase):
         self.assertEqual(services["frontend"]["ports"][0]["published"], "14200")
         self.assertEqual(services["museum-db"]["volumes"][0]["source"], "museum_dev_data")
         self.assertNotEqual(model["volumes"]["museum_dev_data"]["name"], "universidad_museum_mvp_data")
-        self.assertIn("proxy.docker.conf.json", " ".join(services["frontend"]["command"]))
+        frontend = services["frontend"]
+        self.assertEqual(frontend["command"], ["npm", "start", "--", "--host", "0.0.0.0", "--port", "4200", "--poll", "1000"])
+        self.assertTrue(all(m["read_only"] for m in frontend["volumes"]))
 
     def test_traefik_routes_only_to_frontend_in_both_modes(self):
         for dev, port in ((False, "80"), (True, "4200")):
@@ -104,12 +107,13 @@ class ComposeTests(unittest.TestCase):
 
     def test_each_mode_loads_its_dotenv_and_uses_app_network(self):
         for base, source in (("compose.yml", "production"), ("compose.dev.yml", "development")):
-            result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nDB_HOST=host-only\nDB_PORT=15432\nSERVER_PORT=18080\n", base=base)
+            result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nDB_HOST=host-only\nDB_PORT=15432\nSERVER_PORT=18080\nCORS_ALLOWED_ORIGINS=http://localhost:14200,http://127.0.0.1:14200\n", base=base)
             self.assertEqual((result.returncode, result.stderr), (0, ""))
             model = json.loads(result.stdout)
             services = model["services"]
             backend = services["backend"]
             self.assertEqual(backend["environment"]["ENV_SOURCE"], source)
+            self.assertEqual(backend["environment"]["CORS_ALLOWED_ORIGINS"], "http://localhost:14200,http://127.0.0.1:14200")
             for key, value in (("DB_HOST", "museum-db"), ("DB_PORT", "5432"), ("SERVER_PORT", "8080")):
                 self.assertEqual(backend["environment"][key], value)
             self.assertEqual(set(services), {"museum-db", "backend", "frontend"})
@@ -145,41 +149,43 @@ class ComposeTests(unittest.TestCase):
         """CLI/builder instalados; fixture mínima, sin app ni servicios Docker."""
         cli = ROOT / "frontend/node_modules/@angular/cli/bin/ng.js"
         self.assertTrue(cli.exists(), "Requiere dependencias frontend instaladas y Node 24")
-        evidence = ROOT / ".browser/maintenance-eslint"
+        evidence = ROOT / ".browser/httpclient-query-cors/integration-environments-cli"
         evidence.mkdir(parents=True, exist_ok=True)
         for label, setting, allowed in (("default", "", "localhost"),
                                         ("custom", "TRAEFIK_HOST=museum.example.test\n", "museum.example.test"),
                                         ("host", None, "localhost")):
-            with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-runtime-") as directory:
+            with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-environments-") as directory:
                 scratch = Path(directory)
                 config = json.loads((ROOT / "frontend/angular.json").read_text())
                 config["cli"]["cache"] = {"enabled": False}
                 build = config["projects"]["frontend"]["architect"]["build"]
                 build["options"] = {"browser": "src/main.ts", "tsConfig": "tsconfig.app.json", "index": "src/index.html"}
                 (scratch / "angular.json").write_text(json.dumps(config))
-                for name in ("tsconfig.json", "tsconfig.app.json", "proxy.docker.conf.json", "proxy.conf.json"):
+                for name in ("tsconfig.json", "tsconfig.app.json", "package.json"):
                     shutil.copyfile(ROOT / "frontend" / name, scratch / name)
+                (scratch / "src/environments").mkdir(parents=True)
+                for name in ("environment.ts", "environment.development.ts"):
+                    shutil.copyfile(ROOT / "frontend/src/environments" / name, scratch / "src/environments" / name)
                 (scratch / "node_modules").symlink_to(ROOT / "frontend/node_modules", target_is_directory=True)
-                (scratch / "src").mkdir()
                 (scratch / "src/main.ts").write_text("document.body.dataset['ready'] = 'cli-host-proof';\n")
                 (scratch / "src/index.html").write_text("<!doctype html><html><body>cli-host-proof</body></html>")
                 env = {"PATH": os.environ["PATH"], "HOME": directory, "CI": "true", "NG_CLI_ANALYTICS": "false"}
                 if setting is None:
-                    command = ["serve", "--host", "127.0.0.1", "--port", "0"]
+                    command = ["npm", "start", "--", "--host", "127.0.0.1", "--port", "0"]
                 else:
                     model = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + setting, base="compose.dev.yml")
                     self.assertEqual((model.returncode, model.stderr), (0, ""))
                     frontend = json.loads(model.stdout)["services"]["frontend"]
-                    command = frontend["command"][2:]
+                    command = frontend["command"]
                     command[command.index("--host") + 1] = "127.0.0.1"
                     command[command.index("--port") + 1] = "0"
                     env.update(frontend.get("environment", {}))
-                args = [shutil.which("node"), str(cli), *command]
+                args = command
                 outpath = evidence / f"cleanup-cli-{label}-stdout.log"
                 errpath = evidence / f"cleanup-cli-{label}-stderr.log"
                 observations = []
                 with outpath.open("w") as stdout, errpath.open("w") as stderr:
-                    process = subprocess.Popen(args, cwd=scratch, env=env, stdout=stdout, stderr=stderr)
+                    process = subprocess.Popen(args, cwd=scratch, env=env, stdout=stdout, stderr=stderr, start_new_session=True)
                     try:
                         deadline = time.monotonic() + 60
                         port = None
@@ -202,12 +208,15 @@ class ComposeTests(unittest.TestCase):
                             self.assertEqual(response.status, status, body)
                             self.assertIn("cli-host-proof" if status == 200 else f'This host ("{hostname}") is not allowed', body)
                     finally:
-                        if process.poll() is None:
-                            process.terminate()
+                        # npm crea un hijo Angular: cerrar todo nuestro grupo aislado.
+                        try:
+                            os.killpg(process.pid, signal.SIGTERM)
+                        except ProcessLookupError:
+                            pass
                         try:
                             process.wait(timeout=10)
                         except subprocess.TimeoutExpired:
-                            process.kill()
+                            os.killpg(process.pid, signal.SIGKILL)
                             process.wait(timeout=5)
                         (evidence / f"cleanup-cli-{label}-result.log").write_text(json.dumps({"argv": args, "environment": {k: v for k, v in env.items() if k == "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"}, "exit": process.returncode, "http": observations}, indent=2))
 
@@ -292,8 +301,6 @@ class PackagingTests(unittest.TestCase):
             self.assertIn("**/.env", ignore)
             self.assertIn("**/.env.*", ignore)
         self.assertFalse((ROOT / "backend/docker-healthcheck.sh").exists())
-        proxy = json.loads((ROOT / "frontend/proxy.docker.conf.json").read_text())
-        self.assertEqual(proxy["/api/**"]["target"], "http://backend:8080")
 
 
 if __name__ == "__main__":

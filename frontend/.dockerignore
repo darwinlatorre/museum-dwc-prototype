@@ -7,8 +7,6 @@
 !src/**
 !public/
 !public/**
-!proxy.docker.conf.json
-!nginx.conf
 !Dockerfile
 !.dockerignore
 **/.env
