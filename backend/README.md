@@ -12,6 +12,20 @@ La API escucha en **127.0.0.1:8080**, configurable mediante `SERVER_PORT`. La UR
 
 **No reconstruir `target/classes` ni sobrescribir un JAR que esté en ejecución.** Compilar una copia aislada del árbol cuando el servidor de desarrollo use ese classpath. Las pruebas usan exclusivamente PostgreSQL desechable y nunca la base viva del MVP.
 
+## CORS y conexión directa
+
+El navegador puede consultar directamente la API usando la URL pública del backend (por defecto `http://localhost:8080/api`); no debe usar el DNS interno `backend`. `CORS_ALLOWED_ORIGINS` configura una única lista de orígenes permitidos, separados por comas. Su default exacto es:
+
+```text
+http://localhost:4200,http://localhost:8081,http://localhost,http://127.0.0.1:4200,http://127.0.0.1:8081,http://127.0.0.1
+```
+
+La propiedad Spring es `cors.allowed-origins`, declarada en `application.yaml` mediante el placeholder de esa variable. Una lista explícita **reemplaza** los defaults; por ejemplo `http://localhost:4300,https://museo.example`. Indicar orígenes del navegador, sin `/api`. Spring convierte la lista separada por comas; no hay parser de URL propio. Solo se rechaza explícitamente `*` para evitar permitir cualquier origen.
+
+`ApiCorsBeanConfig` implementa únicamente `WebMvcConfigurer.addCorsMappings`, sin filtro adicional. La política se aplica a `/api/**`: `GET`, `HEAD`, `POST`, `PUT` y sus preflight, con `Content-Type` para JSON, sin credenciales ni cabeceras wildcard. En rutas mapeadas, un origen no permitido recibe 403 antes de ejecutar el controlador y sin permisos CORS. Las respuestas permitidas y errores posteriores al mapeo (como un JSON inválido con 400) conservan CORS. Los errores anteriores a seleccionar un controlador, como 405, pueden no incluir cabeceras CORS; no se añade un filtro para cubrirlos. Las solicitudes sin `Origin` mantienen su comportamiento previo y las rutas fuera de `/api/**` no reciben permisos CORS.
+
+CORS **no es autenticación**: clientes no navegador pueden omitir o falsificar `Origin`. No modifica el bind predeterminado `127.0.0.1` ni autoriza exponer el MVP a Internet. Compose debe entregar `CORS_ALLOWED_ORIGINS` al backend; no requiere cambiar credenciales, almacenamiento ni dotenv.
+
 ## Endpoints
 
 | Método | Ruta | Entrada | Resultado |
@@ -113,7 +127,9 @@ bash ./mvnw clean test
 bash ./mvnw package -DskipTests
 ```
 
-Requieren Docker; Testcontainers usa PostgreSQL 17 Alpine y puertos aleatorios, sin consultar la base viva. Las pruebas JPA/EntityManager cubren matriz, límites JSON, rechazos sin efectos, revisión/concurrencia, bootstrap, rollback, reinicios, instalación limpia y actualización V1/V2 con publicaciones hacia V3/V4 sin efectos colaterales. Las pruebas de catálogo mantienen las carreras y `SUCCESS`/`FAILED`/`SUPERSEDED`, comparando ahora la configuración antes/después.
+La suite focalizada CORS se ejecuta con `bash ./mvnw -Dtest=ApiCorsTest test`: usa un contexto MVC con controladores fixture y el manejador real de errores, carga `application.yaml` sin iniciar base de datos y no requiere Docker. Verifica preflight, respuestas, errores MVC, rechazo sin escrituras, rechazo del origen comodín y preservación sin `Origin`.
+
+Las pruebas de integración requieren Docker; Testcontainers usa PostgreSQL 17 Alpine y puertos aleatorios, sin consultar la base viva. Las pruebas JPA/EntityManager cubren matriz, límites JSON, rechazos sin efectos, revisión/concurrencia, bootstrap, rollback, reinicios, instalación limpia y actualización V1/V2 con publicaciones hacia V3/V4 sin efectos colaterales. Las pruebas de catálogo mantienen las carreras y `SUCCESS`/`FAILED`/`SUPERSEDED`, comparando ahora la configuración antes/después.
 
 La evidencia ejecutada y sus limitaciones se registran en [VERIFICATION.md](../VERIFICATION.md); las cifras históricas no son una nueva suite integral. Esto no constituye auditoría de seguridad ni prueba de navegador.
 
