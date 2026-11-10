@@ -13,7 +13,7 @@
 | 5 | `shared/design-system/_feedback.scss` | `.count`, `.badge`, `.published`, `.danger`, `.error`, `.notice`. |
 | 6 | `shared/design-system/_tables.scss` | Base `.p-datatable`, celdas, cabeceras y enlaces. |
 | 7 | `shared/design-system/_primeng.scss` | Tokens de select, overlays, paginadores y selector compartido `.dwc-picker`. |
-| 8–10 | `features/catalog/catalog.scss`, `features/record-sources/validation-configuration.scss`, `features/importer/importer.scss` | Sincronización/definiciones; campos obligatorios y opcionales por contexto; pasos/carga/contexto/mapeo/validación, respectivamente. |
+| 8–10 | `features/catalog/pages/catalog/catalog.scss`, `features/record-sources/pages/validation-configuration/validation-configuration.scss`, `features/importer/importer.scss` | Sincronización/definiciones; campos obligatorios y opcionales por contexto; pasos/carga/contexto/mapeo/validación, respectivamente. |
 
 Las excepciones compactas de mapeo se aplican después de las primitivas. Todos los paginadores, incluido el resumen de campos obligatorios sin datos, comparten `.p-paginator .p-select`; no hay estilos por instancia. El corte móvil continúa en 800px y los overlays mantienen el límite del viewport.
 

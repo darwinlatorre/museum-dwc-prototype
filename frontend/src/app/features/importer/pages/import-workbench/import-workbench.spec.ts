@@ -1,13 +1,13 @@
 import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { App } from '../../../app';
-import { Api } from '../../../core/api/api';
-import { configurationFixture } from '../../../testing/validation-fixture';
-import { buildNormalizationPreview, readPreviewPage, type PreviewSnapshot } from '../engine/normalization-preview';
-import type { Dataset } from '../models/dataset';
-import type { PreviewRequest, PreviewResponse } from '../models/normalization-preview';
-import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
+import { App } from '../../../../app/app';
+import { Api } from '../../../../core/api/api';
+import { configurationFixture } from '../../../../testing/validation-fixture';
+import { buildNormalizationPreview, readPreviewPage, type PreviewSnapshot } from '../../engine/normalization-preview';
+import type { Dataset } from '../../models/dataset';
+import type { PreviewRequest, PreviewResponse } from '../../models/normalization-preview';
+import type { WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
 import { ImportWorkbench } from './import-workbench';
 
 type ResponseBody<T = WorkerResponse> = T extends WorkerResponse ? Omit<T, 'id'> : never;

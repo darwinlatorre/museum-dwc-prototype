@@ -2,10 +2,10 @@ import { inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { App } from '../app';
+import { App } from '../app/app';
 import { Api } from '../core/api/api';
-import { Catalog } from '../features/catalog/catalog';
-import { ValidationConfigurationEditor } from '../features/record-sources/validation-configuration';
+import { Catalog } from '../features/catalog/pages/catalog/catalog';
+import { ValidationConfigurationEditor } from '../features/record-sources/pages/validation-configuration/validation-configuration';
 import { configurationFixture } from './validation-fixture';
 
 async function setup() {

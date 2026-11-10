@@ -1,0 +1,29 @@
+@if (rows().length) {
+  <p class="mapping-summary">{{ populatedCount() }} campos con datos · {{ headers().length - populatedCount() }} campos sin datos</p>
+}
+<p-table #table class="mapping-table" [value]="columns()" [paginator]="true" [rows]="12" [rowsPerPageOptions]="[12, 25, 50, 100]" [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} columnas">
+  <ng-template #header>
+    <tr><th>Encabezado de origen</th><th>Campo Darwin Core de destino</th><th>Posible equivalencia</th></tr>
+  </ng-template>
+  <ng-template #body let-column let-rowIndex="rowIndex">
+    @let header = column.header;
+    @if (rows().length && !column.hasData && (rowIndex === populatedCount() || rowIndex === table.first)) {
+      <tr class="mapping-empty-divider"><th colspan="3" scope="rowgroup">Campos sin datos</th></tr>
+    }
+    <tr>
+      <th scope="row" class="source-header"><strong>{{ header }}</strong></th>
+      <td>
+        <app-dwc-picker [terms]="terms()" [label]="'Mapear ' + header"
+          [value]="mapping()[header] || ''" (valueChange)="mapped.emit({ header, value: $event })" />
+      </td>
+      <td>
+        <div class="suggestion-chips">
+          @for (suggestion of suggest(header); track suggestion) {
+            <button type="button" [attr.aria-pressed]="mapping()[header] === suggestion"
+              (click)="mapped.emit({ header, value: suggestion })">{{ suggestion }}</button>
+          }
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>

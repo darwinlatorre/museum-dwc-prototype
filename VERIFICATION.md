@@ -846,3 +846,17 @@ Las capturas, descargas y HAR permanecen en `.browser/`, excluido de Git. Los pe
 - GREEN: `python3 -B scripts/test_start.py` (9 pruebas), `bash -n start.sh` y `git diff --check` aprobados. Comparación byte a byte contra el manifiesto anterior y archivo de desarrollo vacío comprobados. Sin arrancar servicios ni leer dotenv reales.
 - Evaluación nativa no disponible: requiere declarar los archivos no rastreados; no produjo aprobación.
 - Verificación independiente posterior (`gentle-ai-verify`): PASS. Confirmó identidad byte a byte del manifiesto, ausencia de la ruta anterior, `compose.dev.yml` de 0 bytes, referencias activas y equivalencia del arranque salvo el nombre. Ejecutó 9 pruebas aisladas, `bash -n start.sh`, `git diff --check` y tres comprobaciones estructurales, todas aprobadas. Sin despliegue ni aprobación nativa. Informó scratch conservado en `/tmp/compose-verify-YU7z4F`; el padre no lo accedió ni lo retiró por estar fuera del proyecto.
+
+
+## Co-localización Angular desde dev (2026-11-10)
+
+Worktree propio `refactor/feature-architecture`, base `ebcf020`. No se modificó
+el backend ni se incorporó la rama de transporte HttpClient.
+- RED estructural: `node scripts/check-architecture.mjs` rechazó `Falta app/app.ts`.
+- Primer intento Angular falló con TS5097 por extensiones `.ts` añadidas al
+  recalcular imports con sufijos `.preset`/`.config`/`.routes`; corregidos.
+- GREEN: checker Node, `npm run lint`, `npm test -- --watch=false` (225 pruebas,
+  15 archivos), `npm run build`; comando integrado salió 0.
+- Build inicial 649.97 kB: advertencia sobre presupuesto de 500 kB, no resuelta.
+- Ambos workers se empaquetaron como módulos separados. Navegador pendiente de
+  la unidad de navegación, no se afirma comprobación visual nueva en esta unidad.

@@ -11,13 +11,14 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
 const required = [
-  'features/catalog/catalog.ts', 'features/catalog/catalog.html',
+  'app/app.ts', 'app/app.html', 'app/app.spec.ts',
+  'features/catalog/pages/catalog/catalog.ts', 'features/catalog/pages/catalog/catalog.html',
   'features/catalog/models/catalog-term.ts',
-  'features/record-sources/validation-configuration.ts',
-  'features/record-sources/validation-configuration.html',
+  'features/record-sources/pages/validation-configuration/validation-configuration.ts',
+  'features/record-sources/pages/validation-configuration/validation-configuration.html',
   'features/record-sources/models/validation-configuration.ts',
-  'features/importer/workbench/import-workbench.ts',
-  'features/importer/workbench/import-workbench.html',
+  'features/importer/pages/import-workbench/import-workbench.ts',
+  'features/importer/pages/import-workbench/import-workbench.html',
   'features/importer/components/column-mapping/column-mapping.ts',
   'features/importer/components/record-context/record-context.ts',
   ...['parser', 'normalizer', 'validator', 'export', 'analysis.worker', 'analysis.spec']
@@ -26,7 +27,7 @@ const required = [
     .map((name) => `features/importer/models/${name}.ts`),
   'core/api/api.ts', 'core/i18n/localization.ts',
   'shared/ui/dwc-picker/dwc-picker.ts', 'shared/ui/dwc-picker/dwc-picker.spec.ts',
-  ...['app', 'layout', 'evolution', 'localization'].map((name) => `testing/${name}.spec.ts`),
+  ...['layout', 'evolution', 'localization'].map((name) => `testing/${name}.spec.ts`),
 ];
 for (const path of required) assert.ok(existsSync(join(app, path)), `Falta ${path}`);
 for (const path of ['catalog.ts', 'profiles.ts', 'api.ts', 'localization.ts',
@@ -62,12 +63,18 @@ for (const file of sources) {
         `Vista importada desde motor: ${name}`);
     }
   }
+  if (!file.endsWith('.spec.ts') && /@Component\(/.test(source)) {
+    assert.ok(!/\btemplate\s*:/.test(source), `HTML inline en ${name}`);
+    assert.equal(dirname(file).split('/').at(-1), file.split('/').at(-1).replace(/\.ts$/, ''),
+      `Componente sin carpeta propia: ${name}`);
+    assert.match(source, /templateUrl\s*:/, `Falta HTML externo en ${name}`);
+  }
   for (const match of source.matchAll(/(?:templateUrl|styleUrl)\s*:\s*['"]([^'"]+)['"]/g)) {
     assert.ok(existsSync(resolve(dirname(file), match[1])), `Recurso sin destino en ${name}: ${match[1]}`);
   }
 }
 
-const workbench = join(app, 'features/importer/workbench/import-workbench.ts');
+const workbench = join(app, 'features/importer/pages/import-workbench/import-workbench.ts');
 const worker = read(workbench).match(/new Worker\(new URL\('([^']+)', import\.meta\.url\),\s*\{\s*type: 'module'/);
 assert.ok(worker, 'El worker debe conservar la URL relativa analizable por Angular');
 assert.equal(resolveImport(workbench, worker[1]), join(app, 'features/importer/engine/analysis.worker.ts'));

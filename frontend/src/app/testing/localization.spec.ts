@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { Catalog } from '../features/catalog/catalog';
+import { Catalog } from '../features/catalog/pages/catalog/catalog';
 import { Api } from '../core/api/api';
 import { label, spanish } from '../core/i18n/localization';
 import { configurationFixture } from './validation-fixture';

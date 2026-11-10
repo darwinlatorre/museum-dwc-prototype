@@ -1,10 +1,10 @@
 import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { App } from '../app';
+import { App } from './app';
 import { Api } from '../core/api/api';
 import { Component } from '@angular/core';
 import { vi } from 'vitest';
-import { configurationFixture } from './validation-fixture';
+import { configurationFixture } from '../testing/validation-fixture';
 
 // Compile the actual stylesheet: jsdom cannot provide browser geometry.
 @Component({ template: '', styleUrl: '../../styles.scss' })

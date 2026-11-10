@@ -1,9 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { injectQuery } from '@tanstack/angular-query-experimental';
-import { Api } from './core/api/api';
-import { Catalog } from './features/catalog/catalog';
-import { ValidationConfigurationEditor } from './features/record-sources/validation-configuration';
-import { ImportWorkbench } from './features/importer/workbench/import-workbench';
+import { Api } from '../core/api/api';
+import { Catalog } from '../features/catalog/pages/catalog/catalog';
+import { ValidationConfigurationEditor } from '../features/record-sources/pages/validation-configuration/validation-configuration';
+import { ImportWorkbench } from '../features/importer/pages/import-workbench/import-workbench';
 @Component({
   selector: 'app-root',
   imports: [Catalog, ValidationConfigurationEditor, ImportWorkbench],

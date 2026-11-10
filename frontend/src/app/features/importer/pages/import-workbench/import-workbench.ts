@@ -2,20 +2,20 @@ import { afterRenderEffect, Component, computed, effect, ElementRef, inject, inp
 import { form, FormField } from '@angular/forms/signals';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import type { Change, Normalization } from '../models/normalization';
-import type { Context } from '../models/context';
-import { type Dataset, LIMITS } from '../models/dataset';
-import type { Issue } from '../models/analysis-result';
-import type { ValidationConfiguration } from '../../record-sources/models/validation-configuration';
-import type { Term } from '../../catalog/models/catalog-term';
-import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
+import type { Change, Normalization } from '../../models/normalization';
+import type { Context } from '../../models/context';
+import { type Dataset, LIMITS } from '../../models/dataset';
+import type { Issue } from '../../models/analysis-result';
+import type { ValidationConfiguration } from '../../../record-sources/models/validation-configuration';
+import type { Term } from '../../../catalog/models/catalog-term';
+import type { WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
 import { NormalizationPreviewState } from './normalization-preview-state';
-import { NormalizationPreview } from '../components/normalization-preview/normalization-preview';
-import { missingCells, missingFields } from '../engine/required-fields';
-import { ColumnMapping } from '../components/column-mapping/column-mapping';
-import { RecordContext } from '../components/record-context/record-context';
-import { csvReport, jsonReport } from '../engine/export';
-import { label } from '../../../core/i18n/localization';
+import { NormalizationPreview } from '../../components/normalization-preview/normalization-preview';
+import { missingCells, missingFields } from '../../engine/required-fields';
+import { ColumnMapping } from '../../components/column-mapping/column-mapping';
+import { RecordContext } from '../../components/record-context/record-context';
+import { csvReport, jsonReport } from '../../engine/export';
+import { label } from '../../../../core/i18n/localization';
 
 @Component({
   selector: 'app-import',
@@ -29,7 +29,7 @@ export class ImportWorkbench implements OnDestroy {
   normalizationVisible = output<boolean>();
   private messageId = 0;
   readonly previewState = new NormalizationPreviewState(() => new Worker(
-    new URL('../engine/normalization-preview.worker', import.meta.url), { type: 'module' },
+    new URL('../../engine/normalization-preview.worker', import.meta.url), { type: 'module' },
   ), () => ++this.messageId);
   configuration = input.required<ValidationConfiguration>();
   configurationAvailable = input(true);
@@ -208,7 +208,7 @@ export class ImportWorkbench implements OnDestroy {
     this.worker?.terminate();
     this.error.set('');
     this.busy.set(true);
-    const worker = new Worker(new URL('../engine/analysis.worker', import.meta.url), {
+    const worker = new Worker(new URL('../../engine/analysis.worker', import.meta.url), {
       type: 'module',
     });
     this.worker = worker;

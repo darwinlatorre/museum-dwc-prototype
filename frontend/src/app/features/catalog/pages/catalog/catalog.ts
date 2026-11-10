@@ -2,8 +2,8 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 import { TableModule } from 'primeng/table';
-import { Api } from '../../core/api/api';
-import type { Term } from './models/catalog-term';
+import { Api } from '../../../../core/api/api';
+import type { Term } from '../../models/catalog-term';
 @Component({
   selector: 'app-catalog',
   imports: [FormField, TableModule],

@@ -1,10 +1,10 @@
 import { Component, computed, effect, inject, input, linkedSignal, output, signal, untracked } from '@angular/core';
 import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
-import { DwcPicker } from '../../shared/ui/dwc-picker/dwc-picker';
-import { Api } from '../../core/api/api';
-import { label } from '../../core/i18n/localization';
-import type { Term } from '../catalog/models/catalog-term';
-import { CONTEXTS, type Context, type ValidationConfiguration } from './models/validation-configuration';
+import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
+import { Api } from '../../../../core/api/api';
+import { label } from '../../../../core/i18n/localization';
+import type { Term } from '../../../catalog/models/catalog-term';
+import { CONTEXTS, type Context, type ValidationConfiguration } from '../../models/validation-configuration';
 
 @Component({
   selector: 'app-validation-configuration',
