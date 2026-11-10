@@ -107,7 +107,7 @@ class CatalogSyncTests {
         var result = new ArrayList<Map<String, String>>();
         for (JsonNode term : json.readTree(getCatalog())) {
             var row = new LinkedHashMap<String, String>();
-            for (String key : List.of("name", "uri", "definition", "category", "status")) row.put(key, term.get(key).asText());
+            for (String key : List.of("name", "uri", "definition", "category", "status")) row.put(key, term.get(key).asString());
             result.add(row);
         }
         return result;
@@ -136,7 +136,7 @@ class CatalogSyncTests {
     }
     @Test @Order(0)
     void emptyDatabaseStartsWithTrustedBundleWithoutNetwork() throws Exception {
-        assertThat(metadata().get("active").get("revision").asText()).isEqualTo("bundled");
+        assertThat(metadata().get("active").get("revision").asString()).isEqualTo("bundled");
         assertThat(metadata().get("attempts").asInt()).isZero();
         assertThat(terms()).hasSize(414);
         assertThat(terms()).anySatisfy(term -> assertThat(term.get("category")).isEmpty());
@@ -151,7 +151,7 @@ class CatalogSyncTests {
         refresh().run();
         assertThat(getCatalog()).contains("syncTest");
         JsonNode meta = metadata();
-        assertThat(meta.get("active").get("revision").asText()).isEqualTo("b".repeat(40));
+        assertThat(meta.get("active").get("revision").asString()).isEqualTo("b".repeat(40));
         assertThat(meta.get("active").get("added").asInt()).isEqualTo(1);
         assertThat(terms().stream().filter(t -> t.get("uri").equals(URI)).findFirst().orElseThrow())
             .containsEntry("category", "").containsEntry("definition", "Exact, \"quoted\"\nmultiline definition.");
@@ -194,7 +194,7 @@ class CatalogSyncTests {
         assertThat(getCatalog()).isEqualTo(before);
         assertThat(metadata().get("active")).isEqualTo(success);
         assertThat(metadata().get("attempts").asLong()).isEqualTo(statusBefore.get("attempts").asLong() + 1);
-        assertThat(metadata().get("lastFailure").asText())
+        assertThat(metadata().get("lastFailure").asString())
             .isEqualTo("No se pudo actualizar el catálogo TDWG; se conserva la última versión válida.");
     }
     @Test void identicalRefreshDoesNotRewriteActiveSnapshot() throws Exception {
@@ -226,7 +226,7 @@ class CatalogSyncTests {
             JsonNode active = metadata().get("active");
             release.countDown(); older.get(10, TimeUnit.SECONDS);
             assertThat(metadata().get("active")).isEqualTo(active);
-            assertThat(metadata().get("active").get("revision").asText()).isEqualTo("e".repeat(40));
+            assertThat(metadata().get("active").get("revision").asString()).isEqualTo("e".repeat(40));
         } finally { sourceGate = null; release.countDown(); }
     }
     @Test void applicationRestartServesPersistedBytesWithoutFetching() throws Exception {
@@ -276,9 +276,9 @@ class CatalogSyncTests {
                 .andReturn().getResponse().getContentAsString()).isEqualTo(before);
             release.countDown();
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while (!metadata().get("active").get("revision").asText().equals(candidate.revision())
+            while (!metadata().get("active").get("revision").asString().equals(candidate.revision())
                     && System.nanoTime() < deadline) Thread.yield();
-            assertThat(metadata().get("active").get("revision").asText()).isEqualTo(candidate.revision());
+            assertThat(metadata().get("active").get("revision").asString()).isEqualTo(candidate.revision());
         } finally { release.countDown(); sourceGate = null; }
     }
     @Test @Order(2)
@@ -454,7 +454,7 @@ class CatalogSyncTests {
         refresh().run();
         var expected = json.readTree(Files.readString(Path.of("src/main/resources/data/catalog.json")));
         assertThat(json.readTree(getCatalog())).isEqualTo(expected);
-        assertThat(metadata().get("active").get("revision").asText()).isEqualTo("1".repeat(40));
+        assertThat(metadata().get("active").get("revision").asString()).isEqualTo("1".repeat(40));
         assertThat(expected.size()).isEqualTo(414);
         assertThat(terms().stream().filter(t -> t.get("category").isEmpty()).count()).isEqualTo(52);
         String before = getCatalog();
@@ -463,7 +463,7 @@ class CatalogSyncTests {
         refresh().run();
         var active = metadata().get("active");
         assertThat(getCatalog()).isEqualTo(before);
-        assertThat(active.get("revision").asText()).isEqualTo("2".repeat(40));
+        assertThat(active.get("revision").asString()).isEqualTo("2".repeat(40));
         assertThat(active.get("snapshotVersion").asLong()).isEqualTo(previous.get("snapshotVersion").asLong() + 1);
         for (String key : new String[]{"added", "modified", "deprecated"}) assertThat(active.get(key).asInt()).isZero();
         var store = context.getBean(JpaCatalogStore.class);

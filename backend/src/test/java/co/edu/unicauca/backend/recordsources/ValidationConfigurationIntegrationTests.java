@@ -95,7 +95,7 @@ class ValidationConfigurationIntegrationTests {
         var names = new ArrayList<String>();
         var sizes = new ArrayList<Integer>();
         for (JsonNode context : config.get("contexts")) {
-            names.add(context.get("context").asText());
+            names.add(context.get("context").asString());
             sizes.add(context.get("requiredFields").size());
         }
         assertThat(names).containsExactly("collection", "permit", "sampling", "marine", "other");
