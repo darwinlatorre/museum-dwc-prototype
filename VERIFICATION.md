@@ -1,5 +1,19 @@
 # Evidencia de verificación del MVP
 
+## HttpClient, environments y CORS MVC — candidato actual
+
+- Rama `refactor/httpclient-query-cors` desde `dev` ebcf020; especificación `odd/tasks/httpclient-query-cors.md`. Conexión directa mediante HttpClient y TanStack Query raíz existente. `src/environments/environment.ts` y `environment.development.ts` usan `baseUrl`, con reemplazo development; son valores de compilación. No hay API_URL runtime, JSON de configuración ni generadores/hooks añadidos.
+- CORS únicamente con `WebMvcConfigurer.addCorsMappings`, lista configurable `CORS_ALLOWED_ORIGINS`, `/api/**`, GET/HEAD/POST/PUT y Content-Type; sin credenciales ni comodines. No se promete CORS para errores previos al mapeo como 405. Sin filtro ni parser URI adicional.
+- Retirados por pedido los proxies Angular, nginx.conf propio (routes=[] y Nginx predeterminado suficiente), checker frontend, QUERY_USAGE y helpers descartados. Se conservan pruebas funcionales y documentación vigente. No se modifican datos, dotenv/plantillas ni servicios existentes; el reordenamiento de imports ajeno en ConfigurationService.java queda fuera de los commits.
+- Writers: RED observado para HTTP/selección environments y MVC; versión final **239/239 pruebas frontend**, **21/21 MVC**, **13/13 Compose/CLI**, lint y builds normal/development aprobados. Bundle **668.59 kB / 500 kB**, advertencia conservada. Resultados 244/frontend-runtime y 39/filtro pertenecen a diseños descartados, no se suman ni acreditan el actual.
+- Independiente `mw9xt1qu-4-4gg2`, en copia temporal nueva autorizada: lint PASS, **239/239 frontend**, **13/13 Compose/CLI**, **21/21 MVC**; **5 casos frontend nuevos** y **1 MVC nuevo** también PASS (la segunda ejecución MVC dio 22, no 22 casos nuevos). Cancelación aislada, errores exactos y origen personalizado sin confianza residual comprobados. `git diff --check` PASS; checkout preservado.
+- **Límite declarado y aceptado para publicar:** el build Docker independiente agotó **240 s** en `npm ci` con `--network=none`, en una capa no cacheada. Es fallo de infraestructura, sin defecto funcional demostrado. No se reintentó ni se relanzó el verificador. Arranque Docker y navegador del diseño final **pendientes/no aprobados**. La prueba Docker/navegador anterior aprobó el runtime JSON luego descartado y no sustituye esta prueba: se mantiene como evidencia histórica en `.browser/httpclient-query-cors/{runtime,browser.har,screenshots}`.
+- Logs independientes rescatados en `.browser/httpclient-query-cors/independent/`; se retiró exclusivamente la copia autorizada `/tmp/universidad-httpclient-verify-01a1be31`, sus archivos privados de issue y la raíz vacía. Retirados también backend-build, browser-profile y helpers temporales propios, conservando logs/resultados/capturas. No se leyeron ni limpiaron otros temporales externos; logs Angular externos antiguos reportados por RED no tienen autorización de acceso.
+- ASSESS item 2: nativeRisk **unassessable** por archivos sin seguimiento, sin revisión ni aprobación nativa. No hubo nuevas auditorías npm ni suites DB completas. La issue **#13** fue creada una sola vez con autorización humana exacta para `status:approved`, actor ADMIN verificado, labels existentes y lectura posterior de título/cuerpo/labels idéntica: https://github.com/darwinlatorre/museum-dwc-prototype/issues/13 . El futuro PR usará **Refs #13**, sin cierre automático.
+- La pausa humana anterior («Dejar la entrega pendiente») fue sustituida por la instrucción vigente: «Vale entonces no tomes en cuenta el ultimo mensaje, y aprueba los cambios, cierra el issue y has el pr y apruebalo para dev. y termina.». Se autoriza publicar sin cambiar la implementación ni repetir el verificador; Docker/navegador final siguen pendientes y no se presentan como aprobados. Cierre de issue explícitamente autorizado; no se autorizó merge ni autoaprobación técnica. El usuario aprobó los cambios, lo cual no constituye una revisión nativa ni una revisión GitHub desde otra cuenta.
+- Entrega confirmada: commits `f84fe8c` (CORS), `60bdca4` (HttpClient/environments), `42a9e54` (limpieza); push no-force de la rama. [PR #14](https://github.com/darwinlatorre/museum-dwc-prototype/pull/14) abierto hacia `dev`, no draft, etiqueta única `type:refactor` y cuerpo leído de vuelta idéntico. [Issue #13](https://github.com/darwinlatorre/museum-dwc-prototype/issues/13) cerrada por instrucción explícita, con cuerpo/labels preservados. Sin merge. ASSESS del tercer corte: **medium**, `reviewDue=false` (`under_budget`); no equivale a aprobación nativa.
+- Aprobación formal GitHub pendiente: tanto actor como autor del PR son `darwinlatorre`; GitHub no permite autoaprobar un PR. `reviews=[]`, `reviewDecision` vacío y `statusCheckRollup=[]` al consultar. No se cambiaron credenciales ni se simuló otra revisión. No se afirma que haya CI aprobado. El único cambio ajeno aún local es el orden de imports de ConfigurationService.java, excluido de la publicación.
+
 ## Limpieza de arranque y configuración ESLint
 
 - `start.sh` retirado por pedido explícito. `scripts/test_start.py` se reemplaza por `scripts/test_compose.py`: eliminadas seis pruebas exclusivas del wrapper, sus constantes/stubs y aserciones decorativas de banners; permanecen **13 pruebas** de Compose, almacenamiento, redes, credenciales, empaquetado/licencias y regresión real CLI/HTTP de hosts. No se borraron pruebas de producto ni datos.
@@ -990,3 +1004,82 @@ La verificación independiente anterior sigue sin resultado. No afirmar suite ve
 ni aprobación independiente/nativa. T4 se retira del seguimiento sin marcarla como
 pruebas aprobadas. El PR permanece pendiente por la decisión explícita anterior
 «No crear issue; dejar el PR pendiente». Este cierre no publica ni integra nada.
+
+
+## Combinación con dev HttpClient y alojamiento SPA (T6, 2026-11-10)
+
+Issue15 creado y confirmado con status:approved y type:refactor tras permisos
+explícitos; actorADMIN y blank issues habilitados. El temporal privado autorizado
+se retiró. Base dev6410a3676a8fc81107371a17c36427e9f5677c13. Los cinco conflictos
+se resolvieron preservando HttpClient/environments/CORS, endpoints por feature,
+App directamente en src/app, rutas y estado del importador. Se mantienen borrados
+checker/QUERY_USAGE; el fallback estático de Nginx es solo SPA, sin proxyAPI.
+
+- Worker HTTP: baseline fetch compilable RED24fallos/11pases y19 rechazos de ese
+  baseline; GREEN35/35 focalizadas y lint. Promise/Subscription de dev conservados.
+- Alojamiento: RED nginx.conf ausente (13pass/1fail); GREEN14pruebas Compose.
+  Imagen exacta nginx:1.28-alpine no estaba instalada: preflight no llegó a HTTP.
+  Padre obtuvo la etiqueta del Dockerfile, sin cambiar versión. En sonda original,
+  fixture0700 produjo403; única corrección0755 del fixture propio y pruebaPASS.
+  Nginx real sirvió índice200 para raíz,/catalogo,/fuentes-de-registros,/analisis;
+  JS/licencias literales y MIME correctos; sin proxyAPI. Contenedores/fixtures
+  task-owned retirados, sin tocar servicios o datos existentes.
+- Padre: `npm run lint`, `npm test -- --watch=false --runner-config
+  ../.browser/feature-architecture/vitest.serial.config.mjs` (249 pruebas,
+  19archivos), build normal y development,14pruebas Compose con TMPDIR local,
+  diff-check del índice/worktree: comando integrado salida0. Build normal677.47kB,
+  warning500kB sin resolver. Sin alterar límites ni aserciones. No sumar suites
+  históricas: este resultado corresponde solo a la combinación nueva.
+- Assess nueva combinación: medium nativo, escalación item5 high,
+  reviewDue=false/under_budget e independentVerifier=true. No START nativo.
+- Verificador T6 único mwa4bttb-8-fg06 inspeccionó fuente y copia aislada con
+  dependencias materializadas. Comando focalizado no ejecutó pruebas: .bin/ng
+  copiado no encontró ./bootstrap, exit1 de infraestructura. No reparado ni
+  relanzado, sin fallback al workspace. No certifica GREEN independiente.
+  Su inspección estructural es favorable, no sustituye S5 funcional independiente.
+- La aceptación manual anterior corresponde al candidato previo, no crea esta
+  prueba faltante. Navegador de combinación no ejecutado. Ninguna prueba nueva
+  después del resultado indisponible. No se tocó scratch externo del runtime.
+
+**Needs your decision:** aportar evidencia independiente para esta combinación
+o aceptar explícitamente la limitación sin presentarla como aprobación técnica.
+Merge local en progreso, conflictos resueltos, sin commit; no se publicó el
+resultado combinado ni se creó PR o se integró en dev/main. Rama remota sigue
+hasta1e7d12a; backend ajeno del worktree original intacto.
+
+
+### Continuación aceptada y navegador de la combinación
+
+Usuario: «Si», aceptando continuar con la indisponibilidad independiente explícita
+ofrecida inmediatamente. No se reparó ni relanzó el verificador ni se lo marcó
+aprobado. La evidencia del padre y las limitaciones permanecen diferenciadas.
+
+Nginx1.28-alpine aislado, contenedor task-owned `museum-architecture-final-01a1c307`,
+binding dinámico127.0.0.1:44622, configuración SPA real y build Angular real
+**development** (el último de los dos builds). API absoluta simulada por
+agent-browser; no se contactó backend/base vivos ni se simularon datos en Angular.
+
+- Incidente de fixture: respuestas mock iniciales omitían el permiso CORS del
+  origen de prueba. La espera de catalogNumber agotó25s (fallo registrado, no
+  repetido ni convertido en éxito). Vista de error real observada y capturada.
+  Primera corrección agregó nuevas reglas permitiendo origen, pero las anteriores
+  seguían activas y Reintentar continuó fallando. Segunda corrección acotada del
+  mismo bloqueo: retirar reglas antiguas y registrar las nuevas con --allow-origin.
+  Reintentar recuperó catálogo. No cambios de producto ni límites/aserciones.
+- Rutas profundas /catalogo y /fuentes-de-registros servidas por Nginx real;
+  desconocida redirige /analisis, títulos y aria-current correctos. Móvil390px
+  conserva scroll horizontal contenido; ancho documento390px, sin overflow.
+- CSV ficticio2filas leído por worker mediante control público; contexto/mapeo,
+  archivo y paso preservados al cambiar de sección. Entrada sin agregar protegida:
+  cancelar conserva URL/texto, aceptar descarta. No guardar ni sincronizar.
+- HAR `.browser/feature-architecture/integration.har`:54requests; API solo GET
+  absolutos a http://localhost:8080/api/catalog y validation-configuration. Ocho
+  fallos de mock status0 antes de corregir fixture y seis respuestas mock200
+  posteriores; ningún POST/PUT. No prueba CORS/backend real ni transferencia de
+  registros. La API no pasó por Nginx ni por ruta relativa.
+- Capturas locales abiertas e inspeccionadas en
+  `.browser/feature-architecture/integration-screenshots/`: error inicial,
+  catálogo1440×1000 y fuentes390px. No certificación exhaustiva de accesibilidad.
+- Navegador propio cerrado y contenedor propio retirado; sin tocar servicios,
+  volúmenes ni archivos ajenos. Sin nuevas pruebas tras este contraste salvo
+  comprobaciones estructurales de documentación/entrega.

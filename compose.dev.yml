@@ -61,17 +61,15 @@ services:
     networks:
       - app
     command:
-      - npx
-      - ng
-      - serve
+      - npm
+      - start
+      - --
       - --host
       - 0.0.0.0
       - --port
       - "4200"
       - --poll
       - "1000"
-      - --proxy-config
-      - proxy.docker.conf.json
     # La CLI expone allowed-hosts como booleano; Vite admite un hostname adicional.
     environment:
       __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: ${TRAEFIK_HOST:-localhost}
@@ -86,7 +84,6 @@ services:
       - ./frontend/angular.json:/app/angular.json:ro
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:ro
-      - ./frontend/proxy.docker.conf.json:/app/proxy.docker.conf.json:ro
     labels:
       - "traefik.http.services.museum.loadbalancer.server.port=4200"
     healthcheck:

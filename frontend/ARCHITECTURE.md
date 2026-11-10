@@ -4,19 +4,6 @@ El árbol de `src/app` expresa los tres dominios visibles: catálogo Darwin Core
 fuentes de registros biológicos y análisis local de colecciones. El contexto es
 único por archivo; las revisiones son control de concurrencia, no un ciclo de publicación.
 
-## Comprobación rápida
-
-Desde la raíz del repositorio:
-
-```bash
-cd frontend && node scripts/check-architecture.mjs
-```
-
-El comprobador usa solo Node: exige las ubicaciones principales, resuelve imports
-relativos y recursos de componentes, verifica la URL del worker y detecta contratos
-duplicados. Impide dependencias de vistas desde `core`/`shared` y desde el motor.
-No sustituye las pruebas Angular, el build ni la comprobación en navegador.
-
 ## Propietarios y límites
 
 | Ubicación | Responsabilidad |
@@ -30,7 +17,7 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 | `features/catalog/services` | `CatalogMetadata`: lectura y sincronización; `CatalogSyncResult` pertenece a `features/catalog/models`. |
 | `features/record-sources/services` | `RecordSourcesMetadata`: lectura y escritura de configuración con revisión. |
 | `layouts/museum-layout` | Shell persistente, consultas globales y contrato reactivo de metadatos para el outlet. |
-| `core/api` | `Api.request`: transporte genérico con fetch, AbortSignal y errores existentes; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. |
+| `core/api` | `Api.request`: transporte genérico HttpClient con puente Promise/AbortSignal y errores vigentes; base pública desde environment.baseUrl mediante BASE_URL; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
 | `shared/design-system` | Tokens semánticos, primitivas globales, adaptación de PrimeNG y preset desde la misma paleta CSS. |
@@ -51,6 +38,16 @@ El guard `features/record-sources/guards/unsaved-configuration.ts` consulta el
 editor vivo: tanto el borrador modificado como el texto aún no agregado requieren
 confirmación. Cancelar conserva URL, vista y entrada; aceptar destruye el editor
 y descarta ese borrador. La protección beforeunload pertenece al propio editor.
+
+`app.config.ts` compone explícitamente HttpClient y un solo cliente Query.
+No hay proxy Angular/Nginx ni caché de `httpResource`: el navegador contacta la
+URL absoluta del backend, que debe permitir su origen por CORS.
+`src/environments/environment.ts` configura `baseUrl` para el build normal;
+`environment.development.ts` lo reemplaza mediante `fileReplacements` para
+serve/watch/build development. Ambos contienen solo configuración pública local;
+cambiarla requiere recompilar, no pasar variables al contenedor ya construido.
+No hay inicializador, JSON ni generador runtime. Nginx usa `nginx.conf` estático con fallback a `index.html` para las rutas
+Angular; no proxifica la API ni genera configuración runtime.
 
 Las dependencias entre funcionalidades apuntan a contratos con `import type`, no a
 sus vistas. `core` y `shared` pueden consumir esos modelos, nunca importar componentes

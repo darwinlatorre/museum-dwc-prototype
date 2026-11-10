@@ -8,7 +8,6 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - `frontend/README.md` y `backend/README.md`: arquitectura y contratos.
 - `frontend/ARCHITECTURE.md`: organización por funcionalidades y límites de dependencia.
 - `frontend/DESIGN_SYSTEM.md`: tokens, primitivas, preset y propiedad de estilos.
-- `frontend/QUERY_USAGE.md`: cliente Query compartido, cancelación, invalidaciones y salvedades.
 - `backend/RECORD_SOURCES_ARCHITECTURE.md` y `backend/CATALOG_ARCHITECTURE.md`: puertos, composición y fronteras transaccionales hexagonales.
 - `sources/README.md`: fuentes oficiales y atribuciones.
 - `VERIFICATION.md`: evidencia observada, historial y limitaciones.
@@ -42,6 +41,7 @@ Módulo del Museo de Historia Natural de la Universidad del Cauca: Angular/Prime
 - Contratos entre funcionalidades con `import type`, no vistas desde `core`/`shared`. Mantener el motor independiente de transporte/vistas y la URL de módulo del worker relativa a su workbench.
 - Reutilizar `shared/design-system`: una paleta CSS, `MuseumPreset` conectado en `app.config.ts`, tokens de espacios/radios y primitivas comunes. Estilos de feature globales importados desde `src/styles.scss` para conservar overlays; no duplicar colores o reglas para cada control. No cambiar el comportamiento nativo de selects sin una necesidad explícita.
 - Reutilizar el selector DwC de `shared/ui/dwc-picker` y sus contratos de valor libre, limpieza y deshabilitación; preservar el workbench montado y las guardas de navegación/generación.
+- El navegador contacta directamente `environment.baseUrl` (default `http://localhost:8080/api`), sin proxy API Angular/Nginx. Configurar los application environments `frontend/src/environments/environment.ts` (normal/production) y `environment.development.ts` (development mediante `fileReplacements`). Son configuración de compilación, sin dotenv ni lectura del entorno del proceso: cambiar baseUrl exige recompilar; en producción Docker, reconstruir imagen y recrear contenedor. No hay JSON runtime, generador ni hooks previos. Compose no entrega una URL API al frontend: solo configura el hostname adicional Vite en desarrollo y conserva fuentes read-only, incluidos ambos environments, sin montaje duplicado. Nginx usa `frontend/nginx.conf` estático con fallback SPA a `index.html` para `/analisis`, `/fuentes-de-registros` y `/catalogo`, sin proxy API ni configuración runtime. El backend permite orígenes mediante `WebMvcConfigurer` y `CORS_ALLOWED_ORIGINS` de su `env_file` (default localhost/127.0.0.1 en 4200/8081/80); no duplicar esa lista en Compose. Cambiar puertos públicos exige ajustar baseUrl/orígenes, sin cambiar 8080/5432 internos.
 - TanStack Query usa un cliente raíz; resolverlo con `inject(QueryClient)`, no el alias deprecado `injectQueryClient`. Mantener claves vigentes, callbacks, cancelación `AbortSignal` y políticas existentes; la clave de perfiles se reemplaza por `validation-configuration` por el retiro autorizado; no agregar un cliente por feature ni convertir transporte/caché como parte de un cambio de DI. El cache contiene solo metadatos.
 - La sincronización manual y la programada comparten la misma maquinaria. Evaluar `SUCCESS`/`FAILED`/`SUPERSEDED`, no solo HTTP200; los intentos viejos nunca reemplazan activaciones ni fallos nuevos.
 - No sobrescribir un JAR en ejecución: ejecutar una copia separada del artefacto de compilación. El contenedor copia el JAR compilado en su imagen y no monta el artefacto del host.
@@ -55,7 +55,7 @@ Desde la raíz:
 ```bash
 python3 scripts/test_seeds.py
 python3 -B scripts/test_compose.py
-(cd frontend && npm run lint && node scripts/check-architecture.mjs && npm test -- --watch=false && npm run build)
+(cd frontend && npm run lint && npm test -- --watch=false && npm run build)
 (cd backend && python3 -B scripts/test_codegen.py && python3 scripts/test_architecture.py && python3 scripts/check_architecture.py && bash ./mvnw test && bash ./mvnw package -DskipTests)
 git diff --check
 ```

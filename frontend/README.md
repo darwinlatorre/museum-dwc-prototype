@@ -6,22 +6,44 @@ Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten r
 
 Flujo principal: desde la raíz, ejecutar `docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180`; ver [modos y requisitos](../README.md#ejecución-local). Compose construye y despliega los servicios esperando salud. Node.js 24 y `npm ci --no-audit --no-fund` se ejecutan dentro de la imagen, no en el host. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
 
-Para desarrollo en contenedor: `docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait`. El manifiesto es autónomo e incluye PostgreSQL con volumen propio; `--env-file` sigue siendo necesario para interpolar el manifiesto, aunque el backend también use `env_file`. Angular CLI sirve el puerto `FRONTEND_PORT` (4200), con fuentes montadas y polling para hot reload. `proxy.docker.conf.json` dirige `/api/**` a `backend:8080`; se preserva el proxy del modo host. El frontend pertenece a `app` y, solo con el overlay Traefik, también a `proxy` (red externa `proxy` por defecto, configurable con `TRAEFIK_NETWORK`). Desarrollo con proxy añade `-f compose.traefik.yml` después de `-f compose.dev.yml`; su perfil opcional publica siempre `127.0.0.1:80:80`. Ambos modos usan el router/servicio fijo `museum`, hacia 80 en producción y 4200 en desarrollo: son alternativas, no rutas simultáneas en un mismo Traefik sin configuración manual. Ver el README principal.
+Para desarrollo en contenedor: `docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait`. El manifiesto es autónomo e incluye PostgreSQL con volumen propio; `--env-file` sigue siendo necesario para interpolar el manifiesto, aunque el backend también use `env_file`. Angular CLI sirve el puerto `FRONTEND_PORT` (4200), con fuentes montadas y polling para hot reload. El navegador contacta directamente la URL pública `environment.baseUrl`; no hay proxy API Angular ni Nginx. El backend debe permitir el origen del frontend por CORS. El frontend pertenece a `app` y, solo con el overlay Traefik, también a `proxy` (red externa `proxy` por defecto, configurable con `TRAEFIK_NETWORK`). Desarrollo con proxy añade `-f compose.traefik.yml` después de `-f compose.dev.yml`; su perfil opcional publica siempre `127.0.0.1:80:80`. Ambos modos usan el router/servicio fijo `museum`, hacia 80 en producción y 4200 en desarrollo: son alternativas, no rutas simultáneas en un mismo Traefik sin configuración manual. Ver el README principal.
 
 El servicio Docker configura un único hostname adicional con `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${TRAEFIK_HOST:-localhost}`. Se conservan los hosts locales nativos y se rechazan otros hosts; no se desactiva la validación. Angular CLI 21.2.27 expone `--allowed-hosts` solo como booleano: ni separar el hostname ni usar `=hostname` configura la lista deseada. La variable solo pertenece al servicio Docker, no a la aplicación ni al modo host.
 
-Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200. El proxy dirige `/api` a http://127.0.0.1:8080; iniciar primero el backend.
+Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200 e iniciar primero el backend. Usar `npm start -- ...` para pasar opciones CLI.
+
+### URL pública de la API
+
+La URL se configura con los **application environments de Angular**, mediante `environment.baseUrl`:
+
+| Archivo | Selección |
+|---|---|
+| `src/environments/environment.ts` | Normal: `npm run build` / configuración `production` por defecto. |
+| `src/environments/environment.development.ts` | Desarrollo: `npm start`, `npm run watch` o `npm run build -- --configuration development`. |
+
+Ambos exportan inicialmente:
+
+```ts
+export const environment = {
+  baseUrl: 'http://localhost:8080/api',
+};
+```
+
+Editar `baseUrl` en el archivo del modo deseado. Debe ser una URL HTTP(S) accesible **desde el navegador**, no el nombre Docker `backend`; no incluir credenciales ni secretos. La fachada elimina barras finales antes de añadir el endpoint. `angular.json` reemplaza el archivo normal por el de desarrollo mediante `fileReplacements`; el código siempre importa `environments/environment`.
+
+Es configuración **de compilación**: cambiarla exige volver a compilar; en producción Docker, reconstruir la imagen y recrear el contenedor. No se leen dotenv ni variables del proceso y no se genera/carga JSON runtime. Pasar una variable de entorno al contenedor ya compilado no cambia la URL. El modo normal sigue siendo el MVP local, no una URL de despliegue público.
+
+Configurar `CORS_ALLOWED_ORIGINS` del backend para el origen real de la página; el default permite localhost y 127.0.0.1 en 4200, 8081 y 80. CORS no sustituye autenticación. Ver [puertos personalizados](../README.md#url-pública-y-cors).
 
 ```bash
 npm run lint
-node scripts/check-architecture.mjs
 npm test -- --watch=false
 npm run build
 ```
 
 `npm run lint` ejecuta ESLint directamente (no `ng lint`) sobre `src/**/*.ts` y `src/**/*.html`, incluidas las pruebas y plantillas inline de componentes. `eslint.config.mjs` usa flat config con las reglas recomendadas de ESLint, typescript-eslint y Angular ESLint, sin reglas de formato ni análisis que requiera información de tipos. Cualquier error o advertencia hace fallar el comando. Se ignoran `node_modules`, `dist`, `.angular`, `.cache` y `coverage`; los scripts JavaScript y estilos no forman parte de este lint. Prettier se mantiene separado para formato.
 
-El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. `nginx.conf` conserva `/api/` hacia `backend:8080` y el fallback SPA; producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
+El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx carga el `nginx.conf` estático del frontend: sirve los archivos y aplica fallback a `index.html` para abrir o recargar `/analisis`, `/fuentes-de-registros` y `/catalogo`. No contiene proxy API ni configuración runtime. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
 
 El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
 
@@ -127,7 +149,7 @@ Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNIN
 | `shared/ui/dwc-picker`, `shared/design-system` | Selector, paleta única, primitivas y preset |
 | `testing` | Composición y costuras entre funcionalidades |
 
-Ver [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) y [QUERY_USAGE.md](QUERY_USAGE.md). Cliente Query raíz obtenido con `inject(QueryClient)`, no el alias deprecado. `fetch` propaga `AbortSignal`; ni archivos ni análisis entran en el query cache. El checker estructural no sustituye pruebas, build ni navegador.
+Ver [ARCHITECTURE.md](ARCHITECTURE.md) y [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Cliente Query raíz obtenido con `inject(QueryClient)`, no el alias deprecado. HttpClient convierte `AbortSignal` en cancelación real de la única suscripción; las funciones conservan promesas para Query. Ni archivos ni análisis entran en el query cache.
 
 ## Versiones y licencias
 

@@ -19,7 +19,7 @@ Para contenedores: Docker con Compose **2.24.4 o posterior** (`up --wait --wait-
    docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180
    ```
 
-3. Abrir http://localhost:8081 (o `FRONTEND_HTTP_PORT`). Nginx sirve Angular y dirige `/api/` al backend conservando el prefijo. Flyway crea el esquema; la primera ejecución carga el catálogo y la configuración global de los cinco contextos. Los reinicios no sobrescriben ajustes guardados.
+3. Abrir http://localhost:8081 (o `FRONTEND_HTTP_PORT`). Nginx sirve Angular como archivos estáticos; el navegador contacta directamente `environment.baseUrl`, sin proxy API. Flyway crea el esquema; la primera ejecución carga el catálogo y la configuración global de los cinco contextos. Los reinicios no sobrescriben ajustes guardados.
 
 Compose interpreta dotenv; no ejecutar `source` ni `eval` sobre esos archivos. Las variables ya exportadas en la terminal tienen la precedencia normal de Compose; evitar valores antiguos exportados. Los Dockerfiles instalan dependencias y compilan Angular y Spring dentro de etapas de build.
 
@@ -39,7 +39,7 @@ Para detener el stack sin eliminar datos, desde la raíz:
 docker compose --project-name universidad --env-file .env -f compose.yml stop
 ```
 
-No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Los Dockerfiles tienen etapas `base`, `development`, `build` y `production`. Producción usa la última etapa por defecto, sin repetir `build.target`; desarrollo selecciona `development` explícitamente. Los runtimes reciben únicamente el JAR o Angular compilado, incluida `3rdpartylicenses.txt`; las listas de permitidos de `.dockerignore` excluyen dotenv, Git, artefactos host y `node_modules`.
+No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Los Dockerfiles tienen etapas `base`, `development`, `build` y `production`. Producción usa la última etapa por defecto, sin repetir `build.target`; desarrollo selecciona `development` explícitamente. Los runtimes reciben el JAR o Angular compilado, incluida `3rdpartylicenses.txt`; las listas de permitidos de `.dockerignore` excluyen dotenv, Git, artefactos host y `node_modules`.
 
 ### Desarrollo con código montado
 
@@ -47,15 +47,15 @@ No usar `down -v`, limpiezas de volúmenes ni rotaciones automáticas. Los Docke
 docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait
 ```
 
-Abrir http://localhost:4200 (`FRONTEND_PORT`). Angular CLI escucha dentro del contenedor en 4200, observa las fuentes con polling y dirige `/api/**` a `backend:8080` mediante `proxy.docker.conf.json`. `proxy.conf.json`, seleccionado por `angular.json` para `npm start` en el host, apunta a `localhost:8080`. No son configuraciones duplicadas: el proxy Docker resuelve el servicio `backend`, mientras el host usa localhost. Solo se montan fuentes y configuraciones seleccionadas, no carpetas completas con dotenv ni dependencias del host. Cambios en dependencias requieren reconstruir la imagen.
+Abrir http://localhost:4200 (`FRONTEND_PORT`). Angular CLI escucha dentro del contenedor en 4200 y observa las fuentes con polling. Compose ejecuta `npm start -- --host 0.0.0.0 --port 4200 --poll 1000`, sin proxy ni hooks de configuración runtime. Solo se montan fuentes y configuraciones seleccionadas en solo lectura; `src` ya incluye ambos application environments, sin montaje adicional. No se montan carpetas completas con dotenv ni dependencias del host. Cambios en dependencias requieren reconstruir la imagen.
 
-El servicio frontend añade exclusivamente `${TRAEFIK_HOST:-localhost}` mediante `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS`, opción de Vite usada por Angular. No se pasa `--allowed-hosts`: en CLI 21.2.27 es booleano, no una lista CLI de nombres. Se mantiene la validación de hosts (incluidos los permisos locales nativos de Vite), sin permitir hosts arbitrarios. Este ajuste no cambia `npm start` fuera de Docker ni entrega dotenv al frontend.
+El entorno del servicio frontend configura exclusivamente `${TRAEFIK_HOST:-localhost}` mediante `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS`, opción de Vite usada por Angular. No se pasa `--allowed-hosts`: en CLI 21.2.27 es booleano, no una lista CLI de nombres. Se mantiene la validación de hosts (incluidos los permisos locales nativos de Vite), sin permitir hosts arbitrarios. Este ajuste no cambia `npm start` fuera de Docker ni entrega dotenv al frontend.
 
 El proyecto declarado es `universidad-dev`, con base `museum_dev_data` propia y `target` Java en volumen separado. El backend ejecuta `mvn spring-boot:run`: tras editar Java, ejecutar el mismo comando Compose con `restart backend` en lugar de `up ...`; **no tiene recarga Java automática**. Angular sí dispone de hot reload. Desarrollo y producción comparten los defaults de puertos de base/API: para mantener ambos activos, asignar puertos distintos en `.env.dev` antes de arrancar. No reutilizar el volumen MVP ni parar servicios ajenos para liberar puertos.
 
 ### Traefik opcional
 
-Flujos: **Traefik → Nginx → Spring Boot → PostgreSQL** en producción; **Traefik opcional → Angular CLI → Spring Boot → PostgreSQL** en desarrollo. Base, backend y frontend siempre pertenecen a `app`, con nombre acotado al proyecto (`universidad_app` o `universidad-dev_app`), sin red `default`. Solo el frontend añade `proxy`; la API y la base nunca se conectan a ella. `app` no usa `internal: true`: el backend necesita salida a las fuentes TDWG.
+Traefik enruta únicamente la página hacia **Nginx** en producción o **Angular CLI** en desarrollo. Después, el navegador consulta directamente la API pública de **Spring Boot → PostgreSQL**; Traefik no enruta `/api/`. Base, backend y frontend siempre pertenecen a `app`, con nombre acotado al proyecto (`universidad_app` o `universidad-dev_app`), sin red `default`. Solo el frontend añade `proxy`; la API y la base nunca se conectan a ella. `app` no usa `internal: true`: el backend necesita salida a las fuentes TDWG.
 
 El overlay usa una red **externa** compartida: el operador debe crearla una vez si no existe (`docker network create proxy`, o el nombre de `TRAEFIK_NETWORK`). El default es `proxy`; un `TRAEFIK_NETWORK` configurado previamente, incluido el nombre antiguo, lo sobrescribe. Revisarlo manualmente si se desea adoptar el nuevo default; las plantillas permanecen intactas. Un Traefik existente debe estar conectado a esa red, tener proveedor Docker y el entrypoint indicado. No arrancar el incluido si otro proxy ocupa el puerto.
 
@@ -79,8 +79,37 @@ Abrir http://localhost (`TRAEFIK_HOST`, por defecto `localhost`; un valor explí
 | `FRONTEND_PORT`, `FRONTEND_HTTP_PORT` | 4200 para CLI y 8081 para Nginx |
 | `TRAEFIK_HOST`, `TRAEFIK_ENTRYPOINT` | `localhost`, `web`; un valor explícito prevalece |
 | `TRAEFIK_NETWORK` | `proxy`, externa y preexistente; un valor explícito prevalece |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,http://127.0.0.1:4200,http://localhost:8081,http://127.0.0.1:8081,http://localhost,http://127.0.0.1`; lista separada por comas para Spring MVC |
 
-No se leen ni modifican los dotenv reales para verificar estos contratos. `SERVER_PORT` del dotenv elige el puerto del host; Compose fija el interno en 8080 para conservar los proxies y la salud.
+No se leen ni modifican los dotenv reales para verificar estos contratos. `SERVER_PORT` del dotenv elige el puerto del host; Compose fija el interno en 8080 para conservar la conectividad interna y la salud.
+
+### URL pública y CORS
+
+La URL del backend se configura mediante **application environments de Angular**, no mediante variables del proceso ni dotenv:
+
+| Archivo | Modo |
+|---|---|
+| `frontend/src/environments/environment.ts` | Normal / `production`, usado por `npm run build` y la imagen compilada |
+| `frontend/src/environments/environment.development.ts` | Desarrollo, usado por `npm start`, `npm run watch` y build con `--configuration development` |
+
+Ambos exportan `baseUrl: 'http://localhost:8080/api'`. Editar el archivo del modo deseado: `angular.json` selecciona el de desarrollo con `fileReplacements`. La URL debe ser accesible desde el navegador, no `http://backend:8080`; nunca incluir secretos. HttpClient usa esa base y Query conserva la caché de metadatos y la cancelación. Cambiarla exige recompilar; en producción Docker, reconstruir la imagen y recrear el contenedor. Una variable del contenedor ya compilado no modifica el bundle. Ver [configuración frontend](frontend/README.md#url-pública-de-la-api).
+
+No hay JSON runtime, generador ni proxy API. Nginx usa la configuración estática `frontend/nginx.conf`, con fallback SPA a `index.html` para las rutas `/analisis`, `/fuentes-de-registros` y `/catalogo`; no proxifica la API.
+
+El backend obtiene `CORS_ALLOWED_ORIGINS` del dotenv seleccionado mediante su `env_file`; sin valor usa el default de `application.yaml`, no una segunda lista en Compose. Para esta variable adicional, una exportación de shell por sí sola no sustituye `env_file`: configurarla manualmente en el archivo seleccionado. La lista contiene orígenes exactos (sin `/api`), sin wildcard ni credenciales. CORS no autentica usuarios ni oculta la API a clientes no navegador.
+
+Ejemplo de valores para gestionar manualmente en `.env.dev`, sin tocar los puertos internos:
+
+```text
+DB_PORT=15432
+SERVER_PORT=18080
+FRONTEND_PORT=14200
+CORS_ALLOWED_ORIGINS=http://localhost:14200,http://127.0.0.1:14200
+```
+
+Para ese ejemplo, configurar además `baseUrl: 'http://localhost:18080/api'` en `frontend/src/environments/environment.development.ts`. Para producción, editar el archivo normal y reconstruir la imagen frontend. Los puertos internos siguen siendo 8080/5432.
+
+Si se abre la página mediante un `TRAEFIK_HOST` personalizado, incluir también ese origen real (esquema y puerto público) en CORS. Cambiar CORS requiere recrear el backend: un simple `restart` no actualiza el entorno de un contenedor existente. Las plantillas y los dotenv permanecen intactos durante esta implementación.
 
 ## Análisis de un archivo
 
