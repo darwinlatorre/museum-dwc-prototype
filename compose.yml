@@ -30,18 +30,17 @@ services:
       - DB_NAME=${DB_NAME:?Set DB_NAME in .env}
       - DB_USER=${DB_USER:?Set DB_USER in .env}
       - DB_PASSWORD=${DB_PASSWORD:?Set DB_PASSWORD in .env}
-      - SERVER_ADDRESS=0.0.0.0
-      - SERVER_PORT=8080
+      - SERVER_PORT=${SERVER_PORT:-8080}
       - CORS_ALLOWED_ORIGINS
     ports:
-      - "127.0.0.1:${SERVER_PORT:-8080}:8080"
+      - "127.0.0.1:${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     depends_on:
       museum-db:
         condition: service_healthy
     healthcheck:
       test:
         - CMD-SHELL
-        - 'test "$$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --connect-timeout 2 --max-time 3 http://127.0.0.1:8080/api/catalog/status)" = 200'
+        - 'test "$$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --connect-timeout 2 --max-time 3 http://127.0.0.1:${SERVER_PORT:-8080}/api/catalog/status)" = 200'
       interval: 5s
       timeout: 5s
       start_period: 30s
@@ -62,7 +61,7 @@ services:
       - "traefik.http.routers.museum.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
       - "traefik.http.routers.museum.service=museum"
       - "traefik.http.routers.museum.tls=true"
-      - "traefik.http.routers.museum.tls.certresolver=${TRAEFIK_CERTRESOLVER:-le}"
+      - "traefik.http.routers.museum.tls.certresolver=le"
       - "traefik.http.services.museum.loadbalancer.server.port=80"
     depends_on:
       backend:
@@ -86,9 +85,9 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=${TRAEFIK_ENTRYPOINT:-websecure}
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.${TRAEFIK_ENTRYPOINT:-websecure}.address=:443
-      - --certificatesresolvers.${TRAEFIK_CERTRESOLVER:-le}.acme.email=${TRAEFIK_ACME_EMAIL:-example@email.com}
-      - --certificatesresolvers.${TRAEFIK_CERTRESOLVER:-le}.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.${TRAEFIK_CERTRESOLVER:-le}.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL:-example@email.com}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
     ports:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"

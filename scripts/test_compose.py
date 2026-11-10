@@ -47,17 +47,39 @@ class ComposeTests(unittest.TestCase):
                 self.assertEqual(set(model["volumes"]), {"museum_mvp_data"})
                 self.assertEqual(model["volumes"]["museum_mvp_data"]["name"], "universidad_museum_mvp_data")
                 services = model["services"]
-                for service, published, target in (("museum-db", db_port, 5432), ("backend", server_port, 8080), ("frontend", 8081, 80)):
+                for service, published, target in (("museum-db", db_port, 5432), ("backend", server_port, server_port), ("frontend", 8081, 80)):
                     self.assertEqual(services[service]["ports"], [{"mode": "ingress", "host_ip": "127.0.0.1", "target": target, "published": str(published), "protocol": "tcp"}])
                     self.assertIn("healthcheck", services[service])
                 backend = services["backend"]
                 # config serializa $ como $$ para que el modelo pueda reutilizarse
                 # sin interpolar el valor literal; no es una transformación propia.
-                self.assertEqual(backend["environment"], {"DB_HOST": "museum-db", "DB_PORT": "5432", "DB_NAME": "fixture", "DB_USER": "fixture_user", "DB_PASSWORD": "literal $$ value", "SERVER_ADDRESS": "0.0.0.0", "SERVER_PORT": "8080", "CORS_ALLOWED_ORIGINS": None})
+                self.assertEqual(backend["environment"], {"DB_HOST": "museum-db", "DB_PORT": "5432", "DB_NAME": "fixture", "DB_USER": "fixture_user", "DB_PASSWORD": "literal $$ value", "SERVER_PORT": str(server_port), "CORS_ALLOWED_ORIGINS": None})
                 self.assertEqual(services["museum-db"]["environment"]["POSTGRES_PASSWORD"], "literal $$ value")
                 self.assertEqual(backend["depends_on"]["museum-db"]["condition"], "service_healthy")
                 self.assertEqual(services["frontend"]["depends_on"]["backend"]["condition"], "service_healthy")
                 self.assertEqual(services["museum-db"]["volumes"][0]["source"], "museum_mvp_data")
+
+    def test_backend_port_health_and_optional_cors_in_both_modes(self):
+        for base in ("compose.yml", "compose.dev.yml"):
+            for settings, port, cors in (
+                ("", 8080, None),
+                ("SERVER_PORT=18080\nCORS_ALLOWED_ORIGINS=http://localhost:14200\n", 18080, "http://localhost:14200"),
+                ("SERVER_PORT=\n", 8080, None),
+            ):
+                with self.subTest(base=base, settings=settings):
+                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nSERVER_ADDRESS=untrusted\n" + settings, base=base)
+                    self.assertEqual((result.returncode, result.stderr), (0, ""))
+                    backend = json.loads(result.stdout)["services"]["backend"]
+                    self.assertNotIn("SERVER_ADDRESS", backend["environment"])
+                    self.assertNotIn("SERVER_ADDRESS", (ROOT / base).read_text())
+                    self.assertEqual(backend["environment"]["SERVER_PORT"], str(port))
+                    self.assertEqual(backend["environment"]["CORS_ALLOWED_ORIGINS"], cors)
+                    self.assertEqual(backend["ports"], [{"mode": "ingress", "host_ip": "127.0.0.1", "target": port, "published": str(port), "protocol": "tcp"}])
+                    self.assertEqual(backend["healthcheck"]["test"], [
+                        "CMD-SHELL",
+                        'test "$$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --connect-timeout 2 --max-time 3 '
+                        f'http://127.0.0.1:{port}/api/catalog/status)" = 200',
+                    ])
 
     def test_development_mounts_ports_and_storage_are_isolated(self):
         result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nFRONTEND_PORT=14200\n",
@@ -115,7 +137,7 @@ class ComposeTests(unittest.TestCase):
             self.assertNotIn("ENV_SOURCE", backend["environment"])
             self.assertNotIn("env_file:", (ROOT / base).read_text())
             self.assertEqual(backend["environment"]["CORS_ALLOWED_ORIGINS"], "http://localhost:14200,http://127.0.0.1:14200")
-            for key, value in (("DB_HOST", "museum-db"), ("DB_PORT", "5432"), ("SERVER_PORT", "8080")):
+            for key, value in (("DB_HOST", "museum-db"), ("DB_PORT", "5432"), ("SERVER_PORT", "18080")):
                 self.assertEqual(backend["environment"][key], value)
             self.assertEqual(set(services), {"museum-db", "backend", "frontend"})
             self.assertEqual(backend["depends_on"]["museum-db"]["condition"], "service_healthy")
@@ -151,13 +173,12 @@ class ComposeTests(unittest.TestCase):
         """CLI/builder instalados; fixture mínima, sin app ni servicios Docker."""
         cli = ROOT / "frontend/node_modules/@angular/cli/bin/ng.js"
         self.assertTrue(cli.exists(), "Requiere dependencias frontend instaladas y Node 24")
-        evidence = ROOT / ".browser/httpclient-query-cors/integration-environments-cli"
-        evidence.mkdir(parents=True, exist_ok=True)
         for label, setting, allowed in (("default", "", "localhost"),
                                         ("custom", "TRAEFIK_HOST=museum.example.test\n", "museum.example.test"),
                                         ("host", None, "localhost")):
             with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-environments-") as directory:
                 scratch = Path(directory)
+                evidence = scratch
                 config = json.loads((ROOT / "frontend/angular.json").read_text())
                 config["cli"]["cache"] = {"enabled": False}
                 build = config["projects"]["frontend"]["architect"]["build"]
@@ -274,11 +295,12 @@ class ComposeTests(unittest.TestCase):
         self.assertNotIn("traefik.enable", proxy.get("labels", {}))
         self.assertIn("--providers.docker.exposedbydefault=false", proxy["command"])
 
-    def test_tls_resolver_defaults_overrides_and_local_proxy(self):
+    def test_tls_resolver_is_fixed_and_other_overrides_preserved(self):
         for base in ("compose.yml", "compose.dev.yml"):
             for settings, resolver, entrypoint, email in (
                 ("", "le", "websecure", "example@email.com"),
-                ("TRAEFIK_CERTRESOLVER=custom\nTRAEFIK_ENTRYPOINT=secure\nTRAEFIK_ACME_EMAIL=ops@example.test\n", "custom", "secure", "ops@example.test"),
+                ("TRAEFIK_CERTRESOLVER=custom\nTRAEFIK_ENTRYPOINT=secure\nTRAEFIK_ACME_EMAIL=ops@example.test\n", "le", "secure", "ops@example.test"),
+                ("TRAEFIK_CERTRESOLVER=\n", "le", "websecure", "example@email.com"),
             ):
                 with self.subTest(base=base, resolver=resolver):
                     result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + settings,
@@ -308,6 +330,7 @@ class ComposeTests(unittest.TestCase):
                                         for v in proxy["volumes"]))
                     self.assertEqual(set(proxy["networks"]), {"proxy"})
                     self.assertNotIn("env_file:", (ROOT / base).read_text())
+                    self.assertNotIn("TRAEFIK_CERTRESOLVER", (ROOT / base).read_text())
 
     def test_required_credentials_missing_or_empty(self):
         for key in ("DB_NAME", "DB_USER", "DB_PASSWORD"):
@@ -323,6 +346,12 @@ class ComposeTests(unittest.TestCase):
 
 
 class PackagingTests(unittest.TestCase):
+    def test_backend_container_commands_override_only_binding(self):
+        dockerfile = (ROOT / "backend/Dockerfile").read_text()
+        self.assertIn('CMD ["mvn", "-B", "-ntp", "spring-boot:run", "-Dspring-boot.run.arguments=--server.address=0.0.0.0"]', dockerfile)
+        self.assertIn('ENTRYPOINT ["java", "-jar", "/app/backend.jar"]\nCMD ["--server.address=0.0.0.0"]', dockerfile)
+        self.assertNotIn("SERVER_ADDRESS", dockerfile)
+
     def test_frontend_static_spa_fallback_without_api_proxy_or_runtime_config(self):
         config_path = ROOT / "frontend/nginx.conf"
         self.assertTrue(config_path.is_file(), "Las rutas SPA requieren fallback estático a index.html")
