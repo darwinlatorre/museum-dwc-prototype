@@ -11,7 +11,7 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
 const required = [
-  'app/app.ts', 'app/app.html', 'app/app.spec.ts', 'app/routes.spec.ts',
+  'app.ts', 'app.html', 'app.scss', 'app.spec.ts', 'routes.spec.ts',
   'layouts/museum-layout/museum-layout.ts', 'layouts/museum-layout/museum-layout.html',
   'layouts/museum-layout/museum-layout.scss', 'layouts/museum-layout/museum-layout.spec.ts',
   'features/catalog/services/catalog-metadata.ts', 'features/catalog/models/catalog-sync-result.ts',
@@ -35,7 +35,7 @@ const required = [
   ...['layout', 'evolution', 'localization'].map((name) => `testing/${name}.spec.ts`),
 ];
 for (const path of required) assert.ok(existsSync(join(app, path)), `Falta ${path}`);
-for (const path of ['catalog.ts', 'profiles.ts', 'api.ts', 'localization.ts',
+for (const path of ['app', 'catalog.ts', 'profiles.ts', 'api.ts', 'localization.ts',
   'import-workbench.ts', 'import-workbench.html', 'shared/dwc-picker.ts',
   'analysis/model.ts', 'analysis/parser.ts', 'analysis/analysis.worker.ts',
   'import/column-mapping.ts', 'import/record-context.ts', 'shared/models',
@@ -81,7 +81,7 @@ for (const file of sources) {
 
 assert.doesNotMatch(read(join(app, 'core/api/api.ts')), /features\/|catalog|validation-configuration|CatalogSyncResult/,
   'El transporte genérico no posee endpoints ni modelos de negocio');
-assert.doesNotMatch(read(join(app, 'app/app.ts')), /injectQuery|ImportWorkbench|Catalog|ValidationConfigurationEditor/,
+assert.doesNotMatch(read(join(app, 'app.ts')), /injectQuery|ImportWorkbench|Catalog|ValidationConfigurationEditor/,
   'App debe ser solo la entrada del outlet');
 const routing = read(join(app, 'app.routes.ts'));
 for (const path of ['analisis', 'fuentes-de-registros', 'catalogo']) {

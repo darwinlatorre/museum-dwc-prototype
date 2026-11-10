@@ -1,7 +1,7 @@
 import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { App } from '../../../../app/app';
+import { App } from '../../../../app';
 import { provideRouter, Router } from '@angular/router';
 import { routes } from '../../../../app.routes';
 import { CatalogMetadata } from '../../../catalog/services/catalog-metadata';

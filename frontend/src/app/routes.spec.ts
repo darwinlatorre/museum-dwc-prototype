@@ -5,10 +5,10 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { routes } from '../app.routes';
-import { configurationFixture } from '../testing/validation-fixture';
-import { CatalogMetadata } from '../features/catalog/services/catalog-metadata';
-import { RecordSourcesMetadata } from '../features/record-sources/services/record-sources-metadata';
+import { routes } from './app.routes';
+import { configurationFixture } from './testing/validation-fixture';
+import { CatalogMetadata } from './features/catalog/services/catalog-metadata';
+import { RecordSourcesMetadata } from './features/record-sources/services/record-sources-metadata';
 
 describe('Rutas públicas del museo', () => {
   beforeEach(() => {

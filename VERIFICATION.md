@@ -948,3 +948,32 @@ INSPECT/START, no existe nueva aprobación nativa y no se afirma lo contrario.
 Las pruebas funcionales y de navegador quedaron observadas por el padre con los
 límites anteriores. Backend/Testcontainers/Compose no se ejecutaron porque no
 se modificaron. Auditoría npm no repetida. No se publicó ni integró nada.
+
+
+## Ajuste solicitado: App directamente en src/app (2026-11-10)
+
+Usuario: «Cierralo pero antes los archivos de app/app dentro del front dejalos en
+app/, luego de esto has los commits y el pr a dev.» Se movieron app.ts/html/scss,
+app.spec.ts y routes.spec.ts a `frontend/src/app/`; imports, checker y documento
+arquitectónico adaptados. La raíz App es la excepción explícitamente solicitada;
+los componentes de funcionalidades conservan sus carpetas propias.
+
+- RED checker: `Falta app.ts`; GREEN tras mover los archivos, con prohibición del
+  antiguo subdirectorio redundante. `npm run lint` aprobado.
+- `npm test -- --watch=false`: **falló**, 231 aprobadas y dos timeouts de5000ms:
+  `routes.spec.ts` → abre catálogo directamente y conserva la instancia de análisis;
+  `layouts/museum-layout/museum-layout.spec.ts` → carga/error/reintento de metadatos.
+  No se repitió, no se subieron límites ni se modificaron aserciones para ocultarlo.
+  No se puede declarar suite verde ni reemplazarla por las233 pruebas históricas.
+- Build omitido por el && anterior; ejecutado como comprobación distinta mediante
+  `npm run build && git diff --check`, salida0. Warning bundle658.86kB/500kB persiste.
+- No navegador nuevo: esta unidad solo reubica archivos/imports, sin cambios de UI.
+  Verificación independiente previa sigue indisponible; no se relanzó.
+- Usuario eligió expresamente «No crear issue; dejar el PR pendiente». No se creó
+  issue aprobado ni se hizo push/PR. Commits locales autorizados, con los fallos
+  anteriores visibles. No se aprobó ni integró nada.
+
+**Needs your decision:** falta autorización para una nueva ejecución de la suite
+(o evidencia externa equivalente) que resuelva los dos timeouts. PR pendiente por
+la decisión explícita del usuario y ausencia de issue aprobado requerido por el
+flujo de PR del entorno; no es una protección GitHub comprobada.

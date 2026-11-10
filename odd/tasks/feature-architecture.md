@@ -1,6 +1,6 @@
 # Arquitectura Angular por funcionalidad
 Objetivo: refactorizar desde `dev` (ebcf020), sin incorporar cambios de otras ramas. Rama: `refactor/feature-architecture`.
-Entrega: `auto-chain`, `feature-branch-chain`; no publicar ni integrar. Comprobaciones: Node checker, lint, Angular tests/build y navegador propio. Previsión: 900–1400 líneas editadas, además de movimientos.
+Entrega actual: `single-pr` hacia `dev`, autorizada por el usuario en L14; commits y publicación del PR permitidos, sin aprobar ni integrar. Comprobaciones: Node checker, lint, Angular tests/build y navegador propio. Previsión: 900–1400 líneas editadas, además de movimientos.
 
 ## Specs
 S1. «Implementa Feature-Based Architecture con Component Co-location, siguiendo los principios de Screaming Architecture. Refactoriza lo existente.» «Organizar el código por funcionalidades del negocio.» «Priorizar la organización por funcionalidad sobre una estructura global por tipo de archivo.»
@@ -8,11 +8,15 @@ S2. «Dentro de cada funcionalidad, separar components, pages, services, interfa
 S3. «Cada componente o página Angular debe tener su propia carpeta.» «Los archivos pertenecientes a un componente deben permanecer dentro de su carpeta: .ts, .html, .scss y .spec.ts, cuando correspondan. (Separa el HTML del ts)» «Evitar componentes dispersos directamente dentro de components/ o pages/ sin una carpeta propia.»
 S4. «Utilizar kebab-case para carpetas y archivos.» «Utilizar nombres descriptivos y consistentes.» «Colocar en shared/ únicamente los elementos reutilizables entre funcionalidades, evitando trasladar allí lógica específica del negocio.» «Respetar las convenciones de Angular y mantener la misma estructura en todas las funcionalidades del proyecto.»
 S5. «Mejora la utilidad de las rutas.»
+S6. «Cierralo pero antes los archivos de app/app dentro del front dejalos en app/, luego de esto has los commits y el pr a dev.»
 
 ## Tasks
 T1 | S1–S4 | inline | done | Co-localizar páginas/componentes/plantillas y adaptar límites, pruebas y documentación. Commit: d694c19. RED checker; GREEN checker/lint/225 pruebas/build. Risk: none.
 T2 | S1–S5 | delegated + contraste inline | done | Layout, servicios y rutas; padre contrastó checker/lint/233 pruebas/build/diferencial/navegador. Commit: efb0396. Limitación independiente aceptada por «Avanza.». Risk: item 3 (contratos compartidos).
 T3 | S1–S5 | inline, verificador indisponible aceptado | done | Checks y navegador observados, evidencia en efb0396 y cierre documental. Assess medium nativo, reviewDue=false/under_budget: no iniciar review. Limitación independiente y timeout de automatización registrados.
+
+T4 | S6 | inline | in_progress | Mover archivos raíz App a src/app, adaptar imports/checker/docs y verificar. Commit: pendiente.
+T5 | S6 | inline delivery | pending | Publicar rama y abrir un PR hacia dev, sin aprobar ni integrar; requiere issue aprobado según skill de PR. Commit/PR: pendiente.
 
 ## Log
 L1. Solicitud original:
@@ -45,3 +49,5 @@ L11. Unidad T2 efb0396:1276 líneas editadas. Se conserva unidad coherente layou
 L12. Assess cometido T2 desde d694c199b5e89375b0568859555662cb8c33fe55: nativeRisk medium, escalación item3 high, reviewDue=false, reviewDueReason=under_budget. La escalación no altera reviewDue; no INSPECT/START ni consentir por cuenta del usuario. Verificador independiente sigue indisponible con limitación aceptada; no aprobación nativa.
 
 L13. Cierre: S1–S5 implementadas y contrastadas con límites aceptados. Pruebas backend/Compose no aplicables a este diff, npm audit no repetida. Revisión nativa no debida, no aprobación inventada. Backend ajeno permanece intacto en worktree original. Siguiente paso humano: revisar unidades locales antes de cualquier publicación o integración en dev.
+L14. Usuario: «Cierralo pero antes los archivos de app/app dentro del front dejalos en app/, luego de esto has los commits y el pr a dev.» Autoriza ajuste acotado, commits y un PR único a dev; no autoaprobación/merge. La nueva indicación de ubicación raíz prevalece sobre co-location previa para App. Sin relanzar verificador indisponible; describir falta de prueba independiente en PR.
+L15. Origin confirmado: github.com/darwinlatorre/museum-dwc-prototype, default main; base humana dev. No hay issues abiertos ni PR abiertos; existe label type:refactor y status:approved. Falta vincular issue aprobado, exigido por skill de PR; no inventar aprobación ni crear issue sin autorización.

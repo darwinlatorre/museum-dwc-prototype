@@ -86,8 +86,13 @@ funcionalidades viven en `pages/<nombre>/`; los elementos subordinados del
 importador viven en `components/<nombre>/`. No crear carpetas vacías por tipo ni
 separar `interfaces` de `models` sin una responsabilidad distinta. Se conserva
 la convención Angular moderna sin sufijo `.component` usada por el proyecto.
-`app/app.ts` es la entrada mínima; la composición vive en
+`app.ts` es la entrada mínima; la composición vive en
 `layouts/museum-layout`, junto a su HTML/SCSS/spec. Las pruebas de rutas reales
-viven en `app/routes.spec.ts` y las de consultas en `testing/query-usage.spec.ts`.
+viven en `routes.spec.ts` y las de consultas en `testing/query-usage.spec.ts`.
 Los estilos de catálogo y fuentes se co-localizan con su página, pero siguen
 importados globalmente desde `styles.scss` para preservar overlays PrimeNG.
+
+Por indicación explícita, los archivos raíz `app.ts`, `app.html`, `app.scss`,
+`app.spec.ts` y `routes.spec.ts` viven directamente en `src/app/`, junto a
+`app.config.ts` y `app.routes.ts`, sin un segundo directorio `app/`. El resto
+de componentes y páginas conserva carpeta individual dentro de su propietario.
