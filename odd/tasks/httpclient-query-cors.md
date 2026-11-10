@@ -23,11 +23,11 @@ Verificación: Vitest/HttpTestingController, MockMvc CORS, lint/build, CLI y nav
 
 - T1 [S1,S2,S4,S6,S13] delegated/frontend — done — environments normal/development con baseUrl, HttpClient/Query conservados; 239 pruebas, lint y builds production/development aprobados. Commit: 60bdca4.
 - T2 [S3,S11] delegated/backend — done — WebMvcConfigurer simple, sin filtro ni validador URI; 21 casos MVC aprobados, con RED 17 fallos contra implementación descartada. Commit: f84fe8c.
-- T3 [S1,S4,S6,S12,S13] delegated/frontend + inline/integration — done — Sin proxies, runtime API_URL ni nginx.conf propio; Compose simple y 13 pruebas de CLI/hosts/empaquetado aprobadas. Commit: pendiente.
+- T3 [S1,S4,S6,S12,S13] delegated/frontend + inline/integration — done — Sin proxies, runtime API_URL ni nginx.conf propio; Compose simple y 13 pruebas de CLI/hosts/empaquetado aprobadas. Commit: 42a9e54.
 - T4 [S1,S2,S3,S4,S6,S11,S12,S13,S14] inline/checking + delegated/verify — dropped — Por aprobación de entrega en S14 no se continúa Docker/navegador final. Lint/239 frontend/13 Compose/21 MVC y 6 casos nuevos PASS conservados; timeout Docker 240 s no se considera aprobado ni se reintenta. Commit: evidencia en cierre.
-- T5 [S5,S14] inline/delivery — in_progress — S14 autoriza commits, push, PR a dev y cierre explícito de issue #13; registrar límites. Sin merge. Commit: pendiente.
-- T7 [S14] inline/GitHub-review — pending — Aprobar PR solo si GitHub permite a la cuenta actual revisar a un autor diferente; no simular autoaprobación ni cambiar credenciales.
-- T6 [S7,S8,S9,S10,S13] inline/cleanup — done — Retirados checker, QUERY_USAGE, proxies, nginx.conf, runtime y helpers propios; logs conservados, copia temporal autorizada retirada. Commit: pendiente.
+- T5 [S5,S14] inline/delivery — done — Tres unidades publicadas, PR #14 abierto hacia dev y issue #13 cerrada/confirmada. Límites declarados, sin merge. Commits: f84fe8c, 60bdca4, 42a9e54 y cierre documental.
+- T7 [S14] inline/GitHub-review — blocked — GitHub: actor y autor son darwinlatorre; no permite autoaprobar. Reviews vacías, se requiere otro revisor autorizado. No se simuló aprobación ni se cambiaron credenciales.
+- T6 [S7,S8,S9,S10,S13] inline/cleanup — done — Retirados checker, QUERY_USAGE, proxies, nginx.conf, runtime y helpers propios; logs conservados, copia temporal autorizada retirada. Commit: 42a9e54.
 
 ## Log
 
@@ -98,3 +98,7 @@ L21. Nueva instrucción vigente del usuario, literal:
 S14 reabre entrega y acepta publicarla con los límites declarados, sin nuevas pruebas ni cambios de configuración. Se mantiene baseUrl de compilación. Cierre explícito de issue autorizado, sin auto-merge. Revisar identidad/autor: GitHub no permite aprobar el propio PR; no usar otra identidad ni afirmar aprobación nativa.
 
 L22. Commits observados: f84fe8c CORS MVC (308 líneas cambiadas) y 60bdca4 HttpClient/environments (337). ASSESS committed-only de cada unidad volvió unassessable por archivos aún sin seguimiento; no hubo revisión ni aprobación nativa. Cuenta autenticada darwinlatorre, ADMIN; no PR previo para esta rama, issue #13 abierta/aprobada y origin/dev sigue ebcf020. Se preserva el import ajeno en ConfigurationService.java.
+
+L23. Cierre técnico: 42a9e54 limpieza/Compose/evidencia (362 líneas); native ASSESS medium, reviewDue=false por under_budget, sin revisión nativa. Push no-force confirmado. PR #14 abierto, no draft, base dev, type:refactor único, cuerpo idéntico al preparado: https://github.com/darwinlatorre/museum-dwc-prototype/pull/14 . Issue #13 pasó OPEN→CLOSED por orden humana; lectura posterior conserva cuerpo y labels. Dev no se modificó ni se hizo merge.
+
+L24. Revisión GitHub: autenticado y autor del PR darwinlatorre; reviews=[], reviewDecision vacío y statusCheckRollup=[] al consultar. No se puede aprobar el propio PR y no se intentó otra identidad. Aprobación humana de cambios registrada; aprobación formal GitHub pendiente de otro revisor. No se afirma CI aprobado ni aprobación nativa.
