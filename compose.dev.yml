@@ -26,16 +26,15 @@ services:
       target: development
     networks:
       - app
-    env_file:
-      - .env.dev
     environment:
-      DB_HOST: museum-db
-      DB_PORT: "5432"
-      DB_NAME: ${DB_NAME:?Set DB_NAME in .env.dev}
-      DB_USER: ${DB_USER:?Set DB_USER in .env.dev}
-      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.dev}
-      SERVER_ADDRESS: 0.0.0.0
-      SERVER_PORT: "8080"
+      - DB_HOST=museum-db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:?Set DB_NAME in .env.dev}
+      - DB_USER=${DB_USER:?Set DB_USER in .env.dev}
+      - DB_PASSWORD=${DB_PASSWORD:?Set DB_PASSWORD in .env.dev}
+      - SERVER_ADDRESS=0.0.0.0
+      - SERVER_PORT=8080
+      - CORS_ALLOWED_ORIGINS
     ports:
       - "127.0.0.1:${SERVER_PORT:-8080}:8080"
     depends_on:
@@ -60,6 +59,7 @@ services:
       target: development
     networks:
       - app
+      - proxy
     command:
       - npm
       - start
@@ -85,6 +85,13 @@ services:
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:ro
     labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-proxy}"
+      - "traefik.http.routers.museum.rule=Host(`${TRAEFIK_HOST:-localhost}`)"
+      - "traefik.http.routers.museum.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.museum.service=museum"
+      - "traefik.http.routers.museum.tls=true"
+      - "traefik.http.routers.museum.tls.certresolver=${TRAEFIK_CERTRESOLVER:-le}"
       - "traefik.http.services.museum.loadbalancer.server.port=4200"
     healthcheck:
       test: ["CMD", "wget", "-q", "-T", "3", "-O", "/dev/null", "http://127.0.0.1:4200/"]
@@ -93,9 +100,43 @@ services:
       start_period: 60s
       retries: 10
 
+  traefik:
+    image: traefik:v3.7
+    restart: unless-stopped
+    profiles: [local-traefik]
+    command:
+      - --ping=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=${TRAEFIK_NETWORK:-proxy}
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=${TRAEFIK_ENTRYPOINT:-websecure}
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.${TRAEFIK_ENTRYPOINT:-websecure}.address=:443
+      - --certificatesresolvers.${TRAEFIK_CERTRESOLVER:-le}.acme.email=${TRAEFIK_ACME_EMAIL:-example@email.com}
+      - --certificatesresolvers.${TRAEFIK_CERTRESOLVER:-le}.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.${TRAEFIK_CERTRESOLVER:-le}.acme.httpchallenge.entrypoint=web
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certificates:/letsencrypt
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 networks:
   app:
+  proxy:
+    name: ${TRAEFIK_NETWORK:-proxy}
+    external: true
 
 volumes:
   museum_dev_data:
   backend_dev_target:
+  certificates:

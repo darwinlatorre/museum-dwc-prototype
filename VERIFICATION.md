@@ -1,5 +1,17 @@
 # Evidencia de verificación del MVP
 
+## Unificación Compose y Traefik — dev
+
+- Pedido vigente: integrar el overlay en `compose.yml` y `compose.dev.yml`, mantener `local-traefik`, retirar `env_file` de servicios y publicar directamente en `dev`. El overlay se retira; no se modificaron dotenv ni plantillas, bases, volúmenes o servicios en ejecución.
+- Traefik v3.7, reinicio `unless-stopped`, HTTP `web` → HTTPS `websecure`, resolver configurable default `le`, correo ficticio default `example@email.com`, HTTP-01 y volumen `certificates`. Se conservan binds localhost y nombres de contenedor por proyecto. Se explicó la excepción solicitada al default `web`: ya es el entrypoint HTTP de redirección, no el TLS de 443.
+- Entorno backend explícito, puertos internos fijos y paso opcional de CORS sin duplicar la lista Spring. `--env-file` CLI se conserva solo para resolver variables; no se entregan variables arbitrarias al backend. Red externa `proxy` requerida con o sin perfil; únicamente frontend y Traefik pertenecen a ella.
+- RED observado: nueva prueba TLS falló al no existir aún el servicio integrado. Primera suite completa: 15 pruebas, 3 fallos de aserción (una esperaba ausencia de cualquier `name` y alcanzó la red externa; dos cargaron la expectativa de correo anterior mientras se aplicaba la corrección humana). Se acotó la aserción al volumen y se sincronizó el correo solicitado, sin alterar el comportamiento comprobado.
+- Final padre: `python3 -B scripts/test_compose.py && git diff --check` → **15/15 PASS**, 18,934 s y diff limpio. Incluye CLI Angular real y rechazo de hostname no autorizado, sin levantar servicios Docker.
+- Independiente `mwabzp5t-2-0310`: copia aislada, **15/15 PASS**, 20,730 s, más 8 comprobaciones de configuración/CORS/defaults vacíos/perfil, sin bloqueadores. `git diff --check` PASS y estado original preservado. No se incorporan casos opcionales ajenos al mínimo requerido.
+- ASSESS previo: nativeRisk medium, escalamiento item 5 por infraestructura; `reviewDue=false` (`under_budget`), verificador independiente requerido y cumplido. Esto no equivale a aprobación nativa.
+- Límites: no build de imágenes, arranque Docker, prueba HTTPS ni emisión ACME real. Let's Encrypt no emite para localhost y HTTP-01 requiere infraestructura pública; la configuración no autoriza exponer este MVP sin autenticación. No se repiten auditoría npm ni suites Java/frontend completas por este cambio de manifiestos.
+
+
 ## HttpClient, environments y CORS MVC — candidato actual
 
 - Rama `refactor/httpclient-query-cors` desde `dev` ebcf020; especificación `odd/tasks/httpclient-query-cors.md`. Conexión directa mediante HttpClient y TanStack Query raíz existente. `src/environments/environment.ts` y `environment.development.ts` usan `baseUrl`, con reemplazo development; son valores de compilación. No hay API_URL runtime, JSON de configuración ni generadores/hooks añadidos.
