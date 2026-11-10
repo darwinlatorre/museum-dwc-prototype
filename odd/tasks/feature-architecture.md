@@ -17,8 +17,8 @@ T2 | S1–S5 | delegated + contraste inline | done | Layout, servicios y rutas; 
 T3 | S1–S5 | inline, verificador indisponible aceptado | done | Checks y navegador observados, evidencia en efb0396 y cierre documental. Assess medium nativo, reviewDue=false/under_budget: no iniciar review. Limitación independiente y timeout de automatización registrados.
 
 T4 | S6 | inline | dropped | Movimiento implementado en 48218c5. Seguimiento de verificación detenido por instrucción humana L19 y aceptación manual; no marcar pruebas aprobadas:231 pass/2 timeout5000ms. Checker/lint/build sí aprobados. Risk: none para esta unidad.
-T6 | S1–S7 | delegated + seam inline | in_progress | Cinco conflictos resueltos;249 pruebas Angular/14 Compose/lint/builds aprobados. Usuario acepta continuar con verificación independiente indisponible (L30), sin aprobarla ni relanzarla. Contraste final de navegador/merge local en curso. Riesgos:item3/item5.
-T5 | S6–S7 | inline delivery | pending | Rama publicada hasta1e7d12a. Issue15 aprobado confirmado; PR/merge esperan resolver T6. Sin cambios remotos a dev/main ni aprobación técnica.
+T6 | S1–S7 | delegated + seam inline | done | Merge local72e8eb0 conserva HttpClient y fallback SPA;249pruebas/14Compose/lint/builds/Nginx/navegador contrastados. Independiente indisponible aceptada en L30, no aprobada ni relanzada. Riesgos:item3/item5.
+T5 | S6–S7 | inline delivery | in_progress | Issue15 aprobado confirmado. Preparando push de72e8eb0 y PR único con Refs #15 hacia dev; integración explícitamente autorizada, sin aprobar técnicamente ni tocar main.
 
 ## Log
 L1. Solicitud original:
@@ -70,3 +70,5 @@ L29. Needs your decision: aportar evidencia técnica independiente de esta combi
 L30. Usuario: «Si», como aceptación de continuar con la limitación explícita ofrecida inmediatamente en L29; no como aprobación técnica ni evidencia de la prueba que no ejecutó. No relanzar/reparar verificador. Continúan navegador aplicable, commit de merge, PR con Refs #15 e integración a dev autorizados; main intacta. Issue15 aún OPEN/status:approved y dev aún6410a36 confirmados antes de entregar.
 
 L31. Navegador final con Nginx real aislado y builddevelopment: rutas HTTP profundas/títulos, API absoluta mock, CSVworker y estado al navegar, guard de texto sin agregar, capturas desktop/móvil inspeccionadas y sin overflow de documento. Fixture inicial CORS omitido produjo timeout25s (no repetido); primera corrección duplicó reglas y no recuperó, segunda retiró antiguas/--allow-origin y Reintentar cargó. HAR54requests:8fallos mock status0 +6GETmock200 absolutos a localhost8080;0POST/PUT. No backend vivo ni CORS real certificado. Sesión/contenedor propios retirados. Evidencia detallada en VERIFICATION.md.
+
+L32. Merge local72e8eb0e08fdf603d909c4b6b0f867adb155deb5 completado;sin conflictos pendientes. Assess PR slice frente dev6410a36: medium nativo, escalación5high, reviewDue=false/under_budget. Independiente sigue indisponible aceptada, no aprobarla ni relanzarla. Preparar PR único Refs #15, type:refactor, informar carga de revisión y límites, comprobar controles antes de integrar. No main.

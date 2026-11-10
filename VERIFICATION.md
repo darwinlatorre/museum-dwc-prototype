@@ -1083,3 +1083,9 @@ agent-browser; no se contactó backend/base vivos ni se simularon datos en Angul
 - Navegador propio cerrado y contenedor propio retirado; sin tocar servicios,
   volúmenes ni archivos ajenos. Sin nuevas pruebas tras este contraste salvo
   comprobaciones estructurales de documentación/entrega.
+
+
+Merge local de combinación:72e8eb0e08fdf603d909c4b6b0f867adb155deb5.
+Assess del slice contra dev6410a36:medium nativo, escalaciónitem5high,
+reviewDue=false/under_budget; no START ni aprobación nativa. La aceptación
+explícita de la limitación independiente se publica como límite, no como éxito.
