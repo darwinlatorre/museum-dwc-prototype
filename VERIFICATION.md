@@ -860,3 +860,75 @@ el backend ni se incorporó la rama de transporte HttpClient.
 - Build inicial 649.97 kB: advertencia sobre presupuesto de 500 kB, no resuelta.
 - Ambos workers se empaquetaron como módulos separados. Navegador pendiente de
   la unidad de navegación, no se afirma comprobación visual nueva en esta unidad.
+
+
+## Rutas y servicios por funcionalidad: implementación sin cierre (2026-11-10)
+
+El writer `mwa0gpo1-2-381s` dejó T2 sin commit en el worktree aislado.
+Reportó RED de rutas (2 fallos previstos), GREEN focalizado (70 pruebas), checker,
+lint, suite (233 pruebas/17 archivos), build y diff-check aprobados. Corrigió un
+build inicial superior a 1 MB mediante `loadComponent`; queda advertencia de
+658.86 kB frente a 500 kB. Estos resultados son **delegados**, no nuevos checks
+observados por el padre. El padre leyó rutas, layout, salida del editor y transporte.
+
+Risk: item 3 — separación de contratos de metadatos compartidos. El assess
+pidió verificador independiente; nativeRisk no evaluable por archivos nuevos
+sin selección. No se inició revisión nativa ni existe aprobación.
+
+El único verificador `mwa0vany-3-vm8w` falló al preparar aislamiento: su copia
+conservó node_modules como enlace al workspace y su política exige dependencias
+copiadas sin enlaces. No ejecutó checker, pruebas, lint, build, diff-check ni
+comparación diferencial. Su lectura estructural no reemplaza esos checks.
+No se lo relanzó ni se intentó reparar su preparación. No se accedió ni limpió
+su scratch externo; requiere permiso específico si aún existe.
+
+**Pendiente de decisión humana:** aceptar explícitamente la limitación de prueba
+independiente o aportar evidencia independiente. Pendientes también contraste
+funcional del padre, navegador real (enlaces profundos, historial, borradores,
+importador persistente y escritorio/móvil), revisión nativa aplicable y commit T2.
+No se afirma cierre funcional ni visual, ni se publicó o integró el trabajo.
+
+
+## Contraste del padre tras «Avanza.» (2026-11-10)
+
+El usuario aceptó continuar con la limitación independiente ya explicada. No se
+relanzó el verificador ni se sustituyó su aprobación inexistente.
+
+- Comando del padre: `cd frontend && node scripts/check-architecture.mjs && npm run lint && npm test -- --watch=false && npm run build && git diff --check`: salida 0,
+  233 pruebas/17 archivos aprobados, build 658.86 kB; persiste warning de 500 kB.
+- Diferencial público único contra d694c199b5e89375b0568859555662cb8c33fe55,
+  script ignorado `.browser/feature-architecture/metadata-differential.cjs`:
+  GET catálogo, POST sincronización sin cuerpo, GET/PUT configuración, señal,
+  respuesta, texto arbitrario con espacios, error409 y desconexión idénticos.
+  Procesos base/candidato exit0, stderr vacío y stdout idéntico. Adaptador DI
+  mínimo en VM para ejecutar métodos reales transpilados; no prueba red real.
+- Permiso puntual del usuario para navegador/cache y sesión propia en
+  `/home/dark/.cache/ms-playwright` y `/home/dark/.agent-browser`; sin limpieza ajena.
+- Chromium con agent-browser, sesión propia `feature-arch-01`, build productivo
+  servido en `127.0.0.1:4387` con GET de metadatos ficticios. No se arrancaron
+  servicios de la aplicación ni base viva; PUT/POST del servidor de prueba
+  deshabilitados. No es evidencia de integración backend.
+- Apertura directa `/catalogo` y `/fuentes-de-registros`; raíz y desconocida
+  redirigen `/analisis`; títulos y aria-current correctos. Enlaces e historial
+  sin cambios pendientes conservaron la sesión y paso del importador.
+- CSV ficticio de dos filas leído mediante control público/worker; identificador
+  `001` conservado. Mapeo, diagnóstico y preview Normalizar realizados por UI.
+  Al visitar catálogo y volver siguieron archivo, paso y preview; `main` ancho
+  solo en Normalizar visible. Dos GET API200 y ningún POST/PUT en el tráfico
+  registrado: `.browser/feature-architecture/network-requests.txt`.
+- Entrada sin agregar y borrador agregado solicitaron confirmación; cancelar
+  conservó URL/entrada/lista, aceptar descartó y volver mostró editor limpio.
+- Incidente: `agent-browser back` con confirmación abierta hizo agotar el comando
+  compuesto a los30s (fallo de automatización registrado, sin reintento ni aumento
+  de límite). `dialog status` confirmó diálogo pendiente; `dialog dismiss`
+  resolvió la interacción y conservó `/fuentes-de-registros` y `atras-pendiente`.
+  No afirmar ejecución limpia del comando Atrás. Historial automatizado Angular
+  sí pasó en la suite. No se repitió la maniobra fallida.
+- Detalle original de Normalizar abrió por UI; Escape cerró y devolvió foco al
+  botón exacto, aria-expanded=false. Capturas abiertas e inspeccionadas en
+  `.browser/feature-architecture/screenshots/`: `catalog-desktop.png` (1440×1000),
+  `normalization-desktop.png` (1720×1080), `normalization-mobile.png` y
+  `sources-mobile.png` (390px). Ancho de documento390px en móvil; navegación
+  horizontal contenida, no overflow del documento. No auditoría exhaustiva a11y.
+- Sesión de navegador cerrada y servidor propio detenido. No se modificó ni
+  limpió ningún caché externo. Revisión nativa pendiente en la siguiente etapa.

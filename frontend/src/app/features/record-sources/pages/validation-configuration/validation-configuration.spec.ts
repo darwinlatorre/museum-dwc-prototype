@@ -3,7 +3,7 @@ import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-exper
 import { vi } from 'vitest';
 import type { ValidationConfiguration } from '../../models/validation-configuration';
 import { ValidationConfigurationEditor } from './validation-configuration';
-import { Api } from '../../../../core/api/api';
+import { RecordSourcesMetadata } from '../../services/record-sources-metadata';
 import { configurationFixture, contextKeys } from '../../../../testing/validation-fixture';
 
 async function setup(original: ValidationConfiguration = configurationFixture(['customField'])) {
@@ -13,7 +13,7 @@ async function setup(original: ValidationConfiguration = configurationFixture(['
     validationConfiguration: vi.fn().mockResolvedValue(original),
     updateValidationConfiguration: vi.fn().mockImplementation(async body => ({ ...body, revision: 8 })),
   };
-  TestBed.configureTestingModule({ providers: [provideTanStackQuery(client), { provide: Api, useValue: api }] });
+  TestBed.configureTestingModule({ providers: [provideTanStackQuery(client), { provide: RecordSourcesMetadata, useValue: api }] });
   const f = TestBed.createComponent(ValidationConfigurationEditor);
   f.componentRef.setInput('configuration', original);
   f.componentRef.setInput('terms', [{ name: 'eventDate', uri: '', definition: '', category: '', status: 'recommended' }]);

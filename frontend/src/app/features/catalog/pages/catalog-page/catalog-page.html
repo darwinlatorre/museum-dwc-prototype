@@ -1,0 +1,5 @@
+@if (metadata().terms(); as terms) {
+  @if (metadata().configuration()) {
+    <app-catalog [terms]="terms" />
+  }
+}

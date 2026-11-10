@@ -2,8 +2,10 @@ import { inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { App } from '../app/app';
-import { Api } from '../core/api/api';
+import { MuseumLayout } from '../layouts/museum-layout/museum-layout';
+import { provideRouter } from '@angular/router';
+import { CatalogMetadata } from '../features/catalog/services/catalog-metadata';
+import { RecordSourcesMetadata } from '../features/record-sources/services/record-sources-metadata';
 import { Catalog } from '../features/catalog/pages/catalog/catalog';
 import { ValidationConfigurationEditor } from '../features/record-sources/pages/validation-configuration/validation-configuration';
 import { configurationFixture } from './validation-fixture';
@@ -17,8 +19,9 @@ async function setup() {
     catalog: vi.fn().mockResolvedValue([]), validationConfiguration: vi.fn().mockResolvedValue(configuration),
     updateValidationConfiguration: vi.fn().mockResolvedValue(saved), syncCatalog: vi.fn().mockResolvedValue({ outcome: 'SUCCESS' }),
   };
-  TestBed.configureTestingModule({ providers: [provideTanStackQuery(client), { provide: Api, useValue: api }] });
-  for (const component of [App, Catalog, ValidationConfigurationEditor]) {
+  TestBed.configureTestingModule({ providers: [provideRouter([]), provideTanStackQuery(client),
+    { provide: CatalogMetadata, useValue: api }, { provide: RecordSourcesMetadata, useValue: api }] });
+  for (const component of [MuseumLayout, Catalog, ValidationConfigurationEditor]) {
     TestBed.overrideComponent(component, { set: { template: '', imports: [] } });
   }
   await TestBed.compileComponents();
@@ -49,7 +52,7 @@ describe('Contrato de uso de TanStack Query', () => {
   });
   it('guardar actualiza e invalida solo configuración y pasa AbortSignal a las consultas', async () => {
     const { client, api, saved, editor } = await setup();
-    const app = TestBed.createComponent(App); const f = editor();
+    const app = TestBed.createComponent(MuseumLayout); const f = editor();
     await app.whenStable(); await f.whenStable();
     await vi.waitFor(() => expect(api.validationConfiguration).toHaveBeenCalledTimes(1));
     expect(api.validationConfiguration.mock.calls[0]).toEqual([expect.any(AbortSignal)]);
@@ -65,7 +68,7 @@ describe('Contrato de uso de TanStack Query', () => {
   });
   it('un fallo de consulta muestra error real sin configuración sintética y permite reintentar', async () => {
     const { api } = await setup(); api.validationConfiguration.mockRejectedValueOnce(new Error('Sin configuración'));
-    const app = TestBed.createComponent(App); await app.whenStable();
+    const app = TestBed.createComponent(MuseumLayout); await app.whenStable();
     await vi.waitFor(() => expect(app.componentInstance.configuration.isError()).toBe(true));
     expect(app.componentInstance.configuration.data()).toBeUndefined();
     expect(app.componentInstance.configuration.error()?.message).toBe('Sin configuración');
@@ -81,7 +84,7 @@ describe('Contrato de uso de TanStack Query', () => {
     const { client, api, configuration } = await setup();
     if (outcome === 'transport') api.syncCatalog.mockRejectedValue(new Error('Sin red'));
     else api.syncCatalog.mockResolvedValue({ outcome });
-    const app = TestBed.createComponent(App); const catalog = TestBed.createComponent(Catalog);
+    const app = TestBed.createComponent(MuseumLayout); const catalog = TestBed.createComponent(Catalog);
     await app.whenStable(); await catalog.whenStable();
     await vi.waitFor(() => expect(app.componentInstance.catalog.data()).toEqual([]));
     catalog.componentInstance.synchronize();

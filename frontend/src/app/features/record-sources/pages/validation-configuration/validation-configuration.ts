@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, linkedSignal, output, signal, untracked } from '@angular/core';
 import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
-import { Api } from '../../../../core/api/api';
+import { RecordSourcesMetadata } from '../../services/record-sources-metadata';
 import { label } from '../../../../core/i18n/localization';
 import type { Term } from '../../../catalog/models/catalog-term';
 import { CONTEXTS, type Context, type ValidationConfiguration } from '../../models/validation-configuration';
@@ -10,12 +10,13 @@ import { CONTEXTS, type Context, type ValidationConfiguration } from '../../mode
   selector: 'app-validation-configuration',
   imports: [DwcPicker],
   templateUrl: './validation-configuration.html',
+  host: { '(window:beforeunload)': 'beforeUnload($event)' },
 })
 export class ValidationConfigurationEditor {
   readonly configuration = input.required<ValidationConfiguration>();
   readonly terms = input.required<Term[]>();
   readonly client = inject(QueryClient);
-  private readonly api = inject(Api);
+  private readonly api = inject(RecordSourcesMetadata);
   readonly label = label;
   readonly contexts = CONTEXTS;
   readonly context = signal<Context>('collection');
@@ -77,6 +78,12 @@ export class ValidationConfigurationEditor {
         if (!this.dirty()) this.draft.set(this.normalize(incoming));
       });
     });
+  }
+  beforeUnload(event: BeforeUnloadEvent) {
+    if (this.dirty() || this.field()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   }
   chooseContext(event: Event) {
     this.context.set((event.currentTarget as HTMLButtonElement).value as Context);

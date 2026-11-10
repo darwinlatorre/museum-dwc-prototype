@@ -4,7 +4,8 @@ import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-exper
 import { ValidationConfigurationEditor } from '../features/record-sources/pages/validation-configuration/validation-configuration';
 import { configurationFixture } from './validation-fixture';
 import { RecordContext } from '../features/importer/components/record-context/record-context';
-import { Api } from '../core/api/api';
+import { CatalogMetadata } from '../features/catalog/services/catalog-metadata';
+import { RecordSourcesMetadata } from '../features/record-sources/services/record-sources-metadata';
 import { ColumnMapping } from '../features/importer/components/column-mapping/column-mapping';
 import { Catalog } from '../features/catalog/pages/catalog/catalog';
 import { Table } from 'primeng/table';
@@ -78,7 +79,8 @@ describe('Compact collection layouts', () => {
   });
 
   beforeEach(() => TestBed.configureTestingModule({ providers: [
-    provideTanStackQuery(new QueryClient()), { provide: Api, useValue: {} },
+    provideTanStackQuery(new QueryClient()), { provide: CatalogMetadata, useValue: {} },
+    { provide: RecordSourcesMetadata, useValue: {} },
   ] }));
   afterEach(() => TestBed.resetTestingModule());
 

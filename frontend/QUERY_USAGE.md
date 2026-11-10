@@ -6,12 +6,17 @@ Un único cliente raíz mantiene catálogo y configuración de validación. Arch
 
 `src/app/app.config.ts` proporciona el cliente. Las features lo resuelven con `inject(QueryClient)`, sin proveedores propios ni el alias deprecado `injectQueryClient()`. El proveedor registra `mount()`/`unmount()` al resolver/destruir el inyector.
 
-| Clave | Lectura desde `app.ts` | Frescura |
+| Clave | Lectura desde `layouts/museum-layout/museum-layout.ts` | Frescura |
 |---|---|---:|
-| `['catalog']` | `Api.catalog(signal)` | 300000 ms |
-| `['validation-configuration']` | `Api.validationConfiguration(signal)` | 30000 ms |
+| `['catalog']` | `CatalogMetadata.catalog(signal)` | 300000 ms |
+| `['validation-configuration']` | `RecordSourcesMetadata.validationConfiguration(signal)` | 30000 ms |
 
 Son metadatos globales sin parámetros dependientes: se consultan desde el shell independientemente de la sección visible. La identidad de claves es estructural, no depende de conservar el array. Las lecturas conservan un reintento y no se refrescan por foco. El shell muestra carga/error y permite refetch explícito; no fabrica configuración cuando falla la API.
+
+Los servicios de cada feature poseen sus endpoints; `core/api/Api.request` solo
+implementa el transporte genérico. `CatalogSyncResult` pertenece a catálogo.
+El layout entrega señales tipadas de metadatos a sus páginas mediante
+`ROUTER_OUTLET_DATA`, sin duplicar consultas ni copiar el dataset.
 
 Las query functions devuelven promesas y propagan `AbortSignal` hasta `fetch`. Un HTTP no exitoso rechaza la promesa; no se transforma en datos de éxito. No se añade HttpClient ni puente Observable.
 

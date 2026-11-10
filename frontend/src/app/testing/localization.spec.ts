@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
 import { Catalog } from '../features/catalog/pages/catalog/catalog';
-import { Api } from '../core/api/api';
+import { CatalogMetadata } from '../features/catalog/services/catalog-metadata';
+import { RecordSourcesMetadata } from '../features/record-sources/services/record-sources-metadata';
 import { label, spanish } from '../core/i18n/localization';
 import { configurationFixture } from './validation-fixture';
 
@@ -31,7 +32,7 @@ describe('API de metadatos globales', () => {
     const before = JSON.stringify(body);
     const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
     vi.stubGlobal('fetch', fetch);
-    const api = new Api(); const controller = new AbortController();
+    const api = TestBed.inject(RecordSourcesMetadata); const controller = new AbortController();
     await api.validationConfiguration(controller.signal);
     expect(fetch).toHaveBeenLastCalledWith('/api/validation-configuration', {
       method: 'GET', signal: controller.signal, headers: undefined, body: undefined,
@@ -45,13 +46,22 @@ describe('API de metadatos globales', () => {
   });
   it.each([400, 409])('expone el error real %s sin simular éxito', async status => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status, text: async () => 'Revisión o campos inválidos' }));
-    await expect(new Api().updateValidationConfiguration(configurationFixture())).rejects.toThrow(
+    await expect(TestBed.inject(RecordSourcesMetadata).updateValidationConfiguration(configurationFixture())).rejects.toThrow(
       `API ${status}: Revisión o campos inválidos. No se guardaron los cambios. Actualice los datos antes de volver a intentarlo.`,
     );
   });
+  it('conserva el error de conexión incluso ante cancelación', async () => {
+    const controller = new AbortController(); controller.abort();
+    const fetch = vi.fn().mockRejectedValue(new DOMException('Cancelado', 'AbortError'));
+    vi.stubGlobal('fetch', fetch);
+    await expect(TestBed.inject(CatalogMetadata).catalog(controller.signal)).rejects.toThrow(
+      'No se pudo conectar con el servidor. Actualice los datos antes de volver a intentarlo.',
+    );
+    expect(fetch).toHaveBeenCalledWith('/api/catalog', { method: 'GET', signal: controller.signal, headers: undefined, body: undefined });
+  });
   it('conserva GET catálogo y POST sincronización sin cuerpo', async () => {
     const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => [] }); vi.stubGlobal('fetch', fetch);
-    const api = new Api(); const signal = new AbortController().signal;
+    const api = TestBed.inject(CatalogMetadata); const signal = new AbortController().signal;
     await api.catalog(signal);
     expect(fetch).toHaveBeenLastCalledWith('/api/catalog', { method: 'GET', signal, headers: undefined, body: undefined });
     await api.syncCatalog();

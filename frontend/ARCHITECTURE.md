@@ -27,14 +27,30 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 | `features/importer/components` | `column-mapping`, `record-context` y `normalization-preview`: presentación de reglas, ventanas, grupos y detalle original accesible. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
 | `features/importer/models` | `dataset` y límites, `context`, `analysis-result`, `normalization`, `normalization-preview` y `worker-protocol`. |
-| `core/api` | `Api`: transporte exclusivamente de metadatos; conserva fetch, AbortSignal, revisiones y POST sin cuerpo. No recibe archivos ni registros biológicos. |
+| `features/catalog/services` | `CatalogMetadata`: lectura y sincronización; `CatalogSyncResult` pertenece a `features/catalog/models`. |
+| `features/record-sources/services` | `RecordSourcesMetadata`: lectura y escritura de configuración con revisión. |
+| `layouts/museum-layout` | Shell persistente, consultas globales y contrato reactivo de metadatos para el outlet. |
+| `core/api` | `Api.request`: transporte genérico con fetch, AbortSignal y errores existentes; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
 | `shared/design-system` | Tokens semánticos, primitivas globales, adaptación de PrimeNG y preset desde la misma paleta CSS. |
 | `testing` | Pruebas de composición, estilos y cruces entre funcionalidades; las pruebas propias permanecen junto al propietario. |
 
-`App` sigue siendo la composición raíz: navegación, vistas diferidas, workbench
-montado y coordinación de consultas/caché. No es un repositorio ni un motor de análisis.
+`App` contiene únicamente el outlet raíz. `MuseumLayout` es el único layout:
+conserva navegación, workbench diferido montado y consultas/caché. Sus rutas hijas
+son `/analisis`, `/fuentes-de-registros` y `/catalogo`, con títulos españoles.
+La raíz redirige con `pathMatch: 'full'` a análisis; las desconocidas también.
+Los enlaces usan RouterLink/RouterLinkActive y `aria-current="page"`.
+
+Las páginas enrutadas de catálogo y fuentes son adaptadores delgados que reciben
+señales de metadatos mediante `ROUTER_OUTLET_DATA`; conservan los componentes
+presentacionales y sus inputs/pruebas. La página de análisis marca la ruta; su
+workbench vive en el layout, fuera del outlet hijo, y se oculta sin destruirse.
+No hay RouteReuseStrategy, layouts por feature ni rutas para los pasos internos.
+El guard `features/record-sources/guards/unsaved-configuration.ts` consulta el
+editor vivo: tanto el borrador modificado como el texto aún no agregado requieren
+confirmación. Cancelar conserva URL, vista y entrada; aceptar destruye el editor
+y descarta ese borrador. La protección beforeunload pertenece al propio editor.
 
 Las dependencias entre funcionalidades apuntan a contratos con `import type`, no a
 sus vistas. `core` y `shared` pueden consumir esos modelos, nunca importar componentes
@@ -70,6 +86,8 @@ funcionalidades viven en `pages/<nombre>/`; los elementos subordinados del
 importador viven en `components/<nombre>/`. No crear carpetas vacías por tipo ni
 separar `interfaces` de `models` sin una responsabilidad distinta. Se conserva
 la convención Angular moderna sin sufijo `.component` usada por el proyecto.
-`app/app.ts` es la entrada de composición; su prueba vive en `app/app.spec.ts`.
+`app/app.ts` es la entrada mínima; la composición vive en
+`layouts/museum-layout`, junto a su HTML/SCSS/spec. Las pruebas de rutas reales
+viven en `app/routes.spec.ts` y las de consultas en `testing/query-usage.spec.ts`.
 Los estilos de catálogo y fuentes se co-localizan con su página, pero siguen
 importados globalmente desde `styles.scss` para preservar overlays PrimeNG.

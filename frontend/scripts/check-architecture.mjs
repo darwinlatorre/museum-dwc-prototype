@@ -11,7 +11,12 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
 const required = [
-  'app/app.ts', 'app/app.html', 'app/app.spec.ts',
+  'app/app.ts', 'app/app.html', 'app/app.spec.ts', 'app/routes.spec.ts',
+  'layouts/museum-layout/museum-layout.ts', 'layouts/museum-layout/museum-layout.html',
+  'layouts/museum-layout/museum-layout.scss', 'layouts/museum-layout/museum-layout.spec.ts',
+  'features/catalog/services/catalog-metadata.ts', 'features/catalog/models/catalog-sync-result.ts',
+  'features/record-sources/services/record-sources-metadata.ts',
+  'features/record-sources/guards/unsaved-configuration.ts',
   'features/catalog/pages/catalog/catalog.ts', 'features/catalog/pages/catalog/catalog.html',
   'features/catalog/models/catalog-term.ts',
   'features/record-sources/pages/validation-configuration/validation-configuration.ts',
@@ -73,6 +78,17 @@ for (const file of sources) {
     assert.ok(existsSync(resolve(dirname(file), match[1])), `Recurso sin destino en ${name}: ${match[1]}`);
   }
 }
+
+assert.doesNotMatch(read(join(app, 'core/api/api.ts')), /features\/|catalog|validation-configuration|CatalogSyncResult/,
+  'El transporte genérico no posee endpoints ni modelos de negocio');
+assert.doesNotMatch(read(join(app, 'app/app.ts')), /injectQuery|ImportWorkbench|Catalog|ValidationConfigurationEditor/,
+  'App debe ser solo la entrada del outlet');
+const routing = read(join(app, 'app.routes.ts'));
+for (const path of ['analisis', 'fuentes-de-registros', 'catalogo']) {
+  assert.ok(routing.includes(`path: '${path}'`), `Falta ruta de negocio: ${path}`);
+}
+assert.match(routing, /pathMatch: 'full'/, 'La raíz no debe capturar prefijos');
+assert.match(routing, /canDeactivate: \[unsavedConfiguration\]/, 'Falta protección del borrador');
 
 const workbench = join(app, 'features/importer/pages/import-workbench/import-workbench.ts');
 const worker = read(workbench).match(/new Worker\(new URL\('([^']+)', import\.meta\.url\),\s*\{\s*type: 'module'/);

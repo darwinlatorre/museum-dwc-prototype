@@ -25,6 +25,16 @@ El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `develop
 
 El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
 
+## Navegación
+
+`/analisis`, `/fuentes-de-registros` y `/catalogo` son rutas directas con título y
+enlace activo accesible. `/` y las rutas desconocidas redirigen a `/analisis`.
+Atrás/adelante usa el router; los seis pasos siguen siendo navegación local.
+Un único layout mantiene el importador, archivo y workers al cambiar de sección.
+Fuentes protege tanto cambios del borrador como texto aún no agregado: cancelar
+conserva URL y entrada; aceptar descarta al salir. Cerrar la ventana conserva la
+protección nativa. No hay guardas de autenticación.
+
 ## Analizar una colección: seis pasos
 
 1. **Seleccionar archivo**: CSV UTF-8 separado por comas o XLSX. Para Excel, seleccionar explícitamente una pestaña y pulsar **Leer la hoja seleccionada**.
@@ -107,11 +117,13 @@ Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNIN
 |---|---|
 | `features/catalog` | Catálogo y contrato `Term` |
 | `features/record-sources` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
-| `features/importer/workbench` | Navegación, generaciones, cancelación y worker |
+| `features/importer/pages/import-workbench` | Navegación, generaciones, cancelación y worker |
 | `features/importer/components` | Mapeo, contexto y presentación modular de normalización |
 | `features/importer/engine` | Parser, normalizador, validador y exportación locales |
 | `features/importer/models` | Dataset, límites, resultados y protocolo del worker |
-| `core/api`, `core/i18n` | Metadatos y presentación |
+| `features/*/services` | Operaciones de metadatos según su propietario de negocio |
+| `layouts/museum-layout` | Navegación enrutada, consultas y workbench persistente |
+| `core/api`, `core/i18n` | Transporte genérico y presentación |
 | `shared/ui/dwc-picker`, `shared/design-system` | Selector, paleta única, primitivas y preset |
 | `testing` | Composición y costuras entre funcionalidades |
 
