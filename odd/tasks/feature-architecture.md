@@ -1,6 +1,6 @@
 # Arquitectura Angular por funcionalidad
 Objetivo: refactorizar desde `dev` (ebcf020), sin incorporar cambios de otras ramas. Rama: `refactor/feature-architecture`.
-Entrega actual: `single-pr` hacia `dev`; commits locales autorizados, PR pendiente por decisión L16 (sin crear issue, publicar, aprobar ni integrar). Comprobaciones: Node checker, lint, Angular tests/build y navegador propio. Previsión: 900–1400 líneas editadas, además de movimientos.
+Entrega actual: `single-pr` hacia `dev`; usuario autoriza push e integración en L20. No crear issue sigue vigente mientras no lo autorice; no evadir ese bloqueo de PR mediante integración directa. Comprobaciones: Node checker, lint, Angular tests/build y navegador propio. Previsión: 900–1400 líneas editadas, además de movimientos.
 
 ## Specs
 S1. «Implementa Feature-Based Architecture con Component Co-location, siguiendo los principios de Screaming Architecture. Refactoriza lo existente.» «Organizar el código por funcionalidades del negocio.» «Priorizar la organización por funcionalidad sobre una estructura global por tipo de archivo.»
@@ -9,6 +9,7 @@ S3. «Cada componente o página Angular debe tener su propia carpeta.» «Los ar
 S4. «Utilizar kebab-case para carpetas y archivos.» «Utilizar nombres descriptivos y consistentes.» «Colocar en shared/ únicamente los elementos reutilizables entre funcionalidades, evitando trasladar allí lógica específica del negocio.» «Respetar las convenciones de Angular y mantener la misma estructura en todas las funcionalidades del proyecto.»
 S5. «Mejora la utilidad de las rutas.»
 S6. «Cierralo pero antes los archivos de app/app dentro del front dejalos en app/, luego de esto has los commits y el pr a dev.»
+S7. «Has el push y integra los cambios.»
 
 ## Tasks
 T1 | S1–S4 | inline | done | Co-localizar páginas/componentes/plantillas y adaptar límites, pruebas y documentación. Commit: d694c19. RED checker; GREEN checker/lint/225 pruebas/build. Risk: none.
@@ -16,7 +17,7 @@ T2 | S1–S5 | delegated + contraste inline | done | Layout, servicios y rutas; 
 T3 | S1–S5 | inline, verificador indisponible aceptado | done | Checks y navegador observados, evidencia en efb0396 y cierre documental. Assess medium nativo, reviewDue=false/under_budget: no iniciar review. Limitación independiente y timeout de automatización registrados.
 
 T4 | S6 | inline | dropped | Movimiento implementado en 48218c5. Seguimiento de verificación detenido por instrucción humana L19 y aceptación manual; no marcar pruebas aprobadas:231 pass/2 timeout5000ms. Checker/lint/build sí aprobados. Risk: none para esta unidad.
-T5 | S6 | inline delivery | blocked | Usuario eligió «No crear issue; dejar el PR pendiente». Espera issue aprobado/decisión nueva; sin push/PR, aprobación ni integración.
+T5 | S6–S7 | inline delivery | in_progress | Publicar rama autorizada y comprobar integración con dev. No crear issue ni PR sin issue aprobado; no sortear ese bloqueo integrando directamente.
 
 ## Log
 L1. Solicitud original:
@@ -55,3 +56,4 @@ L16. Usuario eligió «No crear issue; dejar el PR pendiente», con consecuencia
 L17. T4 RED: checker Falta app.ts; GREEN checker tras mover los cinco archivos a src/app y ajustar imports/contrato/docs. Lint aprobado. Suite nueva:231 pass/2 timeout5000ms en routes.spec (catálogo/importador persistente) y museum-layout.spec (carga/error/reintento), sin repetir ni aumentar límites. Build omitido por &&; ejecutado por separado como check distinto: salida0, diff-check0 y warning658.86kB. No navegador nuevo para movimiento sin cambios de UI. Commit local 48218c5; no afirmar suite verde. Needs your decision: autorización de nueva ejecución o prueba externa equivalente para cerrar T4.
 L18. Assess rango fa0d95f7a76ba1993dc8412d13ceec77220e1a5e..48218c5: medium, reviewDue=false/under_budget, independentVerifier=false; sin START. Esto no sustituye prueba funcional faltante. Limitación independiente anterior intacta; no relanzar aquel verificador.
 L19. Usuario: «Cierra la verificacion, ya lo mire yo en persona y funciona.» Se cierra el seguimiento por aceptación manual y se detienen comprobaciones adicionales. No equivale a prueba automatizada verde ni a verificación técnica independiente; los dos timeouts y la indisponibilidad anterior siguen registrados. T4 se retira del seguimiento (dropped), no se marca done mientras la suite tiene fallos. No crear issue, push o PR: sigue vigente la disposición L16. Solo cierre documental, sin nuevas suites ni navegador.
+L20. Usuario: «Has el push y integra los cambios.» Autoriza publicar la rama de trabajo e integrar hacia dev (destino establecido). No implica crear issue previamente denegado ni inventar aprobación técnica. Remote dev observado6410a3676a8fc81107371a17c36427e9f5677c13, sin protección declarada y sin PR abierto; comprobar ancestro/conflictos antes de integrar.
