@@ -4,19 +4,6 @@ El árbol de `src/app` expresa los tres dominios visibles: catálogo Darwin Core
 fuentes de registros biológicos y análisis local de colecciones. El contexto es
 único por archivo; las revisiones son control de concurrencia, no un ciclo de publicación.
 
-## Comprobación rápida
-
-Desde la raíz del repositorio:
-
-```bash
-cd frontend && node scripts/check-architecture.mjs
-```
-
-El comprobador usa solo Node: exige las ubicaciones principales, resuelve imports
-relativos y recursos de componentes, verifica la URL del worker y detecta contratos
-duplicados. Impide dependencias de vistas desde `core`/`shared` y desde el motor.
-No sustituye las pruebas Angular, el build ni la comprobación en navegador.
-
 ## Propietarios y límites
 
 | Ubicación | Responsabilidad |
@@ -27,7 +14,7 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 | `features/importer/components` | `column-mapping`, `record-context` y `normalization-preview`: presentación de reglas, ventanas, grupos y detalle original accesible. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
 | `features/importer/models` | `dataset` y límites, `context`, `analysis-result`, `normalization`, `normalization-preview` y `worker-protocol`. |
-| `core/api` | `Api`: transporte exclusivamente de metadatos; conserva fetch, AbortSignal, revisiones y POST sin cuerpo. No recibe archivos ni registros biológicos. |
+| `core/api` | `Api`: fachada de metadatos con HttpClient y puente Promise/AbortSignal para Query; conserva revisiones y POST sin cuerpo. La base viene de `environment.baseUrl`; token `BASE_URL` reemplazable en pruebas. No recibe archivos ni registros biológicos. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
 | `shared/design-system` | Tokens semánticos, primitivas globales, adaptación de PrimeNG y preset desde la misma paleta CSS. |
@@ -35,6 +22,16 @@ No sustituye las pruebas Angular, el build ni la comprobación en navegador.
 
 `App` sigue siendo la composición raíz: navegación, vistas diferidas, workbench
 montado y coordinación de consultas/caché. No es un repositorio ni un motor de análisis.
+`app.config.ts` compone explícitamente HttpClient y un solo cliente Query.
+No hay proxy Angular/Nginx ni caché de `httpResource`: el navegador contacta la
+URL absoluta del backend, que debe permitir su origen por CORS.
+`src/environments/environment.ts` configura `baseUrl` para el build normal;
+`environment.development.ts` lo reemplaza mediante `fileReplacements` para
+serve/watch/build development. Ambos contienen solo configuración pública local;
+cambiarla requiere recompilar, no pasar variables al contenedor ya construido.
+No hay inicializador, JSON ni generador runtime. Nginx usa su configuración
+estática predeterminada: las rutas Angular están vacías y la navegación entre
+secciones es estado local del shell en `/`, sin enlaces profundos.
 
 Las dependencias entre funcionalidades apuntan a contratos con `import type`, no a
 sus vistas. `core` y `shared` pueden consumir esos modelos, nunca importar componentes
