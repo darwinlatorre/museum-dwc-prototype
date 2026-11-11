@@ -14,8 +14,8 @@ describe('Application environments', () => {
     http.expectOne({ url: `${environment.baseUrl}/catalog`, method: 'GET' }).flush([]);
     expect(await pending).toEqual([]); http.expectNone('app-config.json'); http.verify();
   });
-  it('define solo la URL pública local en ambos environments', () => {
-    expect(environment).toEqual({ baseUrl: 'http://localhost:8080/api' });
-    expect(development).toEqual({ baseUrl: 'http://localhost:8080/api' });
+  it('define la base de mismo origen en ambos environments', () => {
+    expect(environment).toEqual({ baseUrl: '/api' });
+    expect(development).toEqual({ baseUrl: '/api' });
   });
 });

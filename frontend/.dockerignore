@@ -2,6 +2,8 @@
 !package.json
 !package-lock.json
 !angular.json
+!nginx.conf
+!proxy.conf.cjs
 !tsconfig*.json
 !src/
 !src/**
