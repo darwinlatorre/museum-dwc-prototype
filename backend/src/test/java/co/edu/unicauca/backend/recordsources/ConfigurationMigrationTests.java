@@ -84,7 +84,7 @@ class ConfigurationMigrationTests {
         }
     }
 
-    @Test void simultaneousFreshInstallRunsFourMigrationsAndBootstrapsExactlyOneConfiguration() throws Exception {
+    @Test void simultaneousFreshInstallRunsFiveMigrationsAndBootstrapsExactlyOneConfiguration() throws Exception {
         try (var postgres = new PostgreSQLContainer("postgres:17-alpine")) {
             postgres.start();
             var ready = new CountDownLatch(2);
@@ -110,7 +110,7 @@ class ConfigurationMigrationTests {
                         assertThat(configuration.revision()).isZero();
                         assertThat(configuration.contexts()).hasSize(5);
                         assertThat(text(app, "select count(*)::text from validation_configuration")).isEqualTo("1");
-                        assertThat(text(app, "select count(*)::text from flyway_schema_history where success")).isEqualTo("4");
+                        assertThat(text(app, "select count(*)::text from flyway_schema_history where success")).isEqualTo("5");
                     }
                 } finally {
                     for (var future : apps) if (future.state() == Future.State.SUCCESS) future.get().close();
