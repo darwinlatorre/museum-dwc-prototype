@@ -16,7 +16,9 @@ La dirección predeterminada en YAML es el literal `127.0.0.1`, sin placeholder 
 
 ## CORS y conexión directa
 
-El navegador puede consultar directamente la API usando la URL pública del backend (por defecto `http://localhost:8080/api`); no debe usar el DNS interno `backend`. `CORS_ALLOWED_ORIGINS` configura una única lista de orígenes permitidos, separados por comas. Su default exacto es:
+Por defecto el navegador usa `/api` en el mismo origen frontend: Angular CLI/Nginx reenvían al backend interno, con Host y Origin alineados con el destino upstream. Compose propaga `SERVER_PORT` al destino del proxy además del proceso, publicación y healthcheck. Basta acceder a 4200/8081; no se requiere ampliar CORS ni conectar el navegador a 8080. No se configura autenticación ni Tailscale/Funnel.
+
+Como opción, un cliente puede consultar directamente la URL pública del backend (por defecto `http://localhost:8080/api`); no debe usar el DNS interno `backend`. Para ese acceso se conserva la política CORS restrictiva sin cambios de código. `CORS_ALLOWED_ORIGINS` configura una única lista de orígenes permitidos, separados por comas. Su default exacto es:
 
 ```text
 http://localhost:4200,http://localhost:8081,http://localhost,http://127.0.0.1:4200,http://127.0.0.1:8081,http://127.0.0.1
