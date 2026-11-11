@@ -1,8 +1,8 @@
 import { computed, signal } from '@angular/core';
-import type { Dataset } from '../models/dataset';
-import type { Normalization } from '../models/normalization';
-import { isPreviewResponse } from '../models/normalization-preview';
-import type { PreviewMetadata, PreviewRequest, PreviewRow, PreviewWindow } from '../models/normalization-preview';
+import type { Dataset } from '../../models/dataset';
+import type { Normalization } from '../../models/normalization';
+import { isPreviewResponse } from '../../models/normalization-preview';
+import type { PreviewMetadata, PreviewRequest, PreviewRow, PreviewWindow } from '../../models/normalization-preview';
 
 /** Local worker lifetime; never a Query cache. Analysis has its own generation. */
 export class NormalizationPreviewState {

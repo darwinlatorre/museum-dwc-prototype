@@ -8,36 +8,8 @@ import type { Term } from '../../../features/catalog/models/catalog-term';
 @Component({
   selector: 'app-dwc-picker',
   imports: [FormsModule, SelectModule],
-  template: `
-    <div class="dwc-picker">
-      <div class="dwc-picker-field" #field>
-        <p-select
-          [options]="filteredNames()"
-          [ngModel]="value()"
-          (ngModelChange)="value.set($event ?? '')"
-          [ngModelOptions]="{ standalone: true }"
-          [disabled]="disabled()"
-          [editable]="true"
-          [filter]="false"
-          [panelStyle]="{ width: field.getBoundingClientRect().width + 'px' }"
-          panelStyleClass="dwc-picker-panel"
-          [ariaLabel]="label()"
-          [pt]="{ dropdown: { 'aria-label': 'Abrir ' + label() } }"
-          placeholder="Sin asignar"
-          [emptyMessage]="names().length ? 'Ningún campo coincide' : 'No hay campos disponibles'"
-          appendTo="body"
-        />
-      </div>
-      <button type="button" [attr.aria-label]="'Limpiar ' + label()"
-        [disabled]="disabled() || !value()" (click)="value.set('')">Limpiar</button>
-    </div>
-  `,
-  styles: `
-    :host { display: block; min-width: 0; }
-    .dwc-picker { display: flex; align-items: start; gap: .5rem; }
-    .dwc-picker-field { flex: 1; min-width: 0; }
-    p-select { width: 100%; }
-  `,
+  templateUrl: './dwc-picker.html',
+  styleUrl: './dwc-picker.scss',
 })
 export class DwcPicker implements FormValueControl<string> {
   readonly terms = input.required<Term[]>();

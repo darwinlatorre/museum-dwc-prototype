@@ -8,6 +8,6 @@
 @use './app/shared/design-system/feedback';
 @use './app/shared/design-system/tables';
 @use './app/shared/design-system/primeng';
-@use './app/features/catalog/catalog';
-@use './app/features/record-sources/validation-configuration';
+@use './app/features/catalog/pages/catalog/catalog';
+@use './app/features/record-sources/pages/validation-configuration/validation-configuration';
 @use './app/features/importer/importer';

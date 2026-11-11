@@ -1,0 +1,5 @@
+@if (metadata().terms(); as terms) {
+  @if (metadata().configuration(); as configuration) {
+    <app-validation-configuration [terms]="terms" [configuration]="configuration" />
+  }
+}

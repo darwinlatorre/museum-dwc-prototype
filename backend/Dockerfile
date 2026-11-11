@@ -21,7 +21,7 @@ COPY src ./src
 
 EXPOSE 8080
 
-CMD ["mvn", "-B", "-ntp", "spring-boot:run"]
+CMD ["mvn", "-B", "-ntp", "spring-boot:run", "-Dspring-boot.run.arguments=--server.address=0.0.0.0"]
 
 
 # ========================================================================
@@ -53,3 +53,4 @@ USER museum
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "/app/backend.jar"]
+CMD ["--server.address=0.0.0.0"]

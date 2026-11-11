@@ -4,37 +4,54 @@ El árbol de `src/app` expresa los tres dominios visibles: catálogo Darwin Core
 fuentes de registros biológicos y análisis local de colecciones. El contexto es
 único por archivo; las revisiones son control de concurrencia, no un ciclo de publicación.
 
-## Comprobación rápida
-
-Desde la raíz del repositorio:
-
-```bash
-cd frontend && node scripts/check-architecture.mjs
-```
-
-El comprobador usa solo Node: exige las ubicaciones principales, resuelve imports
-relativos y recursos de componentes, verifica la URL del worker y detecta contratos
-duplicados. Impide dependencias de vistas desde `core`/`shared` y desde el motor.
-No sustituye las pruebas Angular, el build ni la comprobación en navegador.
-
 ## Propietarios y límites
 
 | Ubicación | Responsabilidad |
 | --- | --- |
-| `features/catalog` | `Catalog`, su HTML y el contrato `Term` en `models/catalog-term.ts`. |
+| `features/catalog/pages/catalog` | `Catalog`, su HTML y sus pruebas; el contrato `Term` pertenece a `features/catalog/models/catalog-term.ts`. |
 | `features/record-sources` | Administrador de fuentes, HTML/SCSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
-| `features/importer/workbench` | Orquestación del análisis y HTML; conserva `map`, invalidación, cancelación y guardas de generación/navegación. |
+| `features/importer/pages/import-workbench` | Orquestación del análisis y HTML; conserva `map`, invalidación, cancelación y guardas de generación/navegación. |
 | `features/importer/components` | `column-mapping`, `record-context` y `normalization-preview`: presentación de reglas, ventanas, grupos y detalle original accesible. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
 | `features/importer/models` | `dataset` y límites, `context`, `analysis-result`, `normalization`, `normalization-preview` y `worker-protocol`. |
-| `core/api` | `Api`: transporte exclusivamente de metadatos; conserva fetch, AbortSignal, revisiones y POST sin cuerpo. No recibe archivos ni registros biológicos. |
+| `features/catalog/services` | `CatalogMetadata`: lectura y sincronización; `CatalogSyncResult` pertenece a `features/catalog/models`. |
+| `features/record-sources/services` | `RecordSourcesMetadata`: lectura y escritura de configuración con revisión. |
+| `layouts/museum-layout` | Shell persistente, consultas globales y contrato reactivo de metadatos para el outlet. |
+| `core/api` | `Api.request`: transporte genérico HttpClient con puente Promise/AbortSignal y errores vigentes; base pública desde environment.baseUrl mediante BASE_URL; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
 | `shared/design-system` | Tokens semánticos, primitivas globales, adaptación de PrimeNG y preset desde la misma paleta CSS. |
 | `testing` | Pruebas de composición, estilos y cruces entre funcionalidades; las pruebas propias permanecen junto al propietario. |
 
-`App` sigue siendo la composición raíz: navegación, vistas diferidas, workbench
-montado y coordinación de consultas/caché. No es un repositorio ni un motor de análisis.
+`App` contiene únicamente el outlet raíz. `MuseumLayout` es el único layout:
+conserva navegación, workbench diferido montado y consultas/caché. Sus rutas hijas
+son `/analisis`, `/fuentes-de-registros` y `/catalogo`, con títulos españoles.
+La raíz redirige con `pathMatch: 'full'` a análisis; las desconocidas también.
+Los enlaces usan RouterLink/RouterLinkActive y `aria-current="page"`.
+
+Las páginas enrutadas de catálogo y fuentes son adaptadores delgados que reciben
+señales de metadatos mediante `ROUTER_OUTLET_DATA`; conservan los componentes
+presentacionales y sus inputs/pruebas. La página de análisis marca la ruta; su
+workbench vive en el layout, fuera del outlet hijo, y se oculta sin destruirse.
+No hay RouteReuseStrategy, layouts por feature ni rutas para los pasos internos.
+El guard `features/record-sources/guards/unsaved-configuration.ts` consulta el
+editor vivo: tanto el borrador modificado como el texto aún no agregado requieren
+confirmación. Cancelar conserva URL, vista y entrada; aceptar destruye el editor
+y descarta ese borrador. La protección beforeunload pertenece al propio editor.
+
+`app.config.ts` compone explícitamente HttpClient y un solo cliente Query.
+No hay caché de `httpResource`: el navegador usa `/api` de mismo origen.
+`src/environments/environment.ts` y `environment.development.ts` fijan esa base
+para normal/development; se conserva `fileReplacements`. Cambiar la base requiere
+recompilar; no hay inicializador, JSON ni generador runtime del cliente.
+CLI carga `proxy.conf.cjs`: destino servidor `API_PROXY_TARGET` (localhost:8080 en
+host; backend:SERVER_PORT en Compose), con límites `/api` y `/api/...`.
+Nginx usa `nginx.conf` como plantilla oficial; solo sustituye `BACKEND_PORT`,
+proporcionado por Compose desde `SERVER_PORT`. Ambos proxies conservan prefijo,
+query, cuerpos y errores y alinean Host/Origin con el upstream fijo.
+Nginx mantiene fallback SPA fuera de API y una espera de lectura de 300 s para TDWG.
+No se amplía CORS: sigue restrictivo para el acceso directo opcional a la API.
+El proxy no añade autenticación ni cambia la privacidad/cancelación del transporte.
 
 Las dependencias entre funcionalidades apuntan a contratos con `import type`, no a
 sus vistas. `core` y `shared` pueden consumir esos modelos, nunca importar componentes
@@ -43,13 +60,13 @@ El motor no importa transporte ni vistas: el archivo y sus celdas permanecen en 
 
 ## Costuras que deben conservarse
 
-- `workbench/import-workbench.ts` crea el worker mediante
-  `new URL('../engine/analysis.worker', import.meta.url)`; Angular debe empaquetarlo
+- `pages/import-workbench/import-workbench.ts` crea el worker mediante
+  `new URL('../../engine/analysis.worker', import.meta.url)`; Angular debe empaquetarlo
   como módulo independiente. El worker conserva sus imports locales del motor.
-- El controlador local `workbench/normalization-preview-state.ts` conserva solo metadata y ventana actual, original de sesión y referencias al worker persistente. El workbench crea `new URL('../engine/normalization-preview.worker', import.meta.url)`, independiente del worker efímero de análisis. Init envía original/mapping una vez; update solo opciones; page solo ventana con índices físicos explícitos. Ambos comparten contador de mensajes, pero no guardas de generación: paginar/ocultar no invalida validación. Session/generation/id y la identidad del worker descartan respuestas antiguas; error/cancelación requieren reintento manual. No hay dataset en Query, almacenamiento ni API.
+- El controlador local `pages/import-workbench/normalization-preview-state.ts` conserva solo metadata y ventana actual, original de sesión y referencias al worker persistente. El workbench crea `new URL('../../engine/normalization-preview.worker', import.meta.url)`, independiente del worker efímero de análisis. Init envía original/mapping una vez; update solo opciones; page solo ventana con índices físicos explícitos. Ambos comparten contador de mensajes, pero no guardas de generación: paginar/ocultar no invalida validación. Session/generation/id y la identidad del worker descartan respuestas antiguas; error/cancelación requieren reintento manual. No hay dataset en Query, almacenamiento ni API.
 - `normalizationVisible` comunica el paso derivado al shell; la clase ancha requiere además sección activa workbench. El input `active` cierra detalles al ocultarlo, sin desmontar ni reinicializar su worker. No hay mutaciones imperativas de clases ni selectores `:has`.
 - Los HTML grandes están junto a `catalog.ts`, `validation-configuration.ts` y al workbench;
-  las plantillas pequeñas de los auxiliares siguen inline.
+  todos los auxiliares usan también HTML externo dentro de su propia carpeta.
 - El administrador maestro-detalle deriva recuentos y búsqueda del borrador completo;
   filtrar la lista no modifica datos guardados. El nombre Contexto del análisis permanece intacto.
   El editor guarda cinco contextos con revisión, sin enviar datos del archivo. Query actualiza
@@ -61,3 +78,22 @@ El motor no importa transporte ni vistas: el archivo y sus celdas permanecen en 
   El contrato visual y su escala están documentados en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 - Las pruebas de estilos trasladadas a `testing` apuntan a `../../styles.scss`.
   La suite y el build deben ejecutarse sobre el árbol integrado con sus estilos definitivos.
+
+## Co-localización y nombres
+
+Cada componente productivo tiene una carpeta con su nombre en kebab-case y sus
+archivos TS/HTML/SCSS/spec cuando corresponden. Las páginas de las tres
+funcionalidades viven en `pages/<nombre>/`; los elementos subordinados del
+importador viven en `components/<nombre>/`. No crear carpetas vacías por tipo ni
+separar `interfaces` de `models` sin una responsabilidad distinta. Se conserva
+la convención Angular moderna sin sufijo `.component` usada por el proyecto.
+`app.ts` es la entrada mínima; la composición vive en
+`layouts/museum-layout`, junto a su HTML/SCSS/spec. Las pruebas de rutas reales
+viven en `routes.spec.ts` y las de consultas en `testing/query-usage.spec.ts`.
+Los estilos de catálogo y fuentes se co-localizan con su página, pero siguen
+importados globalmente desde `styles.scss` para preservar overlays PrimeNG.
+
+Por indicación explícita, los archivos raíz `app.ts`, `app.html`, `app.scss`,
+`app.spec.ts` y `routes.spec.ts` viven directamente en `src/app/`, junto a
+`app.config.ts` y `app.routes.ts`, sin un segundo directorio `app/`. El resto
+de componentes y páginas conserva carpeta individual dentro de su propietario.

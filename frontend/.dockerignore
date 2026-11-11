@@ -2,13 +2,13 @@
 !package.json
 !package-lock.json
 !angular.json
+!nginx.conf
+!proxy.conf.cjs
 !tsconfig*.json
 !src/
 !src/**
 !public/
 !public/**
-!proxy.docker.conf.json
-!nginx.conf
 !Dockerfile
 !.dockerignore
 **/.env

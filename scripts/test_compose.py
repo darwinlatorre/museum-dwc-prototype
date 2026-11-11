@@ -3,10 +3,13 @@
 import json
 import os
 import http.client
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
 import re
 import time
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -21,7 +24,7 @@ class ComposeTests(unittest.TestCase):
             fixture = scratch / "fixture.env"
             fixture.write_text(values)
             # Copiar solo manifiestos conocidos: ningún dotenv real se abre.
-            for name in ("compose.yml", "compose.dev.yml", "compose.traefik.yml"):
+            for name in ("compose.yml", "compose.dev.yml"):
                 shutil.copyfile(ROOT / name, scratch / name)
             (scratch / ".env").write_text(values + "ENV_SOURCE=production\n")
             (scratch / ".env.dev").write_text(values + "ENV_SOURCE=development\n")
@@ -46,17 +49,42 @@ class ComposeTests(unittest.TestCase):
                 self.assertEqual(set(model["volumes"]), {"museum_mvp_data"})
                 self.assertEqual(model["volumes"]["museum_mvp_data"]["name"], "universidad_museum_mvp_data")
                 services = model["services"]
-                for service, published, target in (("museum-db", db_port, 5432), ("backend", server_port, 8080), ("frontend", 8081, 80)):
+                for service, published, target in (("museum-db", db_port, 5432), ("backend", server_port, server_port), ("frontend", 8081, 80)):
                     self.assertEqual(services[service]["ports"], [{"mode": "ingress", "host_ip": "127.0.0.1", "target": target, "published": str(published), "protocol": "tcp"}])
                     self.assertIn("healthcheck", services[service])
                 backend = services["backend"]
                 # config serializa $ como $$ para que el modelo pueda reutilizarse
                 # sin interpolar el valor literal; no es una transformación propia.
-                self.assertEqual(backend["environment"], {"DB_HOST": "museum-db", "DB_PORT": "5432", "DB_NAME": "fixture", "DB_USER": "fixture_user", "DB_PASSWORD": "literal $$ value", "SERVER_ADDRESS": "0.0.0.0", "SERVER_PORT": "8080", "ENV_SOURCE": "production"})
+                self.assertEqual(backend["environment"], {"DB_HOST": "museum-db", "DB_PORT": "5432", "DB_NAME": "fixture", "DB_USER": "fixture_user", "DB_PASSWORD": "literal $$ value", "SERVER_PORT": str(server_port), "CORS_ALLOWED_ORIGINS": None})
                 self.assertEqual(services["museum-db"]["environment"]["POSTGRES_PASSWORD"], "literal $$ value")
                 self.assertEqual(backend["depends_on"]["museum-db"]["condition"], "service_healthy")
                 self.assertEqual(services["frontend"]["depends_on"]["backend"]["condition"], "service_healthy")
                 self.assertEqual(services["museum-db"]["volumes"][0]["source"], "museum_mvp_data")
+
+    def test_backend_port_health_and_optional_cors_in_both_modes(self):
+        for base in ("compose.yml", "compose.dev.yml"):
+            for settings, port, cors in (
+                ("", 8080, None),
+                ("SERVER_PORT=18080\nCORS_ALLOWED_ORIGINS=http://localhost:14200\n", 18080, "http://localhost:14200"),
+                ("SERVER_PORT=\n", 8080, None),
+            ):
+                with self.subTest(base=base, settings=settings):
+                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nSERVER_ADDRESS=untrusted\n" + settings, base=base)
+                    self.assertEqual((result.returncode, result.stderr), (0, ""))
+                    services = json.loads(result.stdout)["services"]
+                    backend = services["backend"]
+                    expected = {"API_PROXY_TARGET": f"http://backend:{port}", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": ""} if base == "compose.dev.yml" else {"BACKEND_PORT": str(port)}
+                    self.assertEqual(services["frontend"]["environment"], expected)
+                    self.assertNotIn("SERVER_ADDRESS", backend["environment"])
+                    self.assertNotIn("SERVER_ADDRESS", (ROOT / base).read_text())
+                    self.assertEqual(backend["environment"]["SERVER_PORT"], str(port))
+                    self.assertEqual(backend["environment"]["CORS_ALLOWED_ORIGINS"], cors)
+                    self.assertEqual(backend["ports"], [{"mode": "ingress", "host_ip": "127.0.0.1", "target": port, "published": str(port), "protocol": "tcp"}])
+                    self.assertEqual(backend["healthcheck"]["test"], [
+                        "CMD-SHELL",
+                        'test "$$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --connect-timeout 2 --max-time 3 '
+                        f'http://127.0.0.1:{port}/api/catalog/status)" = 200',
+                    ])
 
     def test_development_mounts_ports_and_storage_are_isolated(self):
         result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nFRONTEND_PORT=14200\n",
@@ -74,43 +102,38 @@ class ComposeTests(unittest.TestCase):
         self.assertEqual(services["frontend"]["ports"][0]["published"], "14200")
         self.assertEqual(services["museum-db"]["volumes"][0]["source"], "museum_dev_data")
         self.assertNotEqual(model["volumes"]["museum_dev_data"]["name"], "universidad_museum_mvp_data")
-        self.assertIn("proxy.docker.conf.json", " ".join(services["frontend"]["command"]))
+        frontend = services["frontend"]
+        self.assertEqual(frontend["command"], ["npm", "start", "--", "--host", "0.0.0.0", "--port", "4200", "--poll", "1000"])
+        self.assertTrue(all(m["read_only"] for m in frontend["volumes"]))
+        self.assertTrue(any(m["target"] == "/app/proxy.conf.cjs" and m["source"].endswith("/frontend/proxy.conf.cjs") for m in frontend["volumes"]))
 
-    def test_traefik_routes_only_to_frontend_in_both_modes(self):
-        for dev, port in ((False, "80"), (True, "4200")):
-            result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n",
-                                ("compose.traefik.yml",), ("local-traefik",),
-                                base="compose.dev.yml" if dev else "compose.yml")
-            self.assertEqual((result.returncode, result.stderr), (0, ""))
-            model = json.loads(result.stdout)
-            services = model["services"]
-            labels = services["frontend"]["labels"]
-            self.assertEqual(labels["traefik.enable"], "true")
-            self.assertEqual(labels["traefik.http.services.museum.loadbalancer.server.port"], port)
-            self.assertEqual(labels["traefik.http.routers.museum.rule"], "Host(`localhost`)")
-            self.assertEqual(labels["traefik.http.routers.museum.service"], "museum")
-            self.assertEqual(labels["traefik.http.routers.museum.entrypoints"], "web")
-            self.assertNotIn("proxy", services["backend"]["networks"])
-            self.assertNotIn("proxy", services["museum-db"]["networks"])
-            self.assertTrue(model["networks"]["proxy"]["external"])
-            self.assertEqual(model["networks"]["proxy"]["name"], "proxy")
-            self.assertEqual(labels["traefik.docker.network"], "proxy")
-            self.assertIn("--providers.docker.network=proxy", services["traefik"]["command"])
-            for name in ("backend", "museum-db"):
-                self.assertEqual(set(services[name]["networks"]), {"app"})
-            self.assertEqual(set(services["frontend"]["networks"]), {"app", "proxy"})
-            self.assertEqual(services["traefik"]["ports"][0]["host_ip"], "127.0.0.1")
-            self.assertNotIn("--api.insecure=true", services["traefik"]["command"])
+    def test_local_stack_has_no_reverse_proxy_configuration(self):
+        for base in ("compose.yml", "compose.dev.yml"):
+            with self.subTest(base=base):
+                result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n", base=base)
+                self.assertEqual((result.returncode, result.stderr), (0, ""))
+                model = json.loads(result.stdout)
+                self.assertEqual(set(model["services"]), {"museum-db", "backend", "frontend"})
+                self.assertEqual(set(model["networks"]), {"app"})
+                self.assertNotIn("certificates", model["volumes"])
+                for service in model["services"].values():
+                    self.assertEqual(set(service["networks"]), {"app"})
+                    self.assertNotIn("labels", service)
+                    self.assertNotIn("profiles", service)
+                self.assertEqual(set(model["services"]["frontend"]["environment"]), {"API_PROXY_TARGET", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"} if base == "compose.dev.yml" else {"BACKEND_PORT"})
+                self.assertNotIn("traefik", (ROOT / base).read_text().lower())
 
-    def test_each_mode_loads_its_dotenv_and_uses_app_network(self):
+    def test_each_mode_passes_only_explicit_environment_and_uses_app_network(self):
         for base, source in (("compose.yml", "production"), ("compose.dev.yml", "development")):
-            result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nDB_HOST=host-only\nDB_PORT=15432\nSERVER_PORT=18080\n", base=base)
+            result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nDB_HOST=host-only\nDB_PORT=15432\nSERVER_PORT=18080\nCORS_ALLOWED_ORIGINS=http://localhost:14200,http://127.0.0.1:14200\n", base=base)
             self.assertEqual((result.returncode, result.stderr), (0, ""))
             model = json.loads(result.stdout)
             services = model["services"]
             backend = services["backend"]
-            self.assertEqual(backend["environment"]["ENV_SOURCE"], source)
-            for key, value in (("DB_HOST", "museum-db"), ("DB_PORT", "5432"), ("SERVER_PORT", "8080")):
+            self.assertNotIn("ENV_SOURCE", backend["environment"])
+            self.assertNotIn("env_file:", (ROOT / base).read_text())
+            self.assertEqual(backend["environment"]["CORS_ALLOWED_ORIGINS"], "http://localhost:14200,http://127.0.0.1:14200")
+            for key, value in (("DB_HOST", "museum-db"), ("DB_PORT", "5432"), ("SERVER_PORT", "18080")):
                 self.assertEqual(backend["environment"][key], value)
             self.assertEqual(set(services), {"museum-db", "backend", "frontend"})
             self.assertEqual(backend["depends_on"]["museum-db"]["condition"], "service_healthy")
@@ -118,68 +141,107 @@ class ComposeTests(unittest.TestCase):
             self.assertEqual(model["networks"]["app"]["name"], model["name"] + "_app")
             self.assertFalse(model["networks"]["app"].get("internal", False))
             self.assertEqual(services["museum-db"]["image"], "postgres:17")
-            if source == "development":
-                self.assertEqual(services["frontend"]["environment"], {"__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": "localhost"})
-            else:
-                self.assertNotIn("environment", services["frontend"])
+            self.assertEqual(services["frontend"]["environment"], {"API_PROXY_TARGET": "http://backend:18080", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": ""} if source == "development" else {"BACKEND_PORT": "18080"})
             self.assertNotIn("default", model["networks"])
-            for name in ("museum-db", "backend", "frontend"):
+            for name in ("museum-db", "backend"):
                 self.assertEqual(set(services[name]["networks"]), {"app"})
+            self.assertEqual(set(services["frontend"]["networks"]), {"app"})
             if source == "development":
                 self.assertNotIn("museum_mvp_data", model["volumes"])
 
-    def test_traefik_host_default_and_override_are_consistent(self):
-        for setting, host in (("", "localhost"), ("TRAEFIK_HOST=custom.localhost\n", "custom.localhost")):
-            for base in ("compose.yml", "compose.dev.yml"):
-                with self.subTest(setting=setting, base=base):
-                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + setting,
-                                        ("compose.traefik.yml",), base=base)
+    def test_single_vite_hostname_is_only_passed_to_development_frontend(self):
+        key = "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"
+        for value in (None, "", "museo.example.org"):
+            for base in ("compose.dev.yml", "compose.yml"):
+                with self.subTest(value=value, base=base):
+                    settings = "" if value is None else f"{key}={value}\n"
+                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + settings, base=base)
                     self.assertEqual((result.returncode, result.stderr), (0, ""))
-                    frontend = json.loads(result.stdout)["services"]["frontend"]
-                    self.assertEqual(frontend["labels"]["traefik.http.routers.museum.rule"], f"Host(`{host}`)")
+                    services = json.loads(result.stdout)["services"]
+                    for name in ("backend", "museum-db"):
+                        self.assertNotIn(key, services[name]["environment"])
                     if base == "compose.dev.yml":
-                        self.assertEqual(frontend["environment"], {"__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": host})
-                        self.assertNotIn("--allowed-hosts", frontend["command"])
+                        self.assertEqual(services["frontend"]["environment"], {
+                            "API_PROXY_TARGET": "http://backend:8080", key: value or "",
+                        })
+                    else:
+                        self.assertEqual(services["frontend"]["environment"], {"BACKEND_PORT": "8080"})
 
     def test_development_actual_cli_and_restrictive_hosts(self):
         """CLI/builder instalados; fixture mínima, sin app ni servicios Docker."""
         cli = ROOT / "frontend/node_modules/@angular/cli/bin/ng.js"
         self.assertTrue(cli.exists(), "Requiere dependencias frontend instaladas y Node 24")
-        evidence = ROOT / ".browser/maintenance-eslint"
-        evidence.mkdir(parents=True, exist_ok=True)
-        for label, setting, allowed in (("default", "", "localhost"),
-                                        ("custom", "TRAEFIK_HOST=museum.example.test\n", "museum.example.test"),
-                                        ("host", None, "localhost")):
-            with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-runtime-") as directory:
+        calls = []
+
+        class Upstream(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.respond()
+
+            def do_PUT(self):
+                self.respond()
+
+            def respond(self):
+                body = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+                record = {"method": self.command, "path": self.path, "body": body,
+                          "host": self.headers["Host"], "origin": self.headers.get("Origin"),
+                          "contentType": self.headers.get("Content-Type")}
+                calls.append(record)
+                payload = json.dumps(record).encode()
+                self.send_response(409 if self.path == "/api/error" else 200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def log_message(self, *args):
+                pass
+
+        upstream = ThreadingHTTPServer(("127.0.0.1", 0), Upstream)
+        thread = threading.Thread(target=upstream.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(upstream.server_close)
+        self.addCleanup(thread.join)
+        self.addCleanup(upstream.shutdown)
+        target = f"http://127.0.0.1:{upstream.server_port}"
+        for label, setting in (("docker", ""),
+                               ("empty", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=\n"),
+                               ("custom", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=museo.example.org\n"),
+                               ("host", None)):
+            with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-environments-") as directory:
                 scratch = Path(directory)
+                evidence = scratch
                 config = json.loads((ROOT / "frontend/angular.json").read_text())
                 config["cli"]["cache"] = {"enabled": False}
                 build = config["projects"]["frontend"]["architect"]["build"]
                 build["options"] = {"browser": "src/main.ts", "tsConfig": "tsconfig.app.json", "index": "src/index.html"}
                 (scratch / "angular.json").write_text(json.dumps(config))
-                for name in ("tsconfig.json", "tsconfig.app.json", "proxy.docker.conf.json", "proxy.conf.json"):
+                for name in ("tsconfig.json", "tsconfig.app.json", "package.json", "proxy.conf.cjs"):
                     shutil.copyfile(ROOT / "frontend" / name, scratch / name)
+                (scratch / "src/environments").mkdir(parents=True)
+                for name in ("environment.ts", "environment.development.ts"):
+                    shutil.copyfile(ROOT / "frontend/src/environments" / name, scratch / "src/environments" / name)
                 (scratch / "node_modules").symlink_to(ROOT / "frontend/node_modules", target_is_directory=True)
-                (scratch / "src").mkdir()
                 (scratch / "src/main.ts").write_text("document.body.dataset['ready'] = 'cli-host-proof';\n")
                 (scratch / "src/index.html").write_text("<!doctype html><html><body>cli-host-proof</body></html>")
                 env = {"PATH": os.environ["PATH"], "HOME": directory, "CI": "true", "NG_CLI_ANALYTICS": "false"}
                 if setting is None:
-                    command = ["serve", "--host", "127.0.0.1", "--port", "0"]
+                    command = ["npm", "start", "--", "--host", "127.0.0.1", "--port", "0"]
                 else:
                     model = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + setting, base="compose.dev.yml")
                     self.assertEqual((model.returncode, model.stderr), (0, ""))
                     frontend = json.loads(model.stdout)["services"]["frontend"]
-                    command = frontend["command"][2:]
+                    command = frontend["command"]
                     command[command.index("--host") + 1] = "127.0.0.1"
                     command[command.index("--port") + 1] = "0"
                     env.update(frontend.get("environment", {}))
-                args = [shutil.which("node"), str(cli), *command]
+                # Sustituir solo el destino servidor por el fixture sintético.
+                env["API_PROXY_TARGET"] = target
+                args = command
                 outpath = evidence / f"cleanup-cli-{label}-stdout.log"
                 errpath = evidence / f"cleanup-cli-{label}-stderr.log"
                 observations = []
                 with outpath.open("w") as stdout, errpath.open("w") as stderr:
-                    process = subprocess.Popen(args, cwd=scratch, env=env, stdout=stdout, stderr=stderr)
+                    process = subprocess.Popen(args, cwd=scratch, env=env, stdout=stdout, stderr=stderr, start_new_session=True)
                     try:
                         deadline = time.monotonic() + 60
                         port = None
@@ -190,7 +252,10 @@ class ComposeTests(unittest.TestCase):
                                 break
                             time.sleep(0.1)  # Poll del estado observable, no espera fija de arranque.
                         self.assertIsNotNone(port, outpath.read_text() + errpath.read_text())
-                        for hostname, status in ((allowed, 200), ("localhost", 200), ("untrusted.example.test", 403)):
+                        for hostname, status in (("127.0.0.1", 200), ("localhost", 200),
+                                                 ("museo.example.org", 200 if label == "custom" else 403),
+                                                 ("untrusted.example.test", 403)):
+                            count = len(calls)
                             connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
                             try:
                                 connection.request("GET", "/", headers={"Host": hostname})
@@ -201,64 +266,65 @@ class ComposeTests(unittest.TestCase):
                             observations.append({"host": hostname, "status": response.status, "body": body})
                             self.assertEqual(response.status, status, body)
                             self.assertIn("cli-host-proof" if status == 200 else f'This host ("{hostname}") is not allowed', body)
+                            self.assertEqual(len(calls), count)
+                        for method, path, payload in (("GET", "/api/catalog?q=a%20b&limit=2", None),
+                                                      ("GET", "/api", None),
+                                                      ("PUT", "/api/validation-configuration", '{"revision":7}'),
+                                                      ("PUT", "/api/error", '{"revision":6}')):
+                            count = len(calls)
+                            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                            hostname = "museo.example.org" if label == "custom" else "localhost"
+                            headers = {"Host": hostname, "Origin": f"http://{hostname}:{port}", "Content-Type": "application/json"}
+                            try:
+                                connection.request(method, path, body=payload, headers=headers)
+                                response = connection.getresponse()
+                                result = json.loads(response.read())
+                            finally:
+                                connection.close()
+                            self.assertEqual(response.status, 409 if path == "/api/error" else 200)
+                            self.assertEqual(response.getheader("Content-Type"), "application/json")
+                            self.assertEqual(result, {"method": method, "path": path, "body": payload or "",
+                                                      "host": target.removeprefix("http://"), "origin": target,
+                                                      "contentType": "application/json"})
+                            self.assertEqual(calls[count:], [result])
+                        for path, host, expected_status in (("/api-other", "localhost", 200),
+                                                           ("/api/catalog", "untrusted.example.test", 403)):
+                            count = len(calls)
+                            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                            try:
+                                connection.request("GET", path, headers={"Host": host, "Accept": "text/html"})
+                                response = connection.getresponse()
+                                body = response.read().decode()
+                            finally:
+                                connection.close()
+                            self.assertEqual(response.status, expected_status, body)
+                            self.assertIn("cli-host-proof" if expected_status == 200 else "is not allowed", body)
+                            self.assertEqual(len(calls), count)
                     finally:
-                        if process.poll() is None:
-                            process.terminate()
+                        # npm crea un hijo Angular: cerrar todo nuestro grupo aislado.
+                        try:
+                            os.killpg(process.pid, signal.SIGTERM)
+                        except ProcessLookupError:
+                            pass
                         try:
                             process.wait(timeout=10)
                         except subprocess.TimeoutExpired:
-                            process.kill()
+                            os.killpg(process.pid, signal.SIGKILL)
                             process.wait(timeout=5)
-                        (evidence / f"cleanup-cli-{label}-result.log").write_text(json.dumps({"argv": args, "environment": {k: v for k, v in env.items() if k == "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"}, "exit": process.returncode, "http": observations}, indent=2))
-
-    def test_traefik_network_override_is_preserved(self):
-        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nTRAEFIK_NETWORK=custom_proxy\n",
-                            ("compose.traefik.yml",))
-        self.assertEqual((result.returncode, result.stderr), (0, ""))
-        model = json.loads(result.stdout)
-        self.assertEqual(model["networks"]["proxy"]["name"], "custom_proxy")
-        self.assertEqual(model["services"]["frontend"]["labels"]["traefik.docker.network"], "custom_proxy")
-
-    def test_local_proxy_port_is_fixed_despite_stale_setting(self):
-        removed = "LOCAL_" + "TRAEFIK_PORT"
-        self.assertNotIn(removed, (ROOT / "compose.traefik.yml").read_text())
-        result = self.model(f"DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n{removed}=18000\n",
-                            ("compose.traefik.yml",), ("local-traefik",))
-        self.assertEqual((result.returncode, result.stderr), (0, ""))
-        self.assertEqual(json.loads(result.stdout)["services"]["traefik"]["ports"], [
-            {"mode": "ingress", "host_ip": "127.0.0.1", "target": 80,
-             "published": "80", "protocol": "tcp"}])
-
-    def test_router_names_do_not_depend_on_project_interpolation(self):
-        removed = "COMPOSE_" + "PROJECT_NAME"
-        for name in ("compose.yml", "compose.dev.yml", "compose.traefik.yml"):
-            self.assertNotIn(removed, (ROOT / name).read_text())
-        # El proyecto cambia solo los recursos Compose, no los identificadores Traefik.
-        for base in ("compose.yml", "compose.dev.yml"):
-            result = self.model(f"DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n{removed}=fixture-project\n",
-                                ("compose.traefik.yml",), base=base)
-            self.assertEqual((result.returncode, result.stderr), (0, ""))
-            labels = json.loads(result.stdout)["services"]["frontend"]["labels"]
-            self.assertEqual(labels["traefik.http.routers.museum.service"], "museum")
-            self.assertEqual(set(key for key in labels if key.startswith("traefik.http.services.")),
-                             {"traefik.http.services.museum.loadbalancer.server.port"})
+                        (evidence / f"cleanup-cli-{label}-result.log").write_text(json.dumps({"argv": args, "environment": frontend.get("environment", {}) if setting is not None else {}, "exit": process.returncode, "http": observations}, indent=2))
 
     def test_redundant_defaults_are_implicit_without_changing_storage(self):
         manifest = (ROOT / "compose.yml").read_text()
-        self.assertNotIn("    name:", manifest)
+        self.assertNotIn("    name:", manifest.split("\nvolumes:\n", 1)[1])
         self.assertNotIn("target: production", manifest)
         for feature in ("backend", "frontend"):
             stages = [line for line in (ROOT / feature / "Dockerfile").read_text().splitlines()
                       if line.startswith("FROM ")]
             self.assertTrue(stages[-1].endswith(" AS production"))
-        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n",
-                            ("compose.traefik.yml",), ("local-traefik",))
+        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n")
         self.assertEqual((result.returncode, result.stderr), (0, ""))
         model = json.loads(result.stdout)
         self.assertEqual(model["volumes"]["museum_mvp_data"]["name"], "universidad_museum_mvp_data")
-        proxy = model["services"]["traefik"]
-        self.assertNotIn("traefik.enable", proxy.get("labels", {}))
-        self.assertIn("--providers.docker.exposedbydefault=false", proxy["command"])
 
     def test_required_credentials_missing_or_empty(self):
         for key in ("DB_NAME", "DB_USER", "DB_PASSWORD"):
@@ -274,6 +340,44 @@ class ComposeTests(unittest.TestCase):
 
 
 class PackagingTests(unittest.TestCase):
+    def test_backend_container_commands_override_only_binding(self):
+        dockerfile = (ROOT / "backend/Dockerfile").read_text()
+        self.assertIn('CMD ["mvn", "-B", "-ntp", "spring-boot:run", "-Dspring-boot.run.arguments=--server.address=0.0.0.0"]', dockerfile)
+        self.assertIn('ENTRYPOINT ["java", "-jar", "/app/backend.jar"]\nCMD ["--server.address=0.0.0.0"]', dockerfile)
+        self.assertNotIn("SERVER_ADDRESS", dockerfile)
+
+    def test_frontend_same_origin_proxy_and_spa_template(self):
+        config = (ROOT / "frontend/nginx.conf").read_text()
+        dockerfile = (ROOT / "frontend/Dockerfile").read_text()
+        self.assertIn("COPY nginx.conf /etc/nginx/templates/default.conf.template", dockerfile)
+        self.assertIn("ENV BACKEND_PORT=8080", dockerfile)
+        self.assertIn("NGINX_ENVSUBST_FILTER=^BACKEND_PORT$", dockerfile)
+        self.assertRegex(config, r"listen\s+80\s*;")
+        self.assertRegex(config, r"root\s+/usr/share/nginx/html\s*;")
+        self.assertRegex(config, r"index\s+index\.html\s*;")
+        self.assertRegex(config, r"location\s+/\s*\{\s*try_files\s+\$uri\s+\$uri/\s+/index\.html\s*;\s*\}")
+        self.assertIn("location ~ ^/api(?:/|$)", config)
+        self.assertIn("proxy_pass http://backend:${BACKEND_PORT};", config)
+        self.assertIn("proxy_set_header Host $proxy_host;", config)
+        self.assertIn("proxy_set_header Origin http://$proxy_host;", config)
+        self.assertIn("proxy_read_timeout 300s;", config)
+        for forbidden in ("rewrite", "error_page", "proxy_intercept_errors on", "API_URL", "BASE_URL", "ENTRYPOINT", "docker-entrypoint.d"):
+            self.assertNotIn(forbidden, config + dockerfile)
+        context = (ROOT / "frontend/.dockerignore").read_text().splitlines()
+        for entry in ("!nginx.conf", "!proxy.conf.cjs", "**/.env", "**/.env.*"):
+            self.assertIn(entry, context)
+
+    def test_cli_proxy_defaults_and_boundaries(self):
+        config = json.loads((ROOT / "frontend/angular.json").read_text())
+        self.assertEqual(config["projects"]["frontend"]["architect"]["serve"]["options"]["proxyConfig"], "proxy.conf.cjs")
+        for setting in (None, "", "http://backend:18080"):
+            env = {"PATH": os.environ["PATH"]}
+            if setting is not None:
+                env["API_PROXY_TARGET"] = setting
+            result = subprocess.run(["node", "-e", "console.log(JSON.stringify(require('./frontend/proxy.conf.cjs')))"], cwd=ROOT, env=env, capture_output=True, text=True)
+            self.assertEqual((result.returncode, result.stderr), (0, ""))
+            self.assertEqual(json.loads(result.stdout), {"^/api(?:/|$)": {"target": setting or "http://localhost:8080", "changeOrigin": True, "headers": {"Origin": setting or "http://localhost:8080"}}})
+
     def test_frontend_image_retains_dependency_licenses(self):
         dockerfile = (ROOT / "frontend/Dockerfile").read_text()
         context = (ROOT / "frontend/.dockerignore").read_text().splitlines()
@@ -292,8 +396,6 @@ class PackagingTests(unittest.TestCase):
             self.assertIn("**/.env", ignore)
             self.assertIn("**/.env.*", ignore)
         self.assertFalse((ROOT / "backend/docker-healthcheck.sh").exists())
-        proxy = json.loads((ROOT / "frontend/proxy.docker.conf.json").read_text())
-        self.assertEqual(proxy["/api/**"]["target"], "http://backend:8080")
 
 
 if __name__ == "__main__":

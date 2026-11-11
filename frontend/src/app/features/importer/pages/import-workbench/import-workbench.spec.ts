@@ -1,13 +1,16 @@
 import { DeferBlockBehavior, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
-import { App } from '../../../app';
-import { Api } from '../../../core/api/api';
-import { configurationFixture } from '../../../testing/validation-fixture';
-import { buildNormalizationPreview, readPreviewPage, type PreviewSnapshot } from '../engine/normalization-preview';
-import type { Dataset } from '../models/dataset';
-import type { PreviewRequest, PreviewResponse } from '../models/normalization-preview';
-import type { WorkerRequest, WorkerResponse } from '../models/worker-protocol';
+import { App } from '../../../../app';
+import { provideRouter, Router } from '@angular/router';
+import { routes } from '../../../../app.routes';
+import { CatalogMetadata } from '../../../catalog/services/catalog-metadata';
+import { RecordSourcesMetadata } from '../../../record-sources/services/record-sources-metadata';
+import { configurationFixture } from '../../../../testing/validation-fixture';
+import { buildNormalizationPreview, readPreviewPage, type PreviewSnapshot } from '../../engine/normalization-preview';
+import type { Dataset } from '../../models/dataset';
+import type { PreviewRequest, PreviewResponse } from '../../models/normalization-preview';
+import type { WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
 import { ImportWorkbench } from './import-workbench';
 
 type ResponseBody<T = WorkerResponse> = T extends WorkerResponse ? Omit<T, 'id'> : never;
@@ -1017,16 +1020,17 @@ describe('Preservación pública del análisis local', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(['catalog'], []);
     client.setQueryData(['validation-configuration'], configurationFixture([]));
-    TestBed.configureTestingModule({ deferBlockBehavior: DeferBlockBehavior.Manual, providers: [provideTanStackQuery(client), { provide: Api, useValue: {
-      catalog: async () => [], validationConfiguration: async () => configurationFixture([]),
-    } }], imports: [App] });
+    TestBed.configureTestingModule({ deferBlockBehavior: DeferBlockBehavior.Manual, providers: [provideRouter(routes), provideTanStackQuery(client),
+      { provide: CatalogMetadata, useValue: { catalog: async () => [] } },
+      { provide: RecordSourcesMetadata, useValue: { validationConfiguration: async () => configurationFixture([]) } },
+    ], imports: [App] });
     await TestBed.compileComponents();
-    const f = TestBed.createComponent(App); await f.whenStable();
+    const f = TestBed.createComponent(App); await TestBed.inject(Router).navigateByUrl('/analisis'); await f.whenStable();
     const blocks = await f.getDeferBlocks();
     await blocks[0].render(DeferBlockState.Complete); await f.whenStable();
     const root = f.nativeElement as HTMLElement;
     const click = async (name: string) => {
-      const button = [...root.querySelectorAll<HTMLButtonElement>('button')].find(item => item.textContent?.trim() === name || item.textContent?.replace(/^\s*\d+\s*/, '').trim() === name);
+      const button = [...root.querySelectorAll<HTMLElement>('button, nav a')].find(item => item.textContent?.trim() === name || item.textContent?.replace(/^\s*\d+\s*/, '').trim() === name);
       expect(button, name).toBeTruthy(); button!.click(); await f.whenStable();
     };
     const input = root.querySelector('input[type=file]')!;

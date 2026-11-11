@@ -1,7 +1,7 @@
 import { Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import type { Normalization, NormalizationKind } from '../../models/normalization';
 import type { PreviewCell } from '../../models/normalization-preview';
-import type { NormalizationPreviewState } from '../../workbench/normalization-preview-state';
+import type { NormalizationPreviewState } from '../../pages/import-workbench/normalization-preview-state';
 
 let nextPanel = 0;
 @Component({

@@ -1,0 +1,53 @@
+<a class="skip-link" href="#main">Ir al espacio de trabajo</a>
+<aside class="sidebar">
+  <a class="brand" routerLink="/analisis" aria-label="Inicio de colecciones del museo">
+    <span class="specimen-mark" aria-hidden="true">✳</span>
+    <span>Colecciones del museo<small>Universidad del Cauca</small></span>
+  </a>
+  <p class="workspace-label">Gestión de datos</p>
+  <nav aria-label="Navegación principal">
+    <a routerLink="/analisis" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <span aria-hidden="true">▤</span> Análisis de colecciones</a>
+    <a routerLink="/fuentes-de-registros" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <span aria-hidden="true">☷</span> Fuentes de registros biológicos</a>
+    <a routerLink="/catalogo" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <span aria-hidden="true">▦</span> Catálogo Darwin Core</a>
+  </nav>
+  <div class="sidebar-note">
+    <strong>Sus registros permanecen con usted</strong>
+    <p>Análisis local de archivos. Configuración global por contexto.</p>
+    <span>Espacio de trabajo Darwin Core</span>
+  </div>
+</aside>
+<div class="workspace">
+  <header class="topbar">
+    <div><span>Museo de Historia Natural</span><h1>Calidad de los datos de colecciones</h1></div>
+    <span class="environment">Espacio de investigación</span>
+  </header>
+  <main id="main" tabindex="-1" [class.normalization-wide]="analysisActive() && normalizationVisible()">
+    @if (catalog.isPending() || configuration.isPending()) {
+      <p role="status" class="notice">Cargando catálogo y configuración de validación…</p>
+    }
+    @if (catalog.isError() || configuration.isError()) {
+      <section class="error" role="alert">
+        <h2>Metadatos del servidor no disponibles</h2>
+        <p>{{ catalog.error()?.message || configuration.error()?.message }}</p>
+        <p>No hay configuración de respaldo local. Inicie la API y vuelva a conectarse para cargar los datos actuales del servidor.</p>
+        <button (click)="retry()">Reintentar conexión</button>
+      </section>
+    }
+    <router-outlet [routerOutletData]="metadata" />
+    @if (catalog.data(); as terms) {
+      @if (configuration.data(); as settings) {
+        <div [hidden]="!analysisActive()">
+          @defer (when analysisActive()) {
+            <app-import [terms]="terms" [configuration]="settings" [configurationAvailable]="!configuration.isError()" [active]="analysisActive()" (normalizationVisible)="normalizationVisible.set($event)" />
+          }
+        </div>
+      }
+    }
+  </main>
+  <footer>Universidad del Cauca · Museo de Historia Natural
+    <span>La configuración global requiere un entorno local de confianza.</span>
+  </footer>
+</div>
