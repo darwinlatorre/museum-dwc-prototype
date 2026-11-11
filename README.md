@@ -13,7 +13,7 @@ Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Pe
 Para contenedores: Docker con Compose **2.24.4 o posterior** (`up --wait --wait-timeout`). Las imágenes compilan las aplicaciones: el host no necesita Node, npm, Java ni Maven. Los builds requieren Internet. Para ejecutar fuera de Docker se mantienen Node.js **24**, npm y Java **27**, con Maven Wrapper incluido.
 
 1. Gestionar manualmente los archivos raíz `.env` (producción) y `.env.dev` (desarrollo), usando sus plantillas existentes. Las plantillas y los dotenv se dejan intactos en este cambio: retirar manualmente las entradas antiguas de `SERVER_ADDRESS`. Completar `DB_NAME`, `DB_USER` y `DB_PASSWORD` con valores no vacíos. No guardar credenciales reales en Git ni compartir `docker compose config` sin `--quiet`.
-2. Crear la red externa si no existe (`docker network create proxy`, o el nombre de `TRAEFIK_NETWORK`) y ejecutar Compose desde la raíz:
+2. Ejecutar Compose desde la raíz (no requiere crear redes externas):
 
    ```bash
    docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180
@@ -27,7 +27,7 @@ Compose interpreta dotenv; no ejecutar `source` ni `eval` sobre esos archivos. L
 
 ### Red, configuración y almacenamiento
 
-`compose.yml` es el manifiesto principal de producción (artefactos compilados, no una habilitación para Internet). `compose.dev.yml` es un manifiesto autónomo con su propio servicio PostgreSQL; ambos integran Traefik bajo el perfil `local-traefik`, sin overlay adicional; el antiguo `compose.mvp.yml` no se usa. Todos los puertos publicados escuchan exclusivamente en `127.0.0.1`: PostgreSQL `${DB_PORT:-5432}` → 5432, API `${SERVER_PORT:-8080}` → `${SERVER_PORT:-8080}` y Nginx `${FRONTEND_HTTP_PORT:-8081}` → 80. Si 5432 está ocupado, elegir otro `DB_PORT` libre en el `.env`, **sin detener otro PostgreSQL**. El backend en contenedor siempre usa `museum-db:5432`, escucha internamente en `0.0.0.0:${SERVER_PORT:-8080}` y no consume `DB_HOST=localhost`; este último sirve para un arranque opcional en el host. La API sigue sin autenticación y no debe exponerse a otras interfaces.
+`compose.yml` es el manifiesto principal de producción (artefactos compilados, no una habilitación para Internet). `compose.dev.yml` es un manifiesto autónomo con su propio servicio PostgreSQL; ambos usan únicamente la red `app` administrada por Compose, sin proxy inverso ni red externa; el antiguo `compose.mvp.yml` no se usa. Todos los puertos publicados escuchan exclusivamente en `127.0.0.1`: PostgreSQL `${DB_PORT:-5432}` → 5432, API `${SERVER_PORT:-8080}` → `${SERVER_PORT:-8080}` y Nginx `${FRONTEND_HTTP_PORT:-8081}` → 80. Si 5432 está ocupado, elegir otro `DB_PORT` libre en el `.env`, **sin detener otro PostgreSQL**. El backend en contenedor siempre usa `museum-db:5432`, escucha internamente en `0.0.0.0:${SERVER_PORT:-8080}` y no consume `DB_HOST=localhost`; este último sirve para un arranque opcional en el host. La API sigue sin autenticación y no debe exponerse a otras interfaces.
 
 Se conserva el proyecto fijo `universidad`, servicio `museum-db` y clave de volumen `museum_mvp_data`. Compose genera automáticamente el mismo nombre durable **`universidad_museum_mvp_data`** (`proyecto_clave`), sin un `name` explícito ni migración de datos. No cambiar el proyecto ni la clave para simplificar ese nombre. Nunca se reutiliza `universidad_postgres_data` ni el servicio original `postgres`. Antes de arrancar, confirmar que ese volumen MVP es el deseado: si existe, usar sus credenciales vigentes. Cambiar `DB_NAME`, `DB_USER` o `DB_PASSWORD` en dotenv **no renombra ni rota** una base ya inicializada; no borrar el volumen para resolver discrepancias. El arranque puede aplicar las migraciones existentes al volumen MVP, por lo que debe elegirse conscientemente.
 
@@ -49,44 +49,22 @@ docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait
 
 Abrir http://localhost:4200 (`FRONTEND_PORT`). Angular CLI escucha dentro del contenedor en 4200 y observa las fuentes con polling. Compose ejecuta `npm start -- --host 0.0.0.0 --port 4200 --poll 1000`, sin proxy ni hooks de configuración runtime. Solo se montan fuentes y configuraciones seleccionadas en solo lectura; `src` ya incluye ambos application environments, sin montaje adicional. No se montan carpetas completas con dotenv ni dependencias del host. Cambios en dependencias requieren reconstruir la imagen.
 
-El entorno del servicio frontend configura exclusivamente `${TRAEFIK_HOST:-localhost}` mediante `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS`, opción de Vite usada por Angular. No se pasa `--allowed-hosts`: en CLI 21.2.27 es booleano, no una lista CLI de nombres. Se mantiene la validación de hosts (incluidos los permisos locales nativos de Vite), sin permitir hosts arbitrarios. Este ajuste no cambia `npm start` fuera de Docker ni entrega dotenv al frontend.
+Angular CLI conserva su validación nativa de hosts locales, sin hostnames adicionales ni variables de entorno Vite inyectadas por Compose.
 
 El proyecto declarado es `universidad-dev`, con base `museum_dev_data` propia y `target` Java en volumen separado. El backend ejecuta `mvn spring-boot:run`: tras editar Java, ejecutar el mismo comando Compose con `restart backend` en lugar de `up ...`; **no tiene recarga Java automática**. Angular sí dispone de hot reload. Desarrollo y producción comparten los defaults de puertos de base/API: para mantener ambos activos, asignar puertos distintos en `.env.dev` antes de arrancar. No reutilizar el volumen MVP ni parar servicios ajenos para liberar puertos.
 
-### Traefik opcional
+### Red local
 
-Traefik enruta únicamente la página hacia **Nginx** en producción o **Angular CLI** en desarrollo. Después, el navegador consulta directamente la API pública de **Spring Boot → PostgreSQL**; Traefik no enruta `/api/`. Base, backend y frontend siempre pertenecen a `app`, con nombre acotado al proyecto (`universidad_app` o `universidad-dev_app`), sin red `default`. Solo el frontend añade `proxy`; la API y la base nunca se conectan a ella. `app` no usa `internal: true`: el backend necesita salida a las fuentes TDWG.
-
-Ambos manifiestos usan una red **externa** compartida, incluso sin activar el perfil: el operador debe crearla una vez si no existe (`docker network create proxy`, o el nombre de `TRAEFIK_NETWORK`). El default es `proxy`; un `TRAEFIK_NETWORK` configurado previamente, incluido el nombre antiguo, lo sobrescribe. Revisarlo manualmente si se desea adoptar el nuevo default; las plantillas permanecen intactas. Un Traefik existente debe estar conectado a esa red, tener proveedor Docker, el entrypoint HTTPS indicado y el resolver `le` configurado. No arrancar el incluido si otro proxy ocupa el puerto.
-
-```bash
-# Producción, con Traefik existente:
-docker compose --env-file .env -f compose.yml up --build -d --wait
-# Producción, ejecutando también el Traefik incluido:
-docker compose --env-file .env -f compose.yml --profile local-traefik up --build -d --wait
-# Desarrollo, con Traefik incluido (omitir el perfil para uno existente):
-docker compose --env-file .env.dev -f compose.dev.yml --profile local-traefik up --build -d --wait
-```
-
-El router usa **HTTPS**, entrypoint `${TRAEFIK_ENTRYPOINT:-websecure}` y resolver fijo `le`. El proxy incluido usa Traefik **v3.7**, `restart: unless-stopped`, redirección HTTP → HTTPS y HTTP-01 en `web`. Publica `127.0.0.1:80:80` y `127.0.0.1:443:443`, sin dashboard; conserva certificados en el volumen `certificates` propio del proyecto. No fija `container_name`, para evitar colisiones entre proyectos. El correo ACME predeterminado es el placeholder `example@email.com` (reemplazarlo por un contacto real antes de solicitar certificados), sustituible con `TRAEFIK_ACME_EMAIL`.
-
-**Certificados reales no garantizados en local:** Let's Encrypt no emite para `localhost`; HTTP-01 requiere un dominio público y acceso entrante al puerto 80. El bind local se conserva deliberadamente: este MVP sin autenticación no queda autorizado para Internet. Para un dominio real hace falta infraestructura externa adecuada. No seleccionar `TRAEFIK_ENTRYPOINT=web` con el proxy incluido: `web` ya escucha HTTP en 80 y redirige al entrypoint TLS de 443. El default debe ser `websecure`, no `web`.
-
-Se conservan los accesos HTTP directos locales (8081/4200), independientes de Traefik. Para HTTPS, ajustar el origen permitido y la URL API accesible por el navegador; un frontend HTTPS no convierte la API HTTP en HTTPS ni añade un proxy API. El router y servicio se llaman **`museum`** en ambos modos (destino 80/4200): son alternativas, no publicarlas simultáneamente en el mismo proxy sin rutas manuales distintas. `exposedbydefault=false` excluye el propio proxy; solo frontend se habilita explícitamente.
-
-**Límite de confianza:** el proveedor Docker necesita `/var/run/docker.sock`, montado `:ro`. Esto no restringe los métodos de la API Docker: el proxy tiene acceso privilegiado al daemon. Usar únicamente en un host local confiable; no exponer el socket, el dashboard ni la API a la red.
+Base, backend y frontend pertenecen únicamente a `app`, con nombre acotado al proyecto (`universidad_app` o `universidad-dev_app`). Compose crea esa red automáticamente; no se necesita una red externa. Se conserva la salida del backend hacia las fuentes TDWG y el acceso HTTP local directo en 8081/4200. No hay servicio de proxy inverso, etiquetas de enrutamiento, TLS/ACME ni montaje del socket Docker.
 
 | Variable | Default / función |
 |---|---|
 | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Obligatorias; `museum`, `museum` y un secreto propio, nunca el placeholder |
 | `DB_PORT`, `SERVER_PORT` | Defaults 5432 y 8080; DB interna fija `museum-db:5432`, API usa `SERVER_PORT` tanto dentro como fuera del contenedor y en el healthcheck |
 | `FRONTEND_PORT`, `FRONTEND_HTTP_PORT` | 4200 para CLI y 8081 para Nginx |
-| `TRAEFIK_HOST`, `TRAEFIK_ENTRYPOINT` | `localhost`, `websecure`; un valor explícito prevalece (no usar `web` con el proxy incluido) |
-| `TRAEFIK_ACME_EMAIL` | `example@email.com`; contacto ACME del proxy incluido |
-| `TRAEFIK_NETWORK` | `proxy`, externa y preexistente; un valor explícito prevalece |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,http://127.0.0.1:4200,http://localhost:8081,http://127.0.0.1:8081,http://localhost,http://127.0.0.1`; lista separada por comas para Spring MVC |
 
-No se leen ni modifican los dotenv reales ni las plantillas para verificar estos contratos. El resolver `le` es fijo en las etiquetas frontend y en los comandos del proxy incluido; cualquier ajuste antiguo del nombre de resolver deja de tener efecto.
+No se leen ni modifican los dotenv reales ni las plantillas para verificar estos contratos. Las variables antiguas del proxy ya no son consumidas por Compose; se pueden retirar manualmente de los archivos locales sin cambiar las credenciales de base.
 
 ### URL pública y CORS
 
@@ -114,7 +92,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:14200,http://127.0.0.1:14200
 
 Para ese ejemplo, configurar además `baseUrl: 'http://localhost:18080/api'` en `frontend/src/environments/environment.development.ts`. Para producción, editar el archivo normal y reconstruir la imagen frontend. En ese ejemplo, los puertos internos son 18080 para la API y 5432 para PostgreSQL.
 
-Si se abre la página mediante un `TRAEFIK_HOST` personalizado, incluir también ese origen real (esquema y puerto público) en CORS. Cambiar CORS requiere recrear el backend: un simple `restart` no actualiza el entorno de un contenedor existente. Las plantillas y los dotenv permanecen intactos durante esta implementación.
+Cambiar CORS requiere recrear el backend: un simple `restart` no actualiza el entorno de un contenedor existente. Las plantillas y los dotenv permanecen intactos durante esta implementación.
 
 ## Análisis de un archivo
 

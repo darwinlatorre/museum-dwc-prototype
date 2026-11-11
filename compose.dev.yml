@@ -58,7 +58,6 @@ services:
       target: development
     networks:
       - app
-      - proxy
     command:
       - npm
       - start
@@ -69,9 +68,6 @@ services:
       - "4200"
       - --poll
       - "1000"
-    # La CLI expone allowed-hosts como booleano; Vite admite un hostname adicional.
-    environment:
-      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: ${TRAEFIK_HOST:-localhost}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-4200}:4200"
     depends_on:
@@ -83,15 +79,6 @@ services:
       - ./frontend/angular.json:/app/angular.json:ro
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK:-proxy}"
-      - "traefik.http.routers.museum.rule=Host(`${TRAEFIK_HOST:-localhost}`)"
-      - "traefik.http.routers.museum.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
-      - "traefik.http.routers.museum.service=museum"
-      - "traefik.http.routers.museum.tls=true"
-      - "traefik.http.routers.museum.tls.certresolver=le"
-      - "traefik.http.services.museum.loadbalancer.server.port=4200"
     healthcheck:
       test: ["CMD", "wget", "-q", "-T", "3", "-O", "/dev/null", "http://127.0.0.1:4200/"]
       interval: 5s
@@ -99,43 +86,9 @@ services:
       start_period: 60s
       retries: 10
 
-  traefik:
-    image: traefik:v3.7
-    restart: unless-stopped
-    profiles: [local-traefik]
-    command:
-      - --ping=true
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=${TRAEFIK_NETWORK:-proxy}
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=${TRAEFIK_ENTRYPOINT:-websecure}
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.${TRAEFIK_ENTRYPOINT:-websecure}.address=:443
-      - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL:-example@email.com}
-      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
-    ports:
-      - "127.0.0.1:80:80"
-      - "127.0.0.1:443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - certificates:/letsencrypt
-    networks:
-      - proxy
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
 networks:
   app:
-  proxy:
-    name: ${TRAEFIK_NETWORK:-proxy}
-    external: true
 
 volumes:
   museum_dev_data:
   backend_dev_target:
-  certificates:

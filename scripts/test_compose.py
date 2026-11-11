@@ -101,31 +101,21 @@ class ComposeTests(unittest.TestCase):
         self.assertEqual(frontend["command"], ["npm", "start", "--", "--host", "0.0.0.0", "--port", "4200", "--poll", "1000"])
         self.assertTrue(all(m["read_only"] for m in frontend["volumes"]))
 
-    def test_traefik_routes_only_to_frontend_in_both_modes(self):
-        for dev, port in ((False, "80"), (True, "4200")):
-            result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n",
-                                (), ("local-traefik",),
-                                base="compose.dev.yml" if dev else "compose.yml")
-            self.assertEqual((result.returncode, result.stderr), (0, ""))
-            model = json.loads(result.stdout)
-            services = model["services"]
-            labels = services["frontend"]["labels"]
-            self.assertEqual(labels["traefik.enable"], "true")
-            self.assertEqual(labels["traefik.http.services.museum.loadbalancer.server.port"], port)
-            self.assertEqual(labels["traefik.http.routers.museum.rule"], "Host(`localhost`)")
-            self.assertEqual(labels["traefik.http.routers.museum.service"], "museum")
-            self.assertEqual(labels["traefik.http.routers.museum.entrypoints"], "websecure")
-            self.assertNotIn("proxy", services["backend"]["networks"])
-            self.assertNotIn("proxy", services["museum-db"]["networks"])
-            self.assertTrue(model["networks"]["proxy"]["external"])
-            self.assertEqual(model["networks"]["proxy"]["name"], "proxy")
-            self.assertEqual(labels["traefik.docker.network"], "proxy")
-            self.assertIn("--providers.docker.network=proxy", services["traefik"]["command"])
-            for name in ("backend", "museum-db"):
-                self.assertEqual(set(services[name]["networks"]), {"app"})
-            self.assertEqual(set(services["frontend"]["networks"]), {"app", "proxy"})
-            self.assertEqual(services["traefik"]["ports"][0]["host_ip"], "127.0.0.1")
-            self.assertNotIn("--api.insecure=true", services["traefik"]["command"])
+    def test_local_stack_has_no_reverse_proxy_configuration(self):
+        for base in ("compose.yml", "compose.dev.yml"):
+            with self.subTest(base=base):
+                result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n", base=base)
+                self.assertEqual((result.returncode, result.stderr), (0, ""))
+                model = json.loads(result.stdout)
+                self.assertEqual(set(model["services"]), {"museum-db", "backend", "frontend"})
+                self.assertEqual(set(model["networks"]), {"app"})
+                self.assertNotIn("certificates", model["volumes"])
+                for service in model["services"].values():
+                    self.assertEqual(set(service["networks"]), {"app"})
+                    self.assertNotIn("labels", service)
+                    self.assertNotIn("profiles", service)
+                self.assertNotIn("environment", model["services"]["frontend"])
+                self.assertNotIn("traefik", (ROOT / base).read_text().lower())
 
     def test_each_mode_passes_only_explicit_environment_and_uses_app_network(self):
         for base, source in (("compose.yml", "production"), ("compose.dev.yml", "development")):
@@ -145,37 +135,19 @@ class ComposeTests(unittest.TestCase):
             self.assertEqual(model["networks"]["app"]["name"], model["name"] + "_app")
             self.assertFalse(model["networks"]["app"].get("internal", False))
             self.assertEqual(services["museum-db"]["image"], "postgres:17")
-            if source == "development":
-                self.assertEqual(services["frontend"]["environment"], {"__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": "localhost"})
-            else:
-                self.assertNotIn("environment", services["frontend"])
+            self.assertNotIn("environment", services["frontend"])
             self.assertNotIn("default", model["networks"])
             for name in ("museum-db", "backend"):
                 self.assertEqual(set(services[name]["networks"]), {"app"})
-            self.assertEqual(set(services["frontend"]["networks"]), {"app", "proxy"})
+            self.assertEqual(set(services["frontend"]["networks"]), {"app"})
             if source == "development":
                 self.assertNotIn("museum_mvp_data", model["volumes"])
-
-    def test_traefik_host_default_and_override_are_consistent(self):
-        for setting, host in (("", "localhost"), ("TRAEFIK_HOST=custom.localhost\n", "custom.localhost")):
-            for base in ("compose.yml", "compose.dev.yml"):
-                with self.subTest(setting=setting, base=base):
-                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + setting,
-                                        (), base=base)
-                    self.assertEqual((result.returncode, result.stderr), (0, ""))
-                    frontend = json.loads(result.stdout)["services"]["frontend"]
-                    self.assertEqual(frontend["labels"]["traefik.http.routers.museum.rule"], f"Host(`{host}`)")
-                    if base == "compose.dev.yml":
-                        self.assertEqual(frontend["environment"], {"__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": host})
-                        self.assertNotIn("--allowed-hosts", frontend["command"])
 
     def test_development_actual_cli_and_restrictive_hosts(self):
         """CLI/builder instalados; fixture mínima, sin app ni servicios Docker."""
         cli = ROOT / "frontend/node_modules/@angular/cli/bin/ng.js"
         self.assertTrue(cli.exists(), "Requiere dependencias frontend instaladas y Node 24")
-        for label, setting, allowed in (("default", "", "localhost"),
-                                        ("custom", "TRAEFIK_HOST=museum.example.test\n", "museum.example.test"),
-                                        ("host", None, "localhost")):
+        for label, setting in (("docker", ""), ("host", None)):
             with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-environments-") as directory:
                 scratch = Path(directory)
                 evidence = scratch
@@ -219,7 +191,7 @@ class ComposeTests(unittest.TestCase):
                                 break
                             time.sleep(0.1)  # Poll del estado observable, no espera fija de arranque.
                         self.assertIsNotNone(port, outpath.read_text() + errpath.read_text())
-                        for hostname, status in ((allowed, 200), ("localhost", 200), ("untrusted.example.test", 403)):
+                        for hostname, status in (("127.0.0.1", 200), ("localhost", 200), ("untrusted.example.test", 403)):
                             connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
                             try:
                                 connection.request("GET", "/", headers={"Host": hostname})
@@ -241,42 +213,7 @@ class ComposeTests(unittest.TestCase):
                         except subprocess.TimeoutExpired:
                             os.killpg(process.pid, signal.SIGKILL)
                             process.wait(timeout=5)
-                        (evidence / f"cleanup-cli-{label}-result.log").write_text(json.dumps({"argv": args, "environment": {k: v for k, v in env.items() if k == "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"}, "exit": process.returncode, "http": observations}, indent=2))
-
-    def test_traefik_network_override_is_preserved(self):
-        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nTRAEFIK_NETWORK=custom_proxy\n",
-                            ())
-        self.assertEqual((result.returncode, result.stderr), (0, ""))
-        model = json.loads(result.stdout)
-        self.assertEqual(model["networks"]["proxy"]["name"], "custom_proxy")
-        self.assertEqual(model["services"]["frontend"]["labels"]["traefik.docker.network"], "custom_proxy")
-
-    def test_local_proxy_port_is_fixed_despite_stale_setting(self):
-        removed = "LOCAL_" + "TRAEFIK_PORT"
-        for base in ("compose.yml", "compose.dev.yml"):
-            self.assertNotIn(removed, (ROOT / base).read_text())
-        result = self.model(f"DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n{removed}=18000\n",
-                            (), ("local-traefik",))
-        self.assertEqual((result.returncode, result.stderr), (0, ""))
-        self.assertEqual(json.loads(result.stdout)["services"]["traefik"]["ports"], [
-            {"mode": "ingress", "host_ip": "127.0.0.1", "target": 80,
-             "published": "80", "protocol": "tcp"},
-            {"mode": "ingress", "host_ip": "127.0.0.1", "target": 443,
-             "published": "443", "protocol": "tcp"}])
-
-    def test_router_names_do_not_depend_on_project_interpolation(self):
-        removed = "COMPOSE_" + "PROJECT_NAME"
-        for name in ("compose.yml", "compose.dev.yml"):
-            self.assertNotIn(removed, (ROOT / name).read_text())
-        # El proyecto cambia solo los recursos Compose, no los identificadores Traefik.
-        for base in ("compose.yml", "compose.dev.yml"):
-            result = self.model(f"DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n{removed}=fixture-project\n",
-                                (), base=base)
-            self.assertEqual((result.returncode, result.stderr), (0, ""))
-            labels = json.loads(result.stdout)["services"]["frontend"]["labels"]
-            self.assertEqual(labels["traefik.http.routers.museum.service"], "museum")
-            self.assertEqual(set(key for key in labels if key.startswith("traefik.http.services.")),
-                             {"traefik.http.services.museum.loadbalancer.server.port"})
+                        (evidence / f"cleanup-cli-{label}-result.log").write_text(json.dumps({"argv": args, "environment": frontend.get("environment", {}) if setting is not None else {}, "exit": process.returncode, "http": observations}, indent=2))
 
     def test_redundant_defaults_are_implicit_without_changing_storage(self):
         manifest = (ROOT / "compose.yml").read_text()
@@ -286,51 +223,10 @@ class ComposeTests(unittest.TestCase):
             stages = [line for line in (ROOT / feature / "Dockerfile").read_text().splitlines()
                       if line.startswith("FROM ")]
             self.assertTrue(stages[-1].endswith(" AS production"))
-        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n",
-                            (), ("local-traefik",))
+        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n")
         self.assertEqual((result.returncode, result.stderr), (0, ""))
         model = json.loads(result.stdout)
         self.assertEqual(model["volumes"]["museum_mvp_data"]["name"], "universidad_museum_mvp_data")
-        proxy = model["services"]["traefik"]
-        self.assertNotIn("traefik.enable", proxy.get("labels", {}))
-        self.assertIn("--providers.docker.exposedbydefault=false", proxy["command"])
-
-    def test_tls_resolver_is_fixed_and_other_overrides_preserved(self):
-        for base in ("compose.yml", "compose.dev.yml"):
-            for settings, resolver, entrypoint, email in (
-                ("", "le", "websecure", "example@email.com"),
-                ("TRAEFIK_CERTRESOLVER=custom\nTRAEFIK_ENTRYPOINT=secure\nTRAEFIK_ACME_EMAIL=ops@example.test\n", "le", "secure", "ops@example.test"),
-                ("TRAEFIK_CERTRESOLVER=\n", "le", "websecure", "example@email.com"),
-            ):
-                with self.subTest(base=base, resolver=resolver):
-                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + settings,
-                                        profiles=("local-traefik",), base=base)
-                    self.assertEqual((result.returncode, result.stderr), (0, ""))
-                    model = json.loads(result.stdout)
-                    proxy = model["services"]["traefik"]
-                    labels = model["services"]["frontend"]["labels"]
-                    self.assertEqual(labels["traefik.http.routers.museum.tls"], "true")
-                    self.assertEqual(labels["traefik.http.routers.museum.tls.certresolver"], resolver)
-                    self.assertEqual(labels["traefik.http.routers.museum.entrypoints"], entrypoint)
-                    self.assertEqual(proxy["image"], "traefik:v3.7")
-                    self.assertEqual(proxy["restart"], "unless-stopped")
-                    self.assertEqual(proxy["profiles"], ["local-traefik"])
-                    self.assertNotIn("container_name", proxy)  # Evitar colisiones entre proyectos.
-                    for command in (
-                        "--entrypoints.web.address=:80",
-                        f"--entrypoints.web.http.redirections.entrypoint.to={entrypoint}",
-                        "--entrypoints.web.http.redirections.entrypoint.scheme=https",
-                        f"--entrypoints.{entrypoint}.address=:443",
-                        f"--certificatesresolvers.{resolver}.acme.email={email}",
-                        f"--certificatesresolvers.{resolver}.acme.storage=/letsencrypt/acme.json",
-                        f"--certificatesresolvers.{resolver}.acme.httpchallenge.entrypoint=web",
-                    ):
-                        self.assertIn(command, proxy["command"])
-                    self.assertTrue(any(v["source"] == "certificates" and v["target"] == "/letsencrypt"
-                                        for v in proxy["volumes"]))
-                    self.assertEqual(set(proxy["networks"]), {"proxy"})
-                    self.assertNotIn("env_file:", (ROOT / base).read_text())
-                    self.assertNotIn("TRAEFIK_CERTRESOLVER", (ROOT / base).read_text())
 
     def test_required_credentials_missing_or_empty(self):
         for key in ("DB_NAME", "DB_USER", "DB_PASSWORD"):
