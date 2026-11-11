@@ -49,6 +49,8 @@ services:
   frontend:
     build:
       context: ./frontend
+    environment:
+      - BACKEND_PORT=${SERVER_PORT:-8080}
     networks:
       - app
     ports:

@@ -40,14 +40,18 @@ confirmación. Cancelar conserva URL, vista y entrada; aceptar destruye el edito
 y descarta ese borrador. La protección beforeunload pertenece al propio editor.
 
 `app.config.ts` compone explícitamente HttpClient y un solo cliente Query.
-No hay proxy Angular/Nginx ni caché de `httpResource`: el navegador contacta la
-URL absoluta del backend, que debe permitir su origen por CORS.
-`src/environments/environment.ts` configura `baseUrl` para el build normal;
-`environment.development.ts` lo reemplaza mediante `fileReplacements` para
-serve/watch/build development. Ambos contienen solo configuración pública local;
-cambiarla requiere recompilar, no pasar variables al contenedor ya construido.
-No hay inicializador, JSON ni generador runtime. Nginx usa `nginx.conf` estático con fallback a `index.html` para las rutas
-Angular; no proxifica la API ni genera configuración runtime.
+No hay caché de `httpResource`: el navegador usa `/api` de mismo origen.
+`src/environments/environment.ts` y `environment.development.ts` fijan esa base
+para normal/development; se conserva `fileReplacements`. Cambiar la base requiere
+recompilar; no hay inicializador, JSON ni generador runtime del cliente.
+CLI carga `proxy.conf.cjs`: destino servidor `API_PROXY_TARGET` (localhost:8080 en
+host; backend:SERVER_PORT en Compose), con límites `/api` y `/api/...`.
+Nginx usa `nginx.conf` como plantilla oficial; solo sustituye `BACKEND_PORT`,
+proporcionado por Compose desde `SERVER_PORT`. Ambos proxies conservan prefijo,
+query, cuerpos y errores y alinean Host/Origin con el upstream fijo.
+Nginx mantiene fallback SPA fuera de API y una espera de lectura de 300 s para TDWG.
+No se amplía CORS: sigue restrictivo para el acceso directo opcional a la API.
+El proxy no añade autenticación ni cambia la privacidad/cancelación del transporte.
 
 Las dependencias entre funcionalidades apuntan a contratos con `import type`, no a
 sus vistas. `core` y `shared` pueden consumir esos modelos, nunca importar componentes

@@ -3,6 +3,8 @@
 import json
 import os
 import http.client
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
 import re
 import time
 from pathlib import Path
@@ -69,7 +71,10 @@ class ComposeTests(unittest.TestCase):
                 with self.subTest(base=base, settings=settings):
                     result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\nSERVER_ADDRESS=untrusted\n" + settings, base=base)
                     self.assertEqual((result.returncode, result.stderr), (0, ""))
-                    backend = json.loads(result.stdout)["services"]["backend"]
+                    services = json.loads(result.stdout)["services"]
+                    backend = services["backend"]
+                    expected = {"API_PROXY_TARGET": f"http://backend:{port}", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": ""} if base == "compose.dev.yml" else {"BACKEND_PORT": str(port)}
+                    self.assertEqual(services["frontend"]["environment"], expected)
                     self.assertNotIn("SERVER_ADDRESS", backend["environment"])
                     self.assertNotIn("SERVER_ADDRESS", (ROOT / base).read_text())
                     self.assertEqual(backend["environment"]["SERVER_PORT"], str(port))
@@ -100,6 +105,7 @@ class ComposeTests(unittest.TestCase):
         frontend = services["frontend"]
         self.assertEqual(frontend["command"], ["npm", "start", "--", "--host", "0.0.0.0", "--port", "4200", "--poll", "1000"])
         self.assertTrue(all(m["read_only"] for m in frontend["volumes"]))
+        self.assertTrue(any(m["target"] == "/app/proxy.conf.cjs" and m["source"].endswith("/frontend/proxy.conf.cjs") for m in frontend["volumes"]))
 
     def test_local_stack_has_no_reverse_proxy_configuration(self):
         for base in ("compose.yml", "compose.dev.yml"):
@@ -114,7 +120,7 @@ class ComposeTests(unittest.TestCase):
                     self.assertEqual(set(service["networks"]), {"app"})
                     self.assertNotIn("labels", service)
                     self.assertNotIn("profiles", service)
-                self.assertNotIn("environment", model["services"]["frontend"])
+                self.assertEqual(set(model["services"]["frontend"]["environment"]), {"API_PROXY_TARGET", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"} if base == "compose.dev.yml" else {"BACKEND_PORT"})
                 self.assertNotIn("traefik", (ROOT / base).read_text().lower())
 
     def test_each_mode_passes_only_explicit_environment_and_uses_app_network(self):
@@ -135,7 +141,7 @@ class ComposeTests(unittest.TestCase):
             self.assertEqual(model["networks"]["app"]["name"], model["name"] + "_app")
             self.assertFalse(model["networks"]["app"].get("internal", False))
             self.assertEqual(services["museum-db"]["image"], "postgres:17")
-            self.assertNotIn("environment", services["frontend"])
+            self.assertEqual(services["frontend"]["environment"], {"API_PROXY_TARGET": "http://backend:18080", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS": ""} if source == "development" else {"BACKEND_PORT": "18080"})
             self.assertNotIn("default", model["networks"])
             for name in ("museum-db", "backend"):
                 self.assertEqual(set(services[name]["networks"]), {"app"})
@@ -143,11 +149,64 @@ class ComposeTests(unittest.TestCase):
             if source == "development":
                 self.assertNotIn("museum_mvp_data", model["volumes"])
 
+    def test_single_vite_hostname_is_only_passed_to_development_frontend(self):
+        key = "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS"
+        for value in (None, "", "museo.example.org"):
+            for base in ("compose.dev.yml", "compose.yml"):
+                with self.subTest(value=value, base=base):
+                    settings = "" if value is None else f"{key}={value}\n"
+                    result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n" + settings, base=base)
+                    self.assertEqual((result.returncode, result.stderr), (0, ""))
+                    services = json.loads(result.stdout)["services"]
+                    for name in ("backend", "museum-db"):
+                        self.assertNotIn(key, services[name]["environment"])
+                    if base == "compose.dev.yml":
+                        self.assertEqual(services["frontend"]["environment"], {
+                            "API_PROXY_TARGET": "http://backend:8080", key: value or "",
+                        })
+                    else:
+                        self.assertEqual(services["frontend"]["environment"], {"BACKEND_PORT": "8080"})
+
     def test_development_actual_cli_and_restrictive_hosts(self):
         """CLI/builder instalados; fixture mínima, sin app ni servicios Docker."""
         cli = ROOT / "frontend/node_modules/@angular/cli/bin/ng.js"
         self.assertTrue(cli.exists(), "Requiere dependencias frontend instaladas y Node 24")
-        for label, setting in (("docker", ""), ("host", None)):
+        calls = []
+
+        class Upstream(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.respond()
+
+            def do_PUT(self):
+                self.respond()
+
+            def respond(self):
+                body = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+                record = {"method": self.command, "path": self.path, "body": body,
+                          "host": self.headers["Host"], "origin": self.headers.get("Origin"),
+                          "contentType": self.headers.get("Content-Type")}
+                calls.append(record)
+                payload = json.dumps(record).encode()
+                self.send_response(409 if self.path == "/api/error" else 200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def log_message(self, *args):
+                pass
+
+        upstream = ThreadingHTTPServer(("127.0.0.1", 0), Upstream)
+        thread = threading.Thread(target=upstream.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(upstream.server_close)
+        self.addCleanup(thread.join)
+        self.addCleanup(upstream.shutdown)
+        target = f"http://127.0.0.1:{upstream.server_port}"
+        for label, setting in (("docker", ""),
+                               ("empty", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=\n"),
+                               ("custom", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=museo.example.org\n"),
+                               ("host", None)):
             with self.subTest(mode=label), tempfile.TemporaryDirectory(prefix="cli-environments-") as directory:
                 scratch = Path(directory)
                 evidence = scratch
@@ -156,7 +215,7 @@ class ComposeTests(unittest.TestCase):
                 build = config["projects"]["frontend"]["architect"]["build"]
                 build["options"] = {"browser": "src/main.ts", "tsConfig": "tsconfig.app.json", "index": "src/index.html"}
                 (scratch / "angular.json").write_text(json.dumps(config))
-                for name in ("tsconfig.json", "tsconfig.app.json", "package.json"):
+                for name in ("tsconfig.json", "tsconfig.app.json", "package.json", "proxy.conf.cjs"):
                     shutil.copyfile(ROOT / "frontend" / name, scratch / name)
                 (scratch / "src/environments").mkdir(parents=True)
                 for name in ("environment.ts", "environment.development.ts"):
@@ -175,6 +234,8 @@ class ComposeTests(unittest.TestCase):
                     command[command.index("--host") + 1] = "127.0.0.1"
                     command[command.index("--port") + 1] = "0"
                     env.update(frontend.get("environment", {}))
+                # Sustituir solo el destino servidor por el fixture sintético.
+                env["API_PROXY_TARGET"] = target
                 args = command
                 outpath = evidence / f"cleanup-cli-{label}-stdout.log"
                 errpath = evidence / f"cleanup-cli-{label}-stderr.log"
@@ -191,7 +252,10 @@ class ComposeTests(unittest.TestCase):
                                 break
                             time.sleep(0.1)  # Poll del estado observable, no espera fija de arranque.
                         self.assertIsNotNone(port, outpath.read_text() + errpath.read_text())
-                        for hostname, status in (("127.0.0.1", 200), ("localhost", 200), ("untrusted.example.test", 403)):
+                        for hostname, status in (("127.0.0.1", 200), ("localhost", 200),
+                                                 ("museo.example.org", 200 if label == "custom" else 403),
+                                                 ("untrusted.example.test", 403)):
+                            count = len(calls)
                             connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
                             try:
                                 connection.request("GET", "/", headers={"Host": hostname})
@@ -202,6 +266,40 @@ class ComposeTests(unittest.TestCase):
                             observations.append({"host": hostname, "status": response.status, "body": body})
                             self.assertEqual(response.status, status, body)
                             self.assertIn("cli-host-proof" if status == 200 else f'This host ("{hostname}") is not allowed', body)
+                            self.assertEqual(len(calls), count)
+                        for method, path, payload in (("GET", "/api/catalog?q=a%20b&limit=2", None),
+                                                      ("GET", "/api", None),
+                                                      ("PUT", "/api/validation-configuration", '{"revision":7}'),
+                                                      ("PUT", "/api/error", '{"revision":6}')):
+                            count = len(calls)
+                            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                            hostname = "museo.example.org" if label == "custom" else "localhost"
+                            headers = {"Host": hostname, "Origin": f"http://{hostname}:{port}", "Content-Type": "application/json"}
+                            try:
+                                connection.request(method, path, body=payload, headers=headers)
+                                response = connection.getresponse()
+                                result = json.loads(response.read())
+                            finally:
+                                connection.close()
+                            self.assertEqual(response.status, 409 if path == "/api/error" else 200)
+                            self.assertEqual(response.getheader("Content-Type"), "application/json")
+                            self.assertEqual(result, {"method": method, "path": path, "body": payload or "",
+                                                      "host": target.removeprefix("http://"), "origin": target,
+                                                      "contentType": "application/json"})
+                            self.assertEqual(calls[count:], [result])
+                        for path, host, expected_status in (("/api-other", "localhost", 200),
+                                                           ("/api/catalog", "untrusted.example.test", 403)):
+                            count = len(calls)
+                            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                            try:
+                                connection.request("GET", path, headers={"Host": host, "Accept": "text/html"})
+                                response = connection.getresponse()
+                                body = response.read().decode()
+                            finally:
+                                connection.close()
+                            self.assertEqual(response.status, expected_status, body)
+                            self.assertIn("cli-host-proof" if expected_status == 200 else "is not allowed", body)
+                            self.assertEqual(len(calls), count)
                     finally:
                         # npm crea un hijo Angular: cerrar todo nuestro grupo aislado.
                         try:
@@ -248,23 +346,37 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('ENTRYPOINT ["java", "-jar", "/app/backend.jar"]\nCMD ["--server.address=0.0.0.0"]', dockerfile)
         self.assertNotIn("SERVER_ADDRESS", dockerfile)
 
-    def test_frontend_static_spa_fallback_without_api_proxy_or_runtime_config(self):
-        config_path = ROOT / "frontend/nginx.conf"
-        self.assertTrue(config_path.is_file(), "Las rutas SPA requieren fallback estático a index.html")
-        config = config_path.read_text()
+    def test_frontend_same_origin_proxy_and_spa_template(self):
+        config = (ROOT / "frontend/nginx.conf").read_text()
         dockerfile = (ROOT / "frontend/Dockerfile").read_text()
-        self.assertIn("COPY nginx.conf /etc/nginx/conf.d/default.conf", dockerfile)
+        self.assertIn("COPY nginx.conf /etc/nginx/templates/default.conf.template", dockerfile)
+        self.assertIn("ENV BACKEND_PORT=8080", dockerfile)
+        self.assertIn("NGINX_ENVSUBST_FILTER=^BACKEND_PORT$", dockerfile)
         self.assertRegex(config, r"listen\s+80\s*;")
         self.assertRegex(config, r"root\s+/usr/share/nginx/html\s*;")
         self.assertRegex(config, r"index\s+index\.html\s*;")
         self.assertRegex(config, r"location\s+/\s*\{\s*try_files\s+\$uri\s+\$uri/\s+/index\.html\s*;\s*\}")
-        # El fallback solo sirve archivos: no restaura el proxy API retirado
-        # ni convierte los environments de compilación en configuración runtime.
-        for forbidden in ("proxy_pass", "upstream", "location /api", "envsubst",
-                          "API_URL", "BASE_URL", "templates", "docker-entrypoint.d"):
+        self.assertIn("location ~ ^/api(?:/|$)", config)
+        self.assertIn("proxy_pass http://backend:${BACKEND_PORT};", config)
+        self.assertIn("proxy_set_header Host $proxy_host;", config)
+        self.assertIn("proxy_set_header Origin http://$proxy_host;", config)
+        self.assertIn("proxy_read_timeout 300s;", config)
+        for forbidden in ("rewrite", "error_page", "proxy_intercept_errors on", "API_URL", "BASE_URL", "ENTRYPOINT", "docker-entrypoint.d"):
             self.assertNotIn(forbidden, config + dockerfile)
-        for name in ("proxy.conf.json", "proxy.docker.conf.json"):
-            self.assertFalse((ROOT / "frontend" / name).exists())
+        context = (ROOT / "frontend/.dockerignore").read_text().splitlines()
+        for entry in ("!nginx.conf", "!proxy.conf.cjs", "**/.env", "**/.env.*"):
+            self.assertIn(entry, context)
+
+    def test_cli_proxy_defaults_and_boundaries(self):
+        config = json.loads((ROOT / "frontend/angular.json").read_text())
+        self.assertEqual(config["projects"]["frontend"]["architect"]["serve"]["options"]["proxyConfig"], "proxy.conf.cjs")
+        for setting in (None, "", "http://backend:18080"):
+            env = {"PATH": os.environ["PATH"]}
+            if setting is not None:
+                env["API_PROXY_TARGET"] = setting
+            result = subprocess.run(["node", "-e", "console.log(JSON.stringify(require('./frontend/proxy.conf.cjs')))"], cwd=ROOT, env=env, capture_output=True, text=True)
+            self.assertEqual((result.returncode, result.stderr), (0, ""))
+            self.assertEqual(json.loads(result.stdout), {"^/api(?:/|$)": {"target": setting or "http://localhost:8080", "changeOrigin": True, "headers": {"Origin": setting or "http://localhost:8080"}}})
 
     def test_frontend_image_retains_dependency_licenses(self):
         dockerfile = (ROOT / "frontend/Dockerfile").read_text()
