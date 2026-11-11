@@ -6,11 +6,17 @@ Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten r
 
 Flujo principal: desde la raíz, ejecutar `docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180`; ver [modos y requisitos](../README.md#ejecución-local). Compose construye y despliega los servicios esperando salud. Node.js 24 y `npm ci --no-audit --no-fund` se ejecutan dentro de la imagen, no en el host. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.
 
-Para desarrollo en contenedor: `docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait`. El manifiesto es autónomo e incluye PostgreSQL con volumen propio; `--env-file` selecciona los valores para interpolar Compose y el backend recibe solo su entorno explícito, sin `env_file`. Angular CLI sirve el puerto `FRONTEND_PORT` (4200), con fuentes montadas y polling para hot reload. El navegador contacta directamente la URL pública `environment.baseUrl`; no hay proxy API Angular ni Nginx. El backend debe permitir el origen del frontend por CORS. Los tres servicios pertenecen únicamente a `app`, creada por Compose, sin redes externas.
+Para desarrollo en contenedor: `docker compose --env-file .env.dev -f compose.dev.yml up --build -d --wait`. El manifiesto es autónomo e incluye PostgreSQL con volumen propio; `--env-file` selecciona los valores para interpolar Compose y el backend recibe solo su entorno explícito, sin `env_file`. Angular CLI sirve el puerto `FRONTEND_PORT` (4200), con fuentes montadas y polling para hot reload. El navegador usa `/api` en el mismo puerto frontend. CLI reenvía al destino servidor `API_PROXY_TARGET=http://backend:${SERVER_PORT:-8080}`, sin ampliar CORS. La configuración CJS se monta en solo lectura. Los tres servicios pertenecen únicamente a `app`, creada por Compose, sin redes externas.
 
-Angular CLI usa la validación nativa de hosts locales, sin hostnames adicionales, variables Vite ni desactivación de la validación. El comando Docker conserva únicamente las opciones de escucha, puerto y polling necesarias dentro del contenedor.
+Angular CLI conserva la validación nativa de hosts. Compose desarrollo entrega opcionalmente `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` al servidor Vite: gestionar manualmente, por ejemplo, `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=museo.example.org` en `.env.dev` o el archivo elegido mediante `--env-file`. Admite **un único hostname exacto**, sin protocolo, puerto, array, CSV, wildcard ni booleanos de desactivación. Ausente o vacío conserva los hosts locales nativos; los hosts ajenos siguen rechazados. El comando Docker conserva únicamente las opciones de escucha, puerto y polling. El bundle del navegador no consume esta variable y producción Nginx no la recibe ni la utiliza. La publicación sigue en localhost y no se añade autenticación.
 
-Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200 e iniciar primero el backend. Usar `npm start -- ...` para pasar opciones CLI.
+Cambiar el valor exige recrear frontend, no basta restart ni recargar el navegador:
+
+```bash
+docker compose --env-file .env.dev -f compose.dev.yml up -d --no-deps --force-recreate frontend
+```
+
+Para desarrollo opcional, desde `frontend/`, ejecutar `npm ci` y luego `npm start`. Abrir http://localhost:4200 e iniciar primero el backend en localhost:8080. Para otro puerto: `API_PROXY_TARGET=http://localhost:18080 npm start`. El destino es un origen HTTP confiable, sin `/api`, leído solo por el servidor CLI. Usar `npm start -- ...` para pasar opciones CLI.
 
 ### URL pública de la API
 
@@ -25,15 +31,17 @@ Ambos exportan inicialmente:
 
 ```ts
 export const environment = {
-  baseUrl: 'http://localhost:8080/api',
+  baseUrl: '/api',
 };
 ```
 
-Editar `baseUrl` en el archivo del modo deseado. Debe ser una URL HTTP(S) accesible **desde el navegador**, no el nombre Docker `backend`; no incluir credenciales ni secretos. La fachada elimina barras finales antes de añadir el endpoint. `angular.json` reemplaza el archivo normal por el de desarrollo mediante `fileReplacements`; el código siempre importa `environments/environment`.
+La base relativa mantiene las peticiones en el origen del frontend; el navegador no resuelve el nombre Docker `backend` ni necesita el puerto 8080. La fachada elimina barras finales antes de añadir el endpoint. `angular.json` reemplaza el archivo normal por el de desarrollo mediante `fileReplacements`; el código siempre importa `environments/environment`.
 
 Es configuración **de compilación**: cambiarla exige volver a compilar; en producción Docker, reconstruir la imagen y recrear el contenedor. No se leen dotenv ni variables del proceso y no se genera/carga JSON runtime. Pasar una variable de entorno al contenedor ya compilado no cambia la URL. El modo normal sigue siendo el MVP local, no una URL de despliegue público.
 
-Configurar `CORS_ALLOWED_ORIGINS` del backend para el origen real de la página; el default permite localhost y 127.0.0.1 en 4200, 8081 y 80. CORS no sustituye autenticación. Ver [puertos personalizados](../README.md#url-pública-y-cors).
+`proxy.conf.cjs` reenvía únicamente `/api` y `/api/...`, sin reescribir rutas/query ni establecer un timeout corto. `changeOrigin` y el encabezado Origin alinean el origen upstream con el destino servidor, no con el Host público. No se permite elegir destino mediante una petición. La validación nativa de hosts CLI permanece activa: esto no configura acceso Tailscale/Funnel.
+
+No hace falta ampliar CORS para mismo origen. El acceso directo opcional a la API conserva `CORS_ALLOWED_ORIGINS` restrictivo; su default permite localhost y 127.0.0.1 en 4200, 8081 y 80. Ni CORS ni el proxy sustituyen autenticación. Ver [puertos personalizados](../README.md#url-pública-y-cors).
 
 ```bash
 npm run lint
@@ -43,7 +51,7 @@ npm run build
 
 `npm run lint` ejecuta ESLint directamente (no `ng lint`) sobre `src/**/*.ts` y `src/**/*.html`, incluidas las pruebas y plantillas inline de componentes. `eslint.config.mjs` usa flat config con las reglas recomendadas de ESLint, typescript-eslint y Angular ESLint, sin reglas de formato ni análisis que requiera información de tipos. Cualquier error o advertencia hace fallar el comando. Se ignoran `node_modules`, `dist`, `.angular`, `.cache` y `coverage`; los scripts JavaScript y estilos no forman parte de este lint. Prettier se mantiene separado para formato.
 
-El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx carga el `nginx.conf` estático del frontend: sirve los archivos y aplica fallback a `index.html` para abrir o recargar `/analisis`, `/fuentes-de-registros` y `/catalogo`. No contiene proxy API ni configuración runtime. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
+El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx procesa `nginx.conf` mediante el directorio oficial de plantillas, sin hooks/ENTRYPOINT propios. `NGINX_ENVSUBST_FILTER=^BACKEND_PORT$` sustituye solo ese puerto (default 8080; Compose lo toma de `SERVER_PORT`), preservando `$uri` y las variables Nginx. Reenvía `/api` y `/api/...` a `backend`, sin quitar prefijo ni convertir errores en HTML; Host/Origin se alinean con el upstream y la espera de lectura es 300 s para TDWG. Sirve archivos y conserva fallback a `index.html` para `/analisis`, `/fuentes-de-registros` y `/catalogo`. No genera configuración runtime del cliente. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
 
 El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
 

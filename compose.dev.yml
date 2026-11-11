@@ -56,6 +56,9 @@ services:
     build:
       context: ./frontend
       target: development
+    environment:
+      - API_PROXY_TARGET=http://backend:${SERVER_PORT:-8080}
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS:-}
     networks:
       - app
     command:
@@ -77,6 +80,7 @@ services:
       - ./frontend/src:/app/src:ro
       - ./frontend/public:/app/public:ro
       - ./frontend/angular.json:/app/angular.json:ro
+      - ./frontend/proxy.conf.cjs:/app/proxy.conf.cjs:ro
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:ro
     healthcheck:

@@ -1,9 +1,90 @@
 # Evidencia de verificación del MVP
 
+## Corte frontend: comprobación independiente completada
+
+- Nueva ejecución autorizada tras reparar preparación local: identidad SHA256 de104 archivos por árbol sin diferencias y sin mutaciones al finalizar; Node24.22.2/npm12.2.0. Cadena frontend en workspace original: lint exit0, **249/249 pruebas en19 archivos exit0**, build exit0; total104,565s dentro del límite240s y sin reintentos. `git diff --check -- frontend` PASS y contraste padre PASS. Los fallos previos de timeout/preparación se conservan abajo; este resultado no demuestra que Docker los causara.
+- Evidencia independiente complementaria del mismo corte: Compose/CLI14/14 PASS, guard de hostname y proxy, Nginx79 aserciones con configuración idéntica. Estos resultados complementarios no se vuelven a presentar como ejecuciones nuevas. Bundle677,45kB advierte frente a500kB, no fallo. Auditoría npm pendiente aceptada; no aprobación nativa ni aceptación UI propia nuevas.
+- No se leyó ni modificó dotenv; no se detuvieron servicios ni se cambiaron fuentes, tests, aserciones o límites. El runner serial es local ignorado y no se versiona. El documento ODD vive en el tracker de entrega, no se añade como cambio funcional a este PR.
+
 ## Corte de entrega: retiro de Traefik
 
 - Checkpoint aislado verificado independientemente antes de publicar: 12/12 pruebas Compose/CLI PASS (exit 0, 7,499 s), 16 modelos/diferenciales de configuración conformes, sin cambios en contratos frontend/backend. No se leyeron dotenv ni plantillas. Puertos localhost, proyectos y volúmenes conservados.
 - Este corte no incluye el proxy API ni el hostname Vite posterior. Evidencia de esos cambios corresponde al PR siguiente. Sin build de imágenes, navegador nuevo ni aprobación nativa implícita.
+
+## Host Vite único opcional — verificación independiente y contraste padre
+
+- Decisión humana: «No pues dejalo solo con uno, no me hagas caso.». Solo `compose.dev.yml` entrega `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS:-}` al frontend. Sin lista, launcher, Traefik, flags inseguros ni cambios en producción Nginx, CORS, puertos o servicios vivos. No se leyó/modificó dotenv ni plantillas; la aplicación requiere recrear frontend con el mismo `--env-file` elegido por el humano.
+- Worker mwbczgh9-c-kswu: RED dos pruebas con cuatro fallos esperados (hostname custom403); GREEN focalizado2/2 y suite14/14 PASS. Verificador independiente mwbd3fql-d-1h1w: copia mínima aislada, `python3 -B scripts/test_compose.py` → **exit0,14/14 PASS,16,310s**, Node24.22.2/Compose5.7.0. CLI real con valor ausente/vacío/custom y ejecución host: locales200, custom200/API200 solo cuando configurado, ajeno403 sin llamadas upstream; proxy/query/JSON/error409 preservados. Variable no filtrada a backend/base ni frontend producción.
+- Contraste padre: `python3 -B scripts/test_compose.py ComposeTests.test_single_vite_hostname_is_only_passed_to_development_frontend ComposeTests.test_development_actual_cli_and_restrictive_hosts` → **exit0,2/2 PASS,10,668s**; `git diff --check` exit0. Sin suites Angular/build/auditoría nuevas por este cambio de entorno servidor.
+- ASSESS no clasificó candidato por untracked sin declaración; plan conservador independiente satisfecho, sin afirmar reviewDue/aprobación nativa. Scratch de verificador `/tmp/museum-single-host-cRitV7` conserva logs; no recursos Docker creados. Se observó edición concurrente ajena `.gitignore` añadiendo `.playwright/`; preservada sin atribuirla a este trabajo. Sin commit/push/reinicio.
+
+## Hostname Vite único opcional — autoverificación acotada
+
+- Pedido vigente: paso nativo directo de un hostname, sin listas ni launcher. S1: `compose.dev.yml` añade únicamente `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS:-}` junto a `API_PROXY_TARGET`. S2: guard nativo restrictivo y proxy API preservados. S3: producción no recibe esta variable; `compose.yml` queda intacto respecto al inicio de este trabajo (conserva cambios anteriores de mismo origen/retiro Traefik).
+- No se leyeron ni modificaron dotenv o plantillas; todos los modelos usan valores ficticios en temporales del sistema. No se recrearon servicios vivos ni se aplicó el valor del usuario. README e instrucciones explican un único hostname exacto opcional, default vacío y recreación manual solo del frontend, sin cambios de puertos, API, CORS ni autenticación.
+- Todos los comandos Python siguientes usaron previamente `export PATH=/home/dark/projs/museum-dwc-prototype/.browser/traefik-verification/toolchain/node_modules/node/bin:/home/dark/projs/museum-dwc-prototype/.browser/traefik-verification/toolchain/node_modules/.bin:$PATH`, sin instalaciones.
+
+| Fase | Comando | Evidencia observada |
+|---|---|---|
+| RED | `python3 -B scripts/test_compose.py ComposeTests.test_single_vite_hostname_is_only_passed_to_development_frontend ComposeTests.test_development_actual_cli_and_restrictive_hosts` | exit 1; 2 pruebas, 4 fallos de subcasos, 12,667 s. Falta de variable en desarrollo para ausente/vacío/custom y custom HTTP 403 en lugar de 200; producción conforme. |
+| GREEN | `python3 -B scripts/test_compose.py ComposeTests.test_single_vite_hostname_is_only_passed_to_development_frontend ComposeTests.test_development_actual_cli_and_restrictive_hosts` | exit 0; 2/2 PASS, 11,251 s, stdout vacío. |
+| PRESERVE | `python3 -B scripts/test_compose.py` | exit 0; 14/14 PASS, 13,045 s, stdout vacío. |
+| Estructural | `git diff --check` | exit 0, sin stdout/stderr. |
+
+- CLI/builder reales en cuatro fixtures mínimas: Compose ausente, vacío, hostname `museo.example.org` y comando host sin variable. En todos, localhost/127.0.0.1 devuelven 200 y host ajeno 403; el hostname custom devuelve 200 solo cuando está configurado. GET con query, `/api` exacto, PUT JSON y error 409 mantienen método/ruta/cuerpo/Host/Origin upstream, también con Host custom. Rechazos en página y `/api/catalog` no incrementan las llamadas al upstream sintético; `/api-other` no se reenvía. Teardown retira los temporales y termina únicamente sus procesos CLI.
+- Autoverificación del writer, no verificación independiente ni aprobación global: el padre conserva ese cierre. No builds, suites Angular/backend, navegador, auditoría npm, Docker pull/up/restart, commits ni publicación. Los resultados históricos siguientes no se atribuyen a esta ejecución.
+
+## Proxy API de mismo origen — aceptación manual con límites registrados
+
+- Cierre humano: «Para siguientes situaciones haslo asi, pero ya por este momento ya lo verifique y si funciona.». La verificación independiente del proxy pasó (13/13 Python y 79 aserciones Nginx); el usuario confirma funcionamiento manual. No se realizan más pruebas ahora. El agente no ejecutó la aceptación UI del proxy por el OOM descrito abajo, ni recreó el stack vivo: no presentar la observación humana como prueba propia. Sin aprobación nativa, commits, push ni PR. Los estados parciales más abajo preservan la secuencia de incidentes, no una afirmación de que el usuario siga bloqueado.
+- Preferencia futura registrada: frontend temporal contra API activa solo lectura, sin duplicar backend/base ni reiniciar servicios; pruebas de escritura requieren aislamiento. No equivale a autorización de cambios en datos ni a aprobación técnica por sustitución: la evidencia técnica independiente actual ya existe.
+
+### Nuevo intento autorizado: independiente PASS, navegador pendiente por memoria
+
+- Humano «Autorizo.» habilita nueva ejecución tras imágenes preparadas; todos los agentes anteriores estaban finalizados. Verificador mwbc9vpw-9-z9lr: `python3 -B scripts/test_compose.py` en copia mínima aislada con symlink de dependencias → **13/13 PASS**, exit0, 8,978 s. Runtime oficial Nginx1.28 con upstream sintético en8080/18080 → **22 solicitudes,79 aserciones PASS**, exit0, nginx -t conforme. Preserva prefijo/query/PUT/Host/Origin,409/404 JSON sin SPA, límites API y upstream fijo; SPA para las tres rutas. Plantilla original sin mutaciones, variables Nginx preservadas; solo puerto frontend publicado. Scratch observado `/tmp/same-origin-verify-7IYC3B`, con comandos, logs y probes efectivamente ejecutados. Sin bloqueadores independientes, sin aprobación nativa implícita.
+- Preparación de aplicación completa para Playwright por mwbcdud0-a-vzrc: backend real en imagen development termina **exit137/OOMKilled=true** con límite512MiB. PostgreSQL aislado había iniciado; frontend dev/Nginx no creados. **Cero pruebas de navegador y ningún HTTP200 de esa preparación**. No es defecto del proxy ni del navegador. Host:7935MiB totales,1461MiB disponibles al diagnosticar, sin swap; no se aumentaron límites ni se reintentó a ciegas.
+- Padre comprueba etiqueta exclusiva `museum.origin.browser.run=museum-origin-browser-1626c4e6` y retira únicamente db/backend/red propios. Universidad-dev y servicios ajenos intactos. Logs/manifiesto en `.browser/same-origin-api/browser-runtime/`. Requiere decisión humana para entorno de aceptación UI: API activa solo lectura con frontend temporal o recursos adicionales para aislamiento completo. La verificación independiente ya pasó y no necesita repetirse.
+
+- Especificación `odd/tasks/same-origin-api.md`, rama `feat/same-origin-api` desde dev. Ambos environments `/api`; proxy CLI con destino servidor configurable y default host localhost:8080. Compose desarrollo usa backend:SERVER_PORT y monta CJS read-only. Nginx usa plantilla envsubst oficial limitada a BACKEND_PORT, conserva URI/query y fallback SPA; imagen conserva licencias. No Traefik, no cambio CORS backend, dotenv ni datos.
+- Worker mwbbnif8-7-s13x: RED focalizado Python por contrato ausente y RED environments por base absoluta. GREEN focalizado 4/4 Python y 2/2 environments; suite Python `python3 -B scripts/test_compose.py` **13/13 PASS**; frontend lint PASS, test serial local **249/249 PASS**, build PASS. Advertencia bundle 677,45 kB frente a 500 kB preservada. Sin timeout ni auditoría npm nueva. Incremento frente al snapshot previo: 264 líneas autorales.
+- Verificador mwbbznav-8-chsf: lectura estructural conforme, pero preparación fallida antes de probes; no dispone de nginx:1.28-alpine/python:3.13-alpine y su rol prohíbe pulls. **Cero pruebas independientes, cero probes runtime Nginx/HTTP ejecutados**. No se sustituyó ni reintentó.
+- Padre descarga ambas imágenes con `docker pull nginx:1.28-alpine && docker pull python:3.13-alpine` → exit 0, job-4. Preparación ahora disponible; falta autorización humana para nuevo intento acotado independiente. Comprobación navegador de esta arquitectura aún pendiente; la prueba previa de URL absoluta no vale como prueba del proxy.
+- ASSESS no obtuvo candidato por untracked sin declaración explícita; no hay reviewDue determinado ni aprobación nativa. Prerrequisitos pendientes para cierre: verificación independiente funcional Nginx/CLI, contraste navegador y normalización/selección de candidato. No commits, push ni PR.
+- Stack vivo no recreado. El cambio necesita recrear frontend para cargar proxy/env/montaje; recarga/HMR sola no activa la configuración de servidor. No se debe afirmar que el servicio vivo ya usa el proxy. Los cambios previos de retiro Traefik permanecen preservados en snapshot local y sin mezcla silenciosa en commits.
+
+## API de mismo origen — T1, `odd/tasks/same-origin-api.md`
+
+Implementación y autoverificación acotada de S1–S3, no aceptación final de T2/T3. Se preservó el retiro previo de Traefik, contrastando los siete archivos contra `.browser/same-origin-api/before/`; no se modificaron task, dotenv/plantillas, dependencias, código backend/CORS ni servicios vivos. Sin commit, publicación ni revisión nativa. Incremento medido contra esa base para los siete archivos previos y HEAD para los restantes: **+214/-50 = 264 líneas autorales en 17 archivos**, incluido el CJS nuevo; más 6 líneas locales ignoradas de configuración serial.
+
+- Ambos environments usan `/api`. CLI carga `frontend/proxy.conf.cjs`, con destino servidor configurable y default localhost:8080; Compose dev fija backend:SERVER_PORT y monta CJS read-only. Se mantiene el guard nativo de hosts.
+- Se conserva `frontend/nginx.conf` como única fuente de plantilla: Docker la copia a `/etc/nginx/templates/default.conf.template`, sin renombrado/duplicación ni hooks propios. El entrypoint oficial sustituye solo BACKEND_PORT (default 8080; Compose toma SERVER_PORT), preservando las variables Nginx. Ruta API delimitada, prefijo/query intactos, Host/Origin upstream alineados, lectura/envío 300 s; fallback SPA y licencias preservados. Esto se comprobó estructuralmente, **no en runtime Nginx**.
+- Las fixtures CLI usan upstream HTTP sintético local, sin DB; prueban GET con query, `/api` exacto, PUT JSON, error 409 JSON, `/api-other` sin reenvío y host ajeno rechazado sin incrementar llamadas upstream. Dos modos: comando Compose y comando host; ambos sustituyen solo el destino interno por el puerto aleatorio del fixture. Se mantienen los seis probes anteriores de hosts/página. Los temporales de pruebas se retiran con teardown, junto con sus procesos CLI.
+
+### Comandos y resultados observados
+
+Todos los comandos Node/Python usaron este PATH, sin instalación ni auditoría:
+
+```bash
+export PATH=/home/dark/projs/museum-dwc-prototype/.browser/traefik-verification/toolchain/node_modules/node/bin:/home/dark/projs/museum-dwc-prototype/.browser/traefik-verification/toolchain/node_modules/.bin:$PATH
+```
+
+| Fase | Comando (desde raíz salvo indicación) | Resultado |
+|---|---|---|
+| RED | `python3 -B scripts/test_compose.py PackagingTests.test_cli_proxy_defaults_and_boundaries PackagingTests.test_frontend_same_origin_proxy_and_spa_template ComposeTests.test_backend_port_health_and_optional_cors_in_both_modes ComposeTests.test_development_actual_cli_and_restrictive_hosts` | exit 1; 4 pruebas, 1 fallo y 9 errores de subcasos: faltaban options/proxyConfig, entorno frontend, plantilla y CJS. La fixture CLI no llegó a HTTP por ausencia del CJS. |
+| RED | `cd frontend && npm test -- --watch=false --include src/app/core/api/environments.spec.ts` | exit 1; 1 PASS/1 FAIL: esperaba `/api`, recibió URL absoluta. |
+| GREEN | `python3 -B scripts/test_compose.py PackagingTests.test_cli_proxy_defaults_and_boundaries PackagingTests.test_frontend_same_origin_proxy_and_spa_template ComposeTests.test_backend_port_health_and_optional_cors_in_both_modes ComposeTests.test_development_actual_cli_and_restrictive_hosts` | exit 0; 4/4 PASS, 6,059 s; HTTP CLI real aprobado. |
+| GREEN | `cd frontend && npm test -- --watch=false --include src/app/core/api/environments.spec.ts` | exit 0; 2/2 PASS. |
+| PRESERVE | `python3 -B scripts/test_compose.py` | exit 0; 13/13 PASS, 6,952 s; única suite completa posterior. Defaults/override/vacío de SERVER_PORT, credenciales ficticias, CORS, redes, volúmenes, montajes, licencias y exclusión dotenv conformes. |
+| PRESERVE | `cd frontend && npm run lint` | exit 0, sin hallazgos. |
+| PRESERVE | `cd frontend && npm test -- --watch=false --runner-config ../.browser/same-origin-api/vitest.serial.config.mjs` | exit 0; 249/249 PASS, 19 archivos, 22,16 s de Vitest. Config local ignorada: maxWorkers=1/fileParallelism=false; sin cambio de aserciones ni reintento. |
+| BUILD | `cd frontend && npm run build` | exit 0; advertencia de bundle intacta: 677,45 kB frente a presupuesto 500 kB (exceso 177,45 kB). |
+| Estructural | `git diff --check` | exit 0, sin salida. |
+
+### Alcance pendiente para el padre
+
+S1: implementación y contratos PASS. S2/S3: paso por servidor frontend y acceso solo por puerto frontend PASS en fixture CLI; falta contraste independiente Nginx y navegador de aplicación completa (T2), no se declaran aceptadas globalmente. No se ejecutaron Docker build/up, backend suites, navegador, TDWG real ni auditoría npm. No se acreditó una sincronización larga: solo se comprobó que CLI no introduce timeout corto y Nginx declara 300 s. No se configuraron autenticación, Tailscale/Funnel ni exposición externa.
+
+Prerrequisitos repetibles: Node 24/npm existentes en `.browser/traefik-verification/toolchain`, dependencias `frontend/node_modules`, Docker Compose para modelos con dotenv ficticios generados; no se necesita DB para estas pruebas. Para T2 se requieren además imagen oficial Nginx/recursos Docker aislados y navegador propio. No se añadió framework ni script runtime: la prueba CLI está en `scripts/test_compose.py`; la plantilla fuente en `frontend/nginx.conf`. `.playwright/` incidental y el task sin seguimiento permanecen ajenos e intactos. `.browser/same-origin-api/vitest.serial.config.mjs` es el único artefacto local nuevo, ignorado; no hay scratch/caché nuevo en `git status --short`.
 
 ## Diagnóstico de metadatos en desarrollo — reproducción con Playwright
 
