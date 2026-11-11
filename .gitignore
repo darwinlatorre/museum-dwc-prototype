@@ -10,6 +10,7 @@ target/
 .vscode/
 *.log
 .playwright-cli/
+.playwright/
 .agent-browser/
 .browser/
 /backend/scripts/__pycache__/
