@@ -1,0 +1,28 @@
+{
+  "title": "Colecciones persistidas e importación confirmada",
+  "brief": "T1 · S1,S3,S4,S7–S12. Tres direcciones estructurales con el sistema Museum sincronizado: listado, hoja literal accesible, guardado explícito, papelera y restauración revalidada, importación a colección existente y Finalizar con errores, advertencias, duplicados y confirmación para enviar registros, nunca archivos. Datos sintéticos; estados previstos, sin red ni persistencia. S2/S5 quedan para implementación backend; el padre registra Log y abre canvas.",
+  "feature": "odd/tasks/collections-management.md",
+  "artboards": [
+    {
+      "file": "01-collection-workbench.html",
+      "title": "Mesa de trabajo · Recomendada",
+      "tradeoff": "Lista lateral persistente, hoja y edición desplegable en el mismo espacio: conserva orientación y favorece trabajo repetido. Resta ancho a la hoja en escritorio; en móvil la lista se apila y alarga el recorrido.",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "file": "02-register-and-inspector.html",
+      "title": "Registro e inspector",
+      "tradeoff": "Resumen horizontal de colecciones e inspector lateral visible junto a la hoja: permite contrastar valores y formulario. El inspector reduce el ancho tabular y, en móvil, queda después de la hoja.",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "file": "03-progressive-collection.html",
+      "title": "Registro progresivo",
+      "tradeoff": "Colecciones desplegables y tareas secuenciales dentro de cada una: máxima anchura de hoja y lectura móvil natural. Una colección larga desplaza las demás y comparar colecciones exige más navegación.",
+      "width": 1440,
+      "height": 1100
+    }
+  ]
+}

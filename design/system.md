@@ -1,12 +1,12 @@
-# Sistema de diseño del museo — sincronización de fuentes
+# Sistema de diseño del museo
 
-Sistema existente, no propuesta. Fuentes leídas sin modificaciones. Los artboards son exploraciones de presentación; no amplían el modelo.
+Sincronización S12 para `odd/tasks/collections-management.md`, T1. Sistema existente, no propuesta inicial. Fuentes productivas leídas, nunca modificadas. La referencia se vuelve a contrastar con `_tokens.scss`; no se introduce una paleta nueva.
 
-## Tokens
+## Tokens de origen
 
-Fuente de todos los tokens de esta tabla: `frontend/src/app/shared/design-system/_tokens.scss`. Los alias se resuelven al valor de su referencia, no crean una paleta nueva.
+Fuente de **cada entrada** de esta tabla: `frontend/src/app/shared/design-system/_tokens.scss`. Prefijo `--museum-`; los alias conservan su referencia.
 
-| Grupo | Nombre (prefijo `--museum-`) | Valores en orden |
+| Grupo | Nombres | Valores en orden |
 |---|---|---|
 | Primarios (11) | primary-50,100,200,300,400,500,600,700,800,900,950 | #edf6f2; #d3e8de; #a9d0bd; #7ab497; #509578; #30785c; #235f48; #194c3a; #163e31; #143329; #0b211a |
 | Texto (4) | text; text-muted; heading; link | #203a34; #526960; #1b3930; #23634d |
@@ -18,29 +18,31 @@ Fuente de todos los tokens de esta tabla: `frontend/src/app/shared/design-system
 | Radios (5) | radius-sm; radius-md; radius-lg; radius-panel; control-radius | 4px; 5px; 6px; 8px; var(--museum-radius-md) |
 | Altura (1) | control-height | 3.15rem |
 
-49 tokens `museum` en total. Alias públicos (9): `--pine` → primary-700; `--ink` → text; `--muted` → text-muted; `--line` → line; `--select-control-height` → control-height; `--select-control-border` → control-border; `--select-control-radius` → control-radius; `--mapping-control-height` → select-control-height; `--p-primary-color` → primary-600.
+**49 tokens museum**, incluidos 34 colores semánticos/primarios, y **9 alias públicos**: `--pine` → primary-700; `--ink` → text; `--muted` → text-muted; `--line` → line; `--select-control-height` → control-height; `--select-control-border` → control-border; `--select-control-radius` → control-radius; `--mapping-control-height` → select-control-height; `--p-primary-color` → primary-600.
 
-## Valores locales existentes, no nuevos tokens
+## Valores locales verificados
 
-- `frontend/src/app/shared/design-system/_base.scss`: raíz 14px; h2 1.75rem, espaciado -0.04em; h3 1.35rem; h4 1.05rem; párrafos interlineado 1.6, ancho máximo 80ch; literal `white-space: pre-wrap`. Foco 2px primary-700, separación 3px. Movimiento reducido sin animación/transición.
-- `frontend/src/app/shared/design-system/_forms.scss`: botón padding .55rem .8rem, interlineado 1.3; label .92rem/600; entrada padding .6rem .7rem; entrada mínima 39px; checkbox 18px. Select nativo y PrimeNG comparten altura 3.15rem, borde y radio. No sombra (`none`); no hay escala de sombras definida.
-- `frontend/src/app/shared/design-system/_layout.scss`: toolbar #edf2ef; search máximo 440px; form-grid dos columnas, una a 800px. Espacios tomados de tokens.
-- `frontend/src/app/shared/design-system/_feedback.scss`: badge #edf0eb/#d7ded5; published #e6f3ec/#bfdccd, texto primary-600; danger #913727/#fff0eb, borde error-line; notice #e9f3ed, borde primary-500 y texto primary-700. Son 7 colores locales adicionales.
-- `frontend/src/app/shared/design-system/_primeng.scss`: option-focus #edf4ef; option-selected #e2eee6, texto primary-700. Overlay máximo calc(100vw - 2rem); texto envuelto; altura de opción igual a control. Son 2 colores locales adicionales.
+No son tokens nuevos. Cada línea identifica su fuente bajo `frontend/src/app/shared/design-system/`.
 
-## Reglas de componentes y propiedad
+- `_base.scss`: raíz 14px; h2 1.75rem/-0.04em; h3 1.35rem; h4 1.05rem; párrafos 1.6 y máximo 80ch; `.literal` usa `pre-wrap`. Foco de botones/enlaces 2px primary-700, offset 3px. Movimiento reducido desactiva animación, transición y scroll suave.
+- `_forms.scss`: botón .55rem .8rem/1.3; label .92rem/600; inputs .6rem .7rem, mínimo 39px; checkbox 18px. Selects altura 3.15rem, radio md, sin sombra. Conservar selects nativos.
+- `_layout.scss`: toolbar #edf2ef; search máximo 440px; form-grid dos columnas, una a 800px.
+- `_feedback.scss`: badge #edf0eb/#d7ded5; published #e6f3ec/#bfdccd con texto primary-600; danger #913727/#fff0eb con error-line; notice #e9f3ed con primary-500/700.
+- `_primeng.scss`: option-focus #edf4ef; option-selected #e2eee6, texto primary-700; overlay máximo calc(100vw - 2rem), opciones envueltas con altura de control.
 
-- `frontend/DESIGN_SYSTEM.md`: una entrada global, overlays fuera del host, breakpoint 800px. Reutilizar primitivas; no nueva paleta, tipografía o dependencia.
-- `frontend/src/app/shared/design-system/museum.preset.ts`: MuseumPreset/Aura referencia los 11 tonos primarios CSS; no segunda copia de colores.
-- `frontend/src/app/shared/design-system/_tables.scss`: cabecera table-heading, texto muted; borde line y radio lg; contenido alineado arriba.
-- `frontend/src/app/shared/ui/dwc-picker/dwc-picker.ts`: selección editable, texto libre sin normalizar, limpieza, deshabilitación, filtrado por nombre y overlay. En los bocetos el input con datalist representa esta capacidad, no sustituye el componente productivo.
-- `frontend/src/app/features/record-sources/validation-configuration.scss`: lista con separadores, texto literal envuelto, agregar con picker flexible; apilado a 800px.
-- `frontend/src/app/features/record-sources/validation-configuration.ts` y `.html`: máximo 200 caracteres/campo y 500 campos combinados obligatorios/opcionales por contexto; no vacío, duplicado exacto rechazado entre ambas listas. El botón Obligatorio/Opcional conserva fila y foco, y Quitar retira el campo de la configuración; ambos estados se guardan completos y la búsqueda es solo visual. Cambio de fuente limpia entrada; revisión global, guardado completo explícito, actualización descarta borrador solo tras lectura correcta; errores conservan datos; guardas de salida incluyen entrada pendiente. Sin auto-save, historial ni activación.
-- `frontend/src/app/core/i18n/localization.ts`: Colección biológica, Permiso, Muestreo, Marino, Otros. No se cambia Contexto en análisis.
-- `backend/src/main/resources/data/validation-configuration.json`: revisión inicial 0; campos originales 30/22/10/15/8. Todos se muestran sin traducir ni reordenar su significado.
+Son **10 colores locales adicionales**, no una segunda paleta. No existe escala de sombras.
 
-## Aplicación en las propuestas
+## Componentes y propiedad
 
-Controles con mínimo 44px para interacción táctil; foco explícito también en inputs y summary; bordes de controles primary-700 para contraste no textual. Estas son decisiones de presentación del boceto, no tokens nuevos. Geometría de paneles y grillas propia de cada dirección. No sombras, animación ni colores nuevos.
+- `frontend/DESIGN_SYSTEM.md`: entrada única `frontend/src/styles.scss`, estilos de funcionalidades globales para overlays, corte móvil 800px; reutilizar primitivas y picker DwC.
+- `frontend/src/app/shared/design-system/museum.preset.ts`: MuseumPreset/Aura referencia los 11 primarios CSS; no copia hexadecimales.
+- `frontend/src/app/shared/design-system/_tables.scss`: cabecera table-heading, texto muted, borde line, radio lg, celdas alineadas arriba.
+- `_base.scss`, `_forms.scss`, `_layout.scss`, `_feedback.scss` y `_primeng.scss`: propiedad de tipografía/foco, controles, composición, mensajes y overlays respectivamente.
 
-Comprobación de paleta: las tres propuestas usan solo primary-50/600/700/800, text, text-muted, heading, page, surface, line, nav-text y error-surface/border/text de la tabla. La lámina del sistema también representa los restantes colores de origen y los 10 colores locales documentados. Única familia: museum-font-family. Desviaciones de color/familia: ninguna. La comprobación estructural no equivale a auditoría visual de navegador.
+## Aplicación a Colecciones
+
+Las láminas usan exclusivamente primarios 50/600/700/800, text, text-muted, heading, link, page, surface, line, table-heading, nav-text y error-surface/border/text. Única familia: la de origen. Geometría de composición propia, no tokens nuevos.
+
+Decisiones de boceto: controles y summaries mínimo 44px, bordes de control primary-700, foco explícito en todos los controles y regiones desplazables. Tablas nativas con cabeceras sticky, scroll contenido y valores literales sin elipsis; en móvil se apilan paneles, nunca se eliminan columnas. Formularios y guardado explícito, sin edición oculta al perder foco. Sin sombras ni movimiento.
+
+`design/system.html` muestra los 49 tokens por grupos (los alias se documentan aquí), los colores locales y primitivas. Las alternativas de Colecciones son **referencias de diseño locales**, no implementación ni prueba de persistencia. Los mensajes de resultado están rotulados como estados previstos; ningún archivo o registro se transmite. S2/S5 requieren trabajo backend posterior. La comprobación estructural no certifica geometría, teclado real ni conformidad AA en navegador.
