@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "chosen": "01-collection-workbench.html",
+  "handoffs": {
+    "01-collection-workbench.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-11T21:26:24.416Z",
+      "startedAt": "2026-11-11T21:26:27.657Z",
+      "implementedAt": "2026-11-13T00:51:57.418Z",
+      "feature": "odd/tasks/collections-management.md",
+      "note": "Implementado en Angular: Finalizar y Colecciones. Costura padre lint/312 pruebas/build aprobada; navegador real desktop/móvil, CRUD, paginación y revalidación contrastados. QA sintético cerrado; sin aprobación nativa ni publicación."
+    }
+  }
+}
