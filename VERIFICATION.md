@@ -1,5 +1,14 @@
 # Evidencia de verificación del MVP
 
+## Colecciones persistidas — verificación independiente de persistencia del cierre
+
+- Verificador `gentle-ai-verify`, tarea `mwea133t-k-w8pv`, sobre HEAD `6cc17a44119e3bf6a2ef2605cd5dd6dc95388633`. Riesgo comprobado: item1, persistencia y ausencia de pérdida/escrituras parciales. Ejecución técnica aislada, no aprobación visual ni revisión nativa.
+- Comando en copia aislada: `bash ./mvnw -o -Dmaven.repo.local="$HOME/.m2/repository" -Dtest=CollectionHttpTests,CollectionValidatorTests,ConfigurationMigrationTests test`: exit0, **20/20 PASS** (14 HTTP/PostgreSQL,4 validador,2 migración). Compilación productiva y de pruebas aprobada; ninguna omisión.
+- Sonda propia solo en scratch: `bash ./mvnw -o -Dmaven.repo.local="$HOME/.m2/repository" -Dtest=Risk1IndependentTests#effectiveValuesSurviveTrashAndEveryRejectedEntryPathIsAtomic test`: exit0, **1/1 PASS**. Acciones mediante HTTP público y lectura auxiliar/hash del contenido lógico de las tres tablas, incluidos recibos: rechazos sin cambios, originales distintos de efectivos preservados, restauración exacta y replay sin escritura. La sonda no se incorporó al repositorio ni sustituyó las comparaciones públicas existentes.
+- Resultado independiente: **21/21 PASS**, sin defectos reproducidos ni correcciones. S2/S7/S8/S9/S10 PASS acotado; S5 inspección/compilación PASS. El padre contrastó `CollectionHttpTests.java:315–374` (rollback después de flush, carreras y rechazos sin efectos) y verificó que `backend/src`/`pom.xml` no difieren del corte7d96f95; Git conservaba únicamente `start-dev.sh` humano untracked. No se presenta como ejecución Maven del padre.
+- El verificador informó cero contenedores/volúmenes propios remanentes y servicios preexistentes intactos. Por su restricción de runtime usó `/tmp/collections-risk1-ARuAam`, no el scratch `.browser` solicitado; allí conservó `selected.log`, `independent.log`, `selected-reports/` y `work/backend/target/surefire-reports/`. El padre no accedió ni eliminó esa ruta externa; los resultados se atribuyen al verificador, no a lectura propia de esos informes.
+- No se repitieron suite backend general, paridad Java/TS, frontend, navegador, auditoría, package ni benchmark. No prueba nueva de trigger mediante SQL directo, caída de proceso o bytes físicos PostgreSQL; no se afirman esas garantías. Esta comprobación no concede aprobación nativa, publicación ni merge, ni borra el historial anterior.
+
 ## Colecciones persistidas — aceptación funcional local
 
 - Especificación y decisiones: `odd/tasks/collections-management.md`, S1–S15. Backend en `7d96f958597282c705f523b62f6df165dfc03f39`; frontend en `0a47fff361234e39ec8ffedf713ef3e79e99bfe1`, con Finalizar, cliente tipado y listado/hoja/CRUD con papelera. No hay autenticación, carga de archivos al servidor ni publicación/merge implícitos. Las filas confirmadas sí se guardan en PostgreSQL; el análisis y la preview permanecen locales.
