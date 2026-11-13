@@ -250,7 +250,26 @@
 .normalization-original dd { margin: 0 0 var(--museum-space-3); white-space: pre-wrap; }
 .normalization-duplicates { padding: 0; border-block: 1px solid var(--museum-line); }
 .normalization-duplicates summary { min-height: 44px; cursor: pointer; overflow-wrap: anywhere; }
+/* Finalizar: controles nativos y feedback compacto, sin otro shell ni paleta. */
+app-import-confirmation { display: block; min-width: 0; }
+.wizard-final { max-width: 62rem; overflow-wrap: anywhere; }
+.wizard-final > h3 { margin-top: 0; }
+.wizard-final fieldset {
+  display: grid; gap: var(--museum-space-3); min-width: 0;
+  margin: var(--museum-space-4) 0; padding: var(--museum-space-4);
+  border: 1px solid var(--museum-line); border-radius: var(--museum-radius-md);
+}
+.wizard-final legend { color: var(--museum-heading); font-weight: 600; }
+.wizard-final label { display: grid; gap: var(--museum-space-2); min-width: 0; }
+.wizard-final input:not([type='checkbox']), .wizard-final select { width: 100%; min-width: 0; }
+.wizard-final .confirmation-consent {
+  display: flex; align-items: center; gap: var(--museum-space-3); min-height: 44px;
+}
+.wizard-final .confirmation-consent input { flex: 0 0 auto; }
+.wizard-final button { min-height: 44px; white-space: normal; }
+.wizard-final .actions { flex-wrap: wrap; }
 @media (max-width: 800px) {
+  .wizard-final fieldset { padding: var(--museum-space-3); }
   .checks { flex-direction: column; align-items: stretch; }
   .context-grid { grid-template-columns: 1fr; }
   .upload { padding: 1.2rem; }

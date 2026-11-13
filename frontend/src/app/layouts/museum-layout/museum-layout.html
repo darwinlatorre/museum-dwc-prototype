@@ -10,12 +10,14 @@
       <span aria-hidden="true">▤</span> Análisis de colecciones</a>
     <a routerLink="/fuentes-de-registros" routerLinkActive="active" ariaCurrentWhenActive="page">
       <span aria-hidden="true">☷</span> Fuentes de registros biológicos</a>
+    <a routerLink="/collections" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <span aria-hidden="true">▤</span> Colecciones</a>
     <a routerLink="/catalogo" routerLinkActive="active" ariaCurrentWhenActive="page">
       <span aria-hidden="true">▦</span> Catálogo Darwin Core</a>
   </nav>
   <div class="sidebar-note">
-    <strong>Sus registros permanecen con usted</strong>
-    <p>Análisis local de archivos. Configuración global por contexto.</p>
+    <strong>Análisis local, guardado explícito</strong>
+    <p>Los archivos se analizan en el navegador. Solo los registros confirmados se guardan en el servidor local.</p>
     <span>Espacio de trabajo Darwin Core</span>
   </div>
 </aside>
@@ -36,12 +38,16 @@
         <button (click)="retry()">Reintentar conexión</button>
       </section>
     }
+    @if (catalogSnapshot.isError()) {
+      <p class="error" role="alert">{{ catalogSnapshot.error()?.message }}
+        <button (click)="retry()">Actualizar metadatos</button></p>
+    }
     <router-outlet [routerOutletData]="metadata" />
     @if (catalog.data(); as terms) {
       @if (configuration.data(); as settings) {
         <div [hidden]="!analysisActive()">
           @defer (when analysisActive()) {
-            <app-import [terms]="terms" [configuration]="settings" [configurationAvailable]="!configuration.isError()" [active]="analysisActive()" (normalizationVisible)="normalizationVisible.set($event)" />
+            <app-import [terms]="catalogSnapshot.data()?.terms ?? terms" [catalogVersion]="catalogSnapshot.data()?.snapshotVersion ?? null" [catalogAvailable]="!catalogSnapshot.isError() && !catalogSnapshot.isFetching()" (refreshMetadata)="retry()" [configuration]="settings" [configurationAvailable]="!configuration.isError()" [active]="analysisActive()" (normalizationVisible)="normalizationVisible.set($event)" />
           }
         </div>
       }

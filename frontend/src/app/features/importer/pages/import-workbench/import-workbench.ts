@@ -8,7 +8,9 @@ import { type Dataset, LIMITS } from '../../models/dataset';
 import type { Issue } from '../../models/analysis-result';
 import type { ValidationConfiguration } from '../../../record-sources/models/validation-configuration';
 import type { Term } from '../../../catalog/models/catalog-term';
-import type { WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
+import type { DuplicateCounts, WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
+import type { SourceRecord } from '../../../collections/models/collection';
+import { ImportConfirmation } from '../../components/import-confirmation/import-confirmation';
 import { NormalizationPreviewState } from './normalization-preview-state';
 import { NormalizationPreview } from '../../components/normalization-preview/normalization-preview';
 import { missingCells, missingFields } from '../../engine/required-fields';
@@ -19,7 +21,7 @@ import { label } from '../../../../core/i18n/localization';
 
 @Component({
   selector: 'app-import',
-  imports: [FormField, TableModule, ButtonModule, ColumnMapping, RecordContext, NormalizationPreview],
+  imports: [FormField, TableModule, ButtonModule, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation],
   templateUrl: './import-workbench.html',
   host: { '(window:resize)': 'scrollActiveStep()' },
 })
@@ -34,6 +36,26 @@ export class ImportWorkbench implements OnDestroy {
   configuration = input.required<ValidationConfiguration>();
   configurationAvailable = input(true);
   terms = input.required<Term[]>();
+  catalogVersion = input<number | null>(null);
+  catalogAvailable = input(true);
+  refreshMetadata = output<void>();
+  importLocked = signal(false);
+  analysisRevision = signal(0);
+  duplicates = signal<DuplicateCounts>({ equalRows: { groups: 0, affectedRows: 0 }, occurrenceIds: { groups: 0, affectedRows: 0 } });
+  readonly importReady = computed(() => this.issues() !== undefined && !this.busy() && this.configurationAvailable() && this.catalogAvailable() && this.catalogVersion() !== null);
+  private preparation?: { id: number; offset: number; rows: SourceRecord[]; resolve: (rows: SourceRecord[]) => void; reject: (reason: Error) => void };
+  readonly prepareImport = (): Promise<SourceRecord[]> => {
+    if (!this.importReady() || !this.worker) return Promise.reject(new Error('Vuelva a analizar los datos antes de importar.'));
+    return new Promise((resolve, reject) => {
+      this.preparation = { id: ++this.messageId, offset: 0, rows: [], resolve, reject };
+      this.requestPreparation();
+    });
+  };
+  private requestPreparation() {
+    const pending = this.preparation;
+    if (!pending || !this.worker) return;
+    this.worker.postMessage({ kind: 'prepare', id: pending.id, session: this.session, generation: this.generation, offset: pending.offset } satisfies WorkerRequest);
+  }
   stages = [
     'Seleccionar archivo',
     'Contexto',
@@ -122,6 +144,7 @@ export class ImportWorkbench implements OnDestroy {
   }
   private resultStep = 3;
   canVisit(index: number) {
+    if (this.importLocked() && index !== 5) return false;
     if (index < 0 || index >= this.stages.length) return false;
     if (index === 0) return true;
     if (!this.data()) return false;
@@ -139,6 +162,8 @@ export class ImportWorkbench implements OnDestroy {
   }
   private worker?: Worker;
   private generation = 0;
+  private session = 0;
+  private validationId = 0;
   constructor() {
     effect(() => {
       const options = this.options();
@@ -150,6 +175,8 @@ export class ImportWorkbench implements OnDestroy {
       this.configuration();
       this.configurationAvailable();
       this.terms();
+      this.catalogVersion();
+      this.catalogAvailable();
       this.invalidate();
     });
     effect(() => {
@@ -187,9 +214,13 @@ export class ImportWorkbench implements OnDestroy {
   ngOnDestroy() {
     this.previewState.destroy();
     this.worker?.terminate();
+    this.preparation?.reject(new Error('Preparación cancelada.'));
   }
   invalidate() {
     this.generation++;
+    this.analysisRevision.update(value => value + 1);
+    this.preparation?.reject(new Error('La sesión de análisis ya no está vigente.'));
+    this.preparation = undefined;
     this.worker?.terminate();
     this.worker = undefined;
     this.busy.set(false);
@@ -205,19 +236,38 @@ export class ImportWorkbench implements OnDestroy {
     this.error.set('Procesamiento cancelado. No se enviaron datos al servidor.');
   }
   private dispatch(request: WorkerRequest) {
-    this.worker?.terminate();
+    const reuse = request.kind === 'validate' && !!this.worker;
+    if (!reuse) this.worker?.terminate();
     this.error.set('');
     this.busy.set(true);
-    const worker = new Worker(new URL('../../engine/analysis.worker', import.meta.url), {
-      type: 'module',
-    });
+    const worker = reuse ? this.worker! : new Worker(new URL('../../engine/analysis.worker', import.meta.url), { type: 'module' });
     this.worker = worker;
+    if (request.kind === 'validate') {
+      if (!reuse) this.session++;
+      this.generation++;
+      request = { ...request, session: this.session, generation: this.generation, ...(reuse ? { data: undefined } : {}) };
+      this.validationId = request.id;
+      this.issues.set(undefined);
+      this.analysisRevision.update(value => value + 1);
+    }
     const generation = this.generation;
     worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
-      if (worker !== this.worker || data.id !== request.id || generation !== this.generation) return;
+      if (worker !== this.worker || generation !== this.generation) return;
+      const pending = this.preparation;
+      if (pending && data.id === pending.id) {
+        if (!('session' in data) || data.session !== this.session || data.generation !== this.generation) return;
+        if (data.kind === 'error') { pending.reject(new Error(data.message)); this.preparation = undefined; }
+        else if (data.kind === 'prepared' && data.offset === pending.offset && data.rows.length > 0 && data.rows.length <= 256) {
+          pending.rows.push(...data.rows);
+          pending.offset += data.rows.length;
+          if (data.done) { this.preparation = undefined; pending.resolve(pending.rows); }
+          else { pending.id = ++this.messageId; this.requestPreparation(); }
+        }
+        return;
+      }
+      if (data.id !== request.id || (data.kind === 'result' && (data.session !== this.session || data.generation !== this.generation || data.id !== this.validationId))) return;
       this.busy.set(false);
-      worker.terminate();
-      this.worker = undefined;
+      if (data.kind !== 'result') { worker.terminate(); this.worker = undefined; }
       if (data.kind === 'error') this.error.set(data.message);
       else if (data.kind === 'sheets') {
         this.sheets.set(data.sheets);
@@ -225,7 +275,8 @@ export class ImportWorkbench implements OnDestroy {
       } else if (data.kind === 'parsed') {
         this.data.set(data.data);
         this.step.set(1);
-      } else {
+      } else if (data.kind === 'result') {
+        this.duplicates.set(data.duplicates);
         this.issues.set(data.issues);
         this.changes.set(data.changes);
         this.step.set(this.resultStep);
@@ -234,6 +285,9 @@ export class ImportWorkbench implements OnDestroy {
     worker.onerror = () => {
       if (worker === this.worker && generation === this.generation) {
         this.busy.set(false);
+        this.preparation?.reject(new Error('No se pudo preparar la importación. Los originales se conservan.'));
+        this.preparation = undefined;
+        this.issues.set(undefined);
         this.error.set(
           'El proceso local no pudo analizar este archivo. Pruebe con un CSV más pequeño.',
         );
@@ -289,6 +343,8 @@ export class ImportWorkbench implements OnDestroy {
     this.dispatch({
       id: ++this.messageId,
       kind: 'validate',
+      session: this.session,
+      generation: this.generation,
       data,
       mapping: this.mapping(),
       configuration: this.configuration(),

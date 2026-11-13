@@ -34,7 +34,7 @@
       <summary>Formatos, límites y privacidad</summary>
       <p>CSV (UTF-8 separado por comas) o XLSX. Hasta 10 MiB, 50.000 filas de datos y 500 columnas.
         Una fila de encabezados con nombres únicos y no vacíos.</p>
-      <p>Los archivos se analizan en un Web Worker dedicado del navegador. No se envía nada al servidor.</p>
+      <p>Los archivos se analizan en un Web Worker dedicado del navegador. No se envían registros durante el análisis. Solo una confirmación explícita en Finalizar permite guardarlos en PostgreSQL.</p>
     </details>
     <label class="file-picker"
       >Archivo de la colección<input
@@ -59,7 +59,7 @@
     <strong>{{ file()?.name }}</strong
     ><span>{{ dataset.rows.length }} registros</span
     ><span>{{ dataset.headers.length }} columnas</span
-    ><button (click)="cancel(); visit(0)">Cambiar archivo</button>
+    ><button [disabled]="importLocked()" (click)="cancel(); visit(0)">Cambiar archivo</button>
   </div>
   @switch (step()) {
     @case (1) {
@@ -272,8 +272,15 @@
         <p-button label="Finalizar" [disabled]="!canVisit(5) || busy()" (onClick)="visit(5)" />
       </div>
     }
-    @case (5) {
-      <section class="wizard-final" aria-label="Finalizar"></section>
-    }
+  }
+  @if (context(); as selectedContext) {
+    <div [hidden]="step() !== 5">
+      <app-import-confirmation [active]="step() === 5" [ready]="importReady()" [analysisRevision]="analysisRevision()"
+        [rowCount]="dataset.rows.length" [headers]="dataset.headers" [mapping]="mapping()"
+        [context]="selectedContext" [configurationRevision]="configuration().revision" [catalogVersion]="catalogVersion()"
+        [issues]="issues() ?? []" [duplicates]="duplicates()" [prepare]="prepareImport"
+        (locked)="importLocked.set($event)" (refreshMetadata)="invalidate(); refreshMetadata.emit(); step.set(2)"
+        (cancelPreparation)="cancel(); step.set(2)" />
+    </div>
   }
 }

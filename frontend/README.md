@@ -1,6 +1,6 @@
 # Área de trabajo de las colecciones del museo
 
-Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten revisar archivos locales. La API almacena exclusivamente metadatos de catálogo y configuración global de validación. Los archivos, nombres de archivo, celdas y registros biológicos no se envían al servidor.
+Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten revisar archivos locales y gestionar colecciones persistidas. Analizar y normalizar siguen siendo locales. Solo la confirmación explícita de Finalizar o Guardar envía registros al servidor local, incluidos originales y procedencia; nunca se envían archivos ni nombres de archivo. No hay autenticación: usar exclusivamente un entorno localhost confiable.
 
 ## Ejecución
 
@@ -51,13 +51,13 @@ npm run build
 
 `npm run lint` ejecuta ESLint directamente (no `ng lint`) sobre `src/**/*.ts` y `src/**/*.html`, incluidas las pruebas y plantillas inline de componentes. `eslint.config.mjs` usa flat config con las reglas recomendadas de ESLint, typescript-eslint y Angular ESLint, sin reglas de formato ni análisis que requiera información de tipos. Cualquier error o advertencia hace fallar el comando. Se ignoran `node_modules`, `dist`, `.angular`, `.cache` y `coverage`; los scripts JavaScript y estilos no forman parte de este lint. Prettier se mantiene separado para formato.
 
-El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx procesa `nginx.conf` mediante el directorio oficial de plantillas, sin hooks/ENTRYPOINT propios. `NGINX_ENVSUBST_FILTER=^BACKEND_PORT$` sustituye solo ese puerto (default 8080; Compose lo toma de `SERVER_PORT`), preservando `$uri` y las variables Nginx. Reenvía `/api` y `/api/...` a `backend`, sin quitar prefijo ni convertir errores en HTML; Host/Origin se alinean con el upstream y la espera de lectura es 300 s para TDWG. Sirve archivos y conserva fallback a `index.html` para `/analisis`, `/fuentes-de-registros` y `/catalogo`. No genera configuración runtime del cliente. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
+El Dockerfile multietapa instala dependencias en `base`, ejecuta CLI en `development` y compila en `build`. La última etapa `production`, seleccionada por defecto sin `build.target`, usa `nginx:1.28-alpine` y copia desde build `dist/frontend/browser` y el archivo hermano `3rdpartylicenses.txt`, disponible en `/usr/share/nginx/html/3rdpartylicenses.txt`. Nginx procesa `nginx.conf` mediante el directorio oficial de plantillas, sin hooks/ENTRYPOINT propios. `NGINX_ENVSUBST_FILTER=^BACKEND_PORT$` sustituye solo ese puerto (default 8080; Compose lo toma de `SERVER_PORT`), preservando `$uri` y las variables Nginx. Reenvía `/api` y `/api/...` a `backend`, sin quitar prefijo ni convertir errores en HTML; Host/Origin se alinean con el upstream y la espera de lectura es 300 s para TDWG. Sirve archivos y conserva fallback a `index.html` para `/analisis`, `/fuentes-de-registros`, `/catalogo` y `/collections` (incluidos sus detalles). No genera configuración runtime del cliente. Producción publica solo `127.0.0.1:${FRONTEND_HTTP_PORT:-8081}`. El healthcheck usa wget y el inicio depende del backend saludable. El contexto permite fuentes y manifiestos, pero excluye dotenv, artefactos host y `node_modules`.
 
 El MVP requiere un entorno local confiable: no implementa ni simula autenticación. OIDC/Keycloak es trabajo futuro.
 
 ## Navegación
 
-`/analisis`, `/fuentes-de-registros` y `/catalogo` son rutas directas con título y
+`/analisis`, `/fuentes-de-registros`, `/catalogo`, `/collections` y `/collections/:id` son rutas directas con título y
 enlace activo accesible. `/` y las rutas desconocidas redirigen a `/analisis`.
 Atrás/adelante usa el router; los seis pasos siguen siendo navegación local.
 Un único layout mantiene el importador, archivo y workers al cambiar de sección.
@@ -72,7 +72,7 @@ protección nativa. No hay guardas de autenticación.
 3. **Mapear columnas**: nombres exactos reconocidos sin cambios; sugerencias nunca automáticas. El selector DwC compartido permite texto libre, flechas/Enter, limpieza y deshabilitación. Limpiar retira la asignación explícita, no la columna ni el reconocimiento implícito del encabezado original. Los destinos deben ser únicos. Pulsar **Validar localmente** para diagnosticar los valores originales en el worker.
 4. **Diagnóstico**: resumen por campo obligatorio con registros sin datos sobre el total. Distingue **Columna ausente** de **Valores vacíos**; cada fila se cuenta una vez por campo. Diez vacíos de `subfamily` entre doce registros muestran **10 de 12**. No se inventan ubicaciones para columnas ausentes.
 5. **Normalizar**: empieza en **Con cambios**; **Todos** permite consultar el conjunto completo por páginas de 10/25/50/100 y ventanas de hasta 50 columnas. Seis reglas siempre activas, sin interruptores, normalizan espacios exteriores, NULL/N/A como vacíos (sin distinguir mayúsculas), fechas, coordenadas y números, y comprueban duplicados. Este pedido explícito sustituye el opt-in anterior solo en Normalizar y Aplicar; el primer diagnóstico sigue siendo literal. **Formatos y reglas**, cerrado inicialmente, contiene los selects nativos y ayuda para fechas ambiguas y comas decimales, que requieren elección explícita; ver [reglas y cobertura](NORMALIZATION.md). Cada cambio parte del original y muestra el nombre de la regla. Hover, foco o activación/toque abre el original exacto; Escape o **Cerrar original** cierra sin reabrir al devolver foco. Flechas recorren celdas y Tab sale hacia la paginación. **Ocultar columnas sin datos** es solo presentación, incluida la restauración cuando todas quedan ocultas. **Duplicados**, cerrado inicialmente, resume globalmente ambos criterios y permite consultar grupos y filas físicas; pueden solaparse y nunca eliminan registros. **Aplicar normalización y validar** es explícito y se habilita solo con preview vigente sin error. Cambiar opciones invalida el diagnóstico, no aplica automáticamente. Los originales no cambian.
-6. **Finalizar**: vacío por ahora; no guarda ni envía registros.
+6. **Finalizar**: resumen, destino nuevo o existente y confirmación explícita de envío. El servidor revalida el lote completo: errores y duplicados bloquean; las advertencias requieren consentimiento. Un recibo enlaza al detalle de la colección. Ante respuesta perdida se conserva la misma confirmación idempotente, no se crea otra importación.
 
 La vista **Con cambios** considera todas las columnas fuente, incluidas ocultas/fuera de ventana; un aviso de duplicado sin cambio literal no añade filas. **Sin cambios** mantiene los avisos globales y **Mostrar todos**, cuyo foco pasa al botón Todos persistente. Cambiar vista reinicia página sin recalcular ni invalidar diagnóstico. Los conteos/rango describen la ventana confirmada (`0–0 de 0` si vacía); durante una petición se conservan filas y conteos anteriores con aviso de carga, nunca se renombran como la vista solicitada. Columnas vacías y duplicados usan siempre el dataset completo. Un cambio de formato conserva la vista elegida; un archivo/hoja/mapeo nuevo vuelve a Con cambios. Los valores de tabla son literales planos; el detalle exacto concentra la representación de espacios.
 
@@ -124,7 +124,25 @@ El administrador maestro-detalle muestra los cinco tipos de fuente con sus recue
 
 Son semillas del servidor según el pedido, no defaults productivos del cliente ni una interpretación alternativa del vocabulario TDWG. Los perfiles y sus ciclos de publicación/duplicación se retiran; el retiro de sus datos almacenados corresponde a la migración backend autorizada. No se ofrece consulta de historial legado.
 
-### API: solo metadatos
+## Colecciones persistidas
+
+`/collections` lista metadatos por páginas de 25/50 y `/collections/:id` abre una hoja con todos los campos efectivos de la página visible, alineados por cada esquema fuente. El orden del servidor es UUID. La unión de campos de la página se recorre en ventanas de 25 columnas para acotar el DOM incluso con esquemas heterogéneos. **Activos / Papelera / Todos**, paginación de filas/columnas y desplazamiento horizontal permiten consultar todos los registros y columnas, también en móvil; no se descarga la colección completa. Los registros no entran en Query, solo los metadatos.
+
+**Ver / editar** consulta el registro completo: todos los valores se guardan aunque Buscar campos oculte parte del formulario. Originales, cabeceras, asignaciones y fila de origen son de solo lectura. Se preservan espacios, saltos, ceros y case; no hay fórmulas, pegado masivo, normalización ni guardado automáticos. **Agregar registro** comienza con los obligatorios actuales, permite un esquema de un registro de la página o de papelera y campos DwC/libres mediante el selector compartido. Esas opciones no representan todos los esquemas: pagine en Todos/Papelera para elegir otros.
+
+Cada Guardar envía las revisiones de colección/configuración/catálogo y consentimiento de advertencias. Las incidencias del servidor muestran campo, fila y severidad. Los errores bloquean ese borrador hasta corregir valores; las advertencias exigen marcar su confirmación. Conflictos conservan el borrador y requieren **Actualizar y reanalizar borrador** y un nuevo Guardar explícito: no se sobreescribe silenciosamente. Si actualizar falla, las entradas permanecen.
+
+**Retirar** requiere confirmación y solo mueve a papelera; **Restaurar** vuelve a validar y puede rechazar duplicados activos. No se borran colecciones ni registros definitivamente. Escape/Cancelar vuelven al disparador; salir con cambios pide confirmación y beforeunload protege el cierre.
+
+Un alta manual no es idempotente: un resultado desconocido bloquea nuevas escrituras sin reintentar. **Actualizar para reconciliar** permite consultar las páginas del servidor manteniendo el borrador. Tras comprobar el resultado, **He comprobado los registros del servidor** descarta ese borrador incierto sin reenviarlo. No equivale a una confirmación automática de éxito o fallo.
+
+Contrato completo: [backend/COLLECTIONS_ARCHITECTURE.md](../backend/COLLECTIONS_ARCHITECTURE.md). La evidencia de T5, sus incidentes y límites se registran en [VERIFICATION.md](../VERIFICATION.md); este recorrido no afirma una auditoría exhaustiva.
+
+### API de metadatos y colecciones
+
+`CollectionsApi`, propiedad de `features/collections/data-access`, usa el HttpClient existente y `BASE_URL` para importación y CRUD bajo `/api/collections`; no pasa por `Api` de metadatos ni almacena filas en Query. Rutas y límites completos en el [contrato backend](../backend/COLLECTIONS_ARCHITECTURE.md#contrato-http).
+
+Los endpoints de metadatos siguen separados:
 
 - `GET /api/catalog`.
 - `POST /api/catalog/sync`, cuerpo completamente vacío; resultado `{outcome,status}`.
@@ -148,16 +166,17 @@ Interfaz, ayudas y errores del sistema en español; claves JSON, `ERROR`/`WARNIN
 | `features/catalog` | Catálogo y contrato `Term` |
 | `features/record-sources` | Editor global y modelos `ValidationConfiguration`, `ContextRequirements`, `Context` |
 | `features/importer/pages/import-workbench` | Navegación, generaciones, cancelación y worker |
-| `features/importer/components` | Mapeo, contexto y presentación modular de normalización |
+| `features/importer/components` | Mapeo, contexto, normalización y confirmación de importación |
 | `features/importer/engine` | Parser, normalizador, validador y exportación locales |
 | `features/importer/models` | Dataset, límites, resultados y protocolo del worker |
 | `features/*/services` | Operaciones de metadatos según su propietario de negocio |
+| `features/collections` | Contratos, cliente HttpClient, listado/hoja/editor y guardas de registros persistidos |
 | `layouts/museum-layout` | Navegación enrutada, consultas y workbench persistente |
 | `core/api`, `core/i18n` | Transporte genérico y presentación |
 | `shared/ui/dwc-picker`, `shared/design-system` | Selector, paleta única, primitivas y preset |
 | `testing` | Composición y costuras entre funcionalidades |
 
-Ver [ARCHITECTURE.md](ARCHITECTURE.md) y [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Cliente Query raíz obtenido con `inject(QueryClient)`, no el alias deprecado. HttpClient convierte `AbortSignal` en cancelación real de la única suscripción; las funciones conservan promesas para Query. Ni archivos ni análisis entran en el query cache.
+Ver [ARCHITECTURE.md](ARCHITECTURE.md) y [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Cliente Query raíz obtenido con `inject(QueryClient)`, no el alias deprecado. HttpClient convierte `AbortSignal` en cancelación real de la única suscripción; las funciones conservan promesas para Query. Ni archivos, análisis, filas ni borradores biológicos entran en el query cache; de colecciones solo se cachean metadatos. El shell obtiene la instantánea mediante estado → términos → estado con versión estable y exige reanalizar si cambia. El worker de análisis permanece vivo tras validar, con session/generation y preparación paginada para confirmar; el worker independiente de preview conserva su contrato local.
 
 ## Versiones y licencias
 

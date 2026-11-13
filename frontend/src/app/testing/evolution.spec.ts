@@ -22,6 +22,7 @@ const issues = [
   { field: 'raw', row: null, description: 'Original warning', severity: 'WARNING', context: 'system', configurationRevision: 7 },
 ];
 let requests: WorkerRequest[];
+let scrollIntoViewDescriptor: PropertyDescriptor | undefined;
 class LocalWorker {
   onmessage?: (event: MessageEvent) => void;
   terminate() {}
@@ -39,7 +40,8 @@ class LocalWorker {
     requests.push(request);
     queueMicrotask(() => this.onmessage?.({ data: request.kind === 'parse'
       ? { id: request.id, kind: 'parsed', data: { headers: ['catalog', 'raw', 'eventDate'], rows: [{ row: 2, values: ['  original  ', 'N/A', ''] }] } }
-      : { id: request.id, kind: 'result', changes: [], issues } } as MessageEvent));
+      : { id: request.id, session: request.session, generation: request.generation, kind: 'result', changes: [], issues,
+        duplicates: { equalRows: { groups: 0, affectedRows: 0 }, occurrenceIds: { groups: 0, affectedRows: 0 } } } } as MessageEvent));
   }
 }
 const button = (root: ParentNode, name: string) => {
@@ -80,12 +82,20 @@ async function workbench() {
 
 describe('Evolución de los controles públicos', () => {
   beforeEach(() => {
+    // jsdom no implementa el desplazamiento que PrimeNG invoca al abrir el selector.
+    scrollIntoViewDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: vi.fn() });
     requests = [];
     vi.stubGlobal('Worker', LocalWorker);
     vi.stubGlobal('matchMedia', (media: string) => ({ matches: false, media, addEventListener() {}, removeEventListener() {} }));
     TestBed.configureTestingModule({ providers: [provideTanStackQuery(new QueryClient()), { provide: CatalogMetadata, useValue: {} }] });
   });
-  afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    if (scrollIntoViewDescriptor) Object.defineProperty(Element.prototype, 'scrollIntoView', scrollIntoViewDescriptor);
+    else Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+    vi.unstubAllGlobals();
+  });
 
   it('oculta paginadores innecesarios en normalización y diagnóstico sin cambiar el resultado completo', async () => {
     const f = await workbench();

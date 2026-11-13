@@ -1,6 +1,6 @@
 # Motor de normalización local
 
-La normalización crea una copia reversible **desde el original**, nunca desde la copia anterior. No envía datos al servidor. Esta documentación cubre el motor; los controles y su aceptación visual corresponden a la integración del workbench.
+La normalización crea una copia reversible **desde el original**, nunca desde la copia anterior. El análisis, preview y Aplicar no envían datos al servidor. **Finalizar → Confirmar e importar** es una acción diferente: con consentimiento explícito envía originales, valores de trabajo, cabeceras y asignaciones para persistir registros en PostgreSQL; nunca el archivo ni su nombre. Esta documentación cubre el motor y esa frontera; no acredita aceptación visual en navegador.
 
 ## Uso y compatibilidad
 
@@ -48,7 +48,7 @@ Autoridad: [TDWG Darwin Core](https://dwc.tdwg.org/list/), alcance investigado e
 
 ## Preview persistente para el consumidor T3
 
-Contrato tipado: `models/normalization-preview.ts`; worker: `engine/normalization-preview.worker.ts`. Es **independiente** del worker efímero `analysis.worker.ts`, cuyo protocolo parse/validate no cambia.
+Contrato tipado: `models/normalization-preview.ts`; worker: `engine/normalization-preview.worker.ts`. Es **independiente** de `analysis.worker.ts`: parse sigue siendo efímero, mientras el análisis validado ahora conserva originales y valores efectivos para preparar una confirmación sin recalcular ni aplicar reglas implícitas.
 
 1. Crear un worker módulo relativo al workbench y enviar `preview-init` con original, mapping, opciones y ventana. El clon recibido por postMessage se conserva una vez en el worker. Cambiar archivo/hoja/mapeo exige nueva sesión; terminar el worker anterior al descartar el workbench.
 2. Cada cambio de opciones envía `preview-update` sin dataset/mapping, con generación creciente. Toda actualización parte del original cacheado. Un cálculo nuevo sustituye al pendiente; no se publica una respuesta del cálculo sustituido.
@@ -59,7 +59,7 @@ Contrato tipado: `models/normalization-preview.ts`; worker: `engine/normalizatio
 
 Cambiar filtro reinicia offset en el consumidor y solo envía `preview-page`, sin originales, opciones ni generación nueva. El consumidor correlaciona id/sesión/generación y filtro confirmado; mientras espera no debe etiquetar la página anterior con el filtro solicitado. Los filtros inválidos se rechazan antes de modificar estado. Los duplicados y metadatos de columnas siempre describen TODAS las filas normalizadas, aunque changed esté vacío.
 
-El cálculo usa un generador compartido y tareas de event loop entre lotes acotados (no solo microtasks). Almacena valores, máscaras compactas por fila cambiada y conteos; comparte filas sin cambios. Cachea posiciones fuente de filas con algún `after !== before` en el mismo bucle existente, incluyendo columnas ocultas/no mapeadas/fuera de ventana. Un aviso de duplicado sin cambio literal no incluye la fila. Leer páginas selecciona esas posiciones sin reescanear ni recalcular; `sourceRow` sigue siendo la identidad física original. El índice completo nunca cruza al hilo principal. Solo materializa `PreviewCell` para la ventana. El snapshot completo nunca cruza postMessage ni va a Query/cache. El helper síncrono `buildNormalizationPreview` es para pequeños consumidores puros/pruebas; no llamarlo desde la UI para datasets grandes.
+El cálculo usa un generador compartido y tareas de event loop entre lotes acotados (no solo microtasks). Almacena valores, máscaras compactas por fila cambiada y conteos; comparte filas sin cambios. Cachea posiciones fuente de filas con algún `after !== before` en el mismo bucle existente, incluyendo columnas ocultas/no mapeadas/fuera de ventana. Un aviso de duplicado sin cambio literal no incluye la fila. Leer páginas selecciona esas posiciones sin reescanear ni recalcular; `sourceRow` sigue siendo la identidad física original. El índice completo nunca cruza al hilo principal. Solo materializa `PreviewCell` para la ventana. El snapshot completo de preview nunca cruza postMessage ni va a Query/cache. El helper síncrono `buildNormalizationPreview` es para pequeños consumidores puros/pruebas; no llamarlo desde la UI para datasets grandes.
 
 ## Duplicados y Aplicar
 
@@ -69,4 +69,20 @@ El cálculo usa un generador compartido y tareas de event loop entre lotes acota
 - `enabled: false` significa no comprobado. `occurrenceIdColumnIndex: null` permite informar «Sin occurrenceID mapeado; se comprobaron las filas completas» sin desactivar el criterio de fila.
 - Aplicar usa el mismo detector y añade WARNING por miembro/criterio con tamaño y primera fila, no listas gigantes repetidas. Conserva claves y límite `LIMITS.issues` del informe JSON/CSV; superar100.000 produce el mismo error existente, no un resultado parcial. Los informes siguen siendo diagnósticos, no exportaciones biológicas.
 
-La integración debe conservar **todas** las opciones en diagnosticOptions, capturar mapping/contexto/revisión al aplicar y mantener separadas las invalidaciones de preview y diagnóstico. No ejecutar validación automáticamente al elegir formatos ni al ocultar columnas. La gestión de busy, foco, detalle original y errores del navegador pertenece a T3/T4.
+La integración debe conservar **todas** las opciones en diagnosticOptions, capturar mapping/contexto/revisión al aplicar y mantener separadas las invalidaciones de preview y diagnóstico. No ejecutar validación automáticamente al elegir formatos ni al ocultar columnas. La gestión de busy, foco, detalle original y errores del navegador pertenece al workbench.
+
+## Finalizar: confirmación y preparación local (T3)
+
+Finalizar resume registros, columnas, errores, advertencias y ambos criterios de duplicados del **análisis vigente**, no de la vista previa. Los duplicados siguen siendo avisos no destructivos en diagnóstico, pero bloquean la persistencia del lote completo, igual que cualquier ERROR. Las advertencias restantes requieren su propia casilla de consentimiento. La autorización de salida y almacenamiento en PostgreSQL es independiente. No se transmiten filas al navegar, elegir formatos, paginar ni abrir Finalizar.
+
+Se puede nombrar una colección nueva sin recortar su nombre o elegir una existente por páginas de 50; solo son seleccionables las del mismo contexto. Se captura su revisión para la escritura. El servidor vuelve a validar y rechaza todo el lote ante errores o duplicados internos/activos en esa colección; el cliente no los omite ni promete aceptación anticipada. La API y los errores exactos están en [COLLECTIONS_ARCHITECTURE.md](../backend/COLLECTIONS_ARCHITECTURE.md).
+
+El shell conserva las consultas de metadatos. Su instantánea versionada lee estado → términos → estado y rechaza versiones distintas. Una nueva versión/configuración/disponibilidad invalida el diagnóstico y exige validación nueva. `catalog()` conserva su API anterior. Solo los metadatos se almacenan en el QueryClient raíz; los contratos y `CollectionsApi` pertenecen a `features/collections`, y las lecturas/escrituras biológicas **no usan Query**.
+
+`models/worker-protocol.ts` añade sesión/generación a validate y prepare. El primer validate entrega originales; validaciones explícitas siguientes reutilizan ese worker y mandan solo opciones/metadatos. Cada cálculo parte de originales inmutables. Invalidar termina el worker y rechaza preparaciones pendientes; cambiar archivo/mapeo crea otra sesión. Preparar solo se solicita después de Confirmar, mediante ventanas pull de hasta 256 filas y presupuesto de 256 Ki unidades UTF-16, salvo una fila individual indivisible. Se conservan `sourceRow`, orden de cabeceras, mapping, originales y valores efectivos del último análisis. Antes de HTTP se comprueban los límites por campo, texto persistible, 20 Mi unidades UTF-16 acumuladas y 32 MiB del JSON real: nunca truncamiento ni coerción.
+
+Con diagnóstico crudo se envían valores crudos, aunque se haya visitado Normalizar. Solo **Aplicar normalización y validar** cambia los valores enviados. La preparación verifica worker/id/sesión/generación y se descarta si cambió el análisis; cancelar preparación no envía nada. No se clona el dataset por toggles de presentación.
+
+Cada confirmación usa un UUID. Preparación/envío impiden doble clic y cambios de destino. Una respuesta perdida o error incierto conserva exactamente cuerpo/UUID; **Reintentar la misma confirmación** es explícito y no genera otra clave. No se afirma rollback ante incertidumbre. Un rechazo conocido permite otra confirmación; cambios de configuración, catálogo o revisión requieren actualizar y reanalizar, sin sobrescribir guardas del servidor. El error público `503 AUTHORITY_UNAVAILABLE` también es un rechazo sin efectos y exige actualizar los metadatos; un 503 sin ese código conserva la clasificación incierta y el mismo cuerpo/UUID para reintentar. El recibo confirmado muestra insertados/revisión y enlaza `/collections/{collectionId}`; las vistas y rutas de gestión corresponden a T4, todavía no implementadas aquí.
+
+Pruebas DOM/worker/HTTP no sustituyen la aceptación de escritorio/móvil, foco y navegación con navegador real de T5.

@@ -1,8 +1,8 @@
 # Gestión y validación de registros biológicos del museo
 
-Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Permite analizar archivos CSV/XLSX **en el navegador**, validarlos según una configuración global editable por contexto y descargar diagnósticos sin enviar registros biológicos al servidor.
+Primer módulo para el Museo de Historia Natural de la Universidad del Cauca. Permite analizar archivos CSV/XLSX **en el navegador**, validarlos según una configuración global editable por contexto y descargar diagnósticos localmente. Solo al confirmar explícitamente **Finalizar** se envían los registros textuales para importarlos en una colección PostgreSQL nueva o existente; también pueden gestionarse después desde **Colecciones**.
 
-**MVP de desarrollo, no despliegue de producción.** La autenticación y la importación de registros al servidor no están habilitadas. Ambos servidores deben permanecer en la interfaz local. La aplicación no certifica la publicación ante SiB, la taxonomía, los permisos ni las extensiones GGBN.
+**MVP de desarrollo, no despliegue de producción.** La autenticación no está habilitada; la importación confirmada y la gestión de registros requieren un entorno localhost confiable. Ambos servidores deben permanecer en la interfaz local. La aplicación no certifica la publicación ante SiB, la taxonomía, los permisos ni las extensiones GGBN.
 
 **Licencias de interfaz:** PrimeNG **21.1.10, edición comunitaria MIT**, temas PrimeUI **2.0.3** y Angular **21.2.25** (CLI/build **21.2.27**). No se utilizan versiones comerciales/LTS ni se requiere una clave PrimeUI. La migración desde la versión 22 fue autorizada; no se ocultaron avisos ni se alteraron mecanismos de licencia. Conservar las licencias incluidas en las dependencias al redistribuir.
 
@@ -88,7 +88,7 @@ Ambos exportan `baseUrl: '/api'`; `angular.json` selecciona desarrollo con `file
 
 Angular CLI usa `frontend/proxy.conf.cjs`: en el host, `npm start` apunta a `http://localhost:8080`. Para otro puerto, ejecutar desde `frontend` `API_PROXY_TARGET=http://localhost:18080 npm start`. Es un destino servidor confiable (origen HTTP, sin `/api`), nunca una opción recibida del navegador. En Compose desarrollo se fija a `http://backend:${SERVER_PORT:-8080}`.
 
-Nginx carga `frontend/nginx.conf` como plantilla oficial `/etc/nginx/templates/default.conf.template`. Solo sustituye `BACKEND_PORT` (default 8080), entregado por Compose desde `SERVER_PORT`; no modifica el bundle. Reenvía `/api` y `/api/...` a `backend`, preservando prefijo, query, cuerpos y errores, sin convertirlos en HTML SPA. Host y Origin hacia el upstream se alinean con el destino fijo; la ruta `/api-other` no se proxifica. La espera de lectura es de 300 s para sincronización TDWG. El resto conserva fallback a `index.html` para `/analisis`, `/fuentes-de-registros` y `/catalogo`, además de las licencias.
+Nginx carga `frontend/nginx.conf` como plantilla oficial `/etc/nginx/templates/default.conf.template`. Solo sustituye `BACKEND_PORT` (default 8080), entregado por Compose desde `SERVER_PORT`; no modifica el bundle. Reenvía `/api` y `/api/...` a `backend`, preservando prefijo, query, cuerpos y errores, sin convertirlos en HTML SPA. Host y Origin hacia el upstream se alinean con el destino fijo; la ruta `/api-other` no se proxifica. La espera de lectura es de 300 s para sincronización TDWG. El resto conserva fallback a `index.html` para `/analisis`, `/fuentes-de-registros`, `/catalogo` y `/collections` (incluidos sus detalles), además de las licencias.
 
 El acceso de mismo origen no necesita ampliar CORS. Para clientes opcionales que consultan directamente la API, el backend obtiene `CORS_ALLOWED_ORIGINS` mediante el entorno explícito de Compose, resuelto desde shell o `--env-file` (precedencia normal del shell); sin definir usa el default de `application.yaml`, no una segunda lista en Compose. La lista contiene orígenes exactos (sin `/api`), sin wildcard ni credenciales. CORS no autentica usuarios ni oculta la API a clientes no navegador.
 
@@ -117,9 +117,15 @@ Cambiar CORS requiere recrear el backend: un simple `restart` no actualiza el en
    - Duplicados avisa sobre todos los registros por filas completas iguales y por `occurrenceID` no vacío repetido, sin borrar ni convertir esos avisos en cambios de valor. **Ocultar columnas sin datos** y los filtros solo cambian la vista; una fila modificada en una columna oculta sigue en Con cambios.
    - El detalle antes/después se abre al pasar el ratón, enfocar o tocar; Escape lo cierra. La tabla muestra valores literales; las marcas de espacios quedan en el detalle del original.
    - **Aplicar normalización y validar** sigue siendo explícito y permanece en Normalizar. Cambiar formatos o vistas no valida automáticamente; el primer diagnóstico usa originales. [Reglas y límites de normalización](frontend/NORMALIZATION.md).
-6. **Finalizar** queda vacío por ahora; no guarda ni envía registros.
+6. En **Finalizar**, revisar el resumen, elegir una colección nueva o existente y confirmar explícitamente el envío. Se requieren cero errores y consentimiento de advertencias; los duplicados bloquean dentro del lote y contra los registros activos de la misma colección, no entre colecciones distintas. El servidor revalida y guarda todo o nada. Ante una respuesta perdida, reintentar la misma confirmación idempotente, no crear otra importación. El recibo permite abrir la colección sin desmontar el análisis.
 
-El análisis se ejecuta en un Web Worker. La API recibe únicamente metadatos de configuración y catálogo; **no se envían nombres de archivo, celdas, filas ni contenido biológico**. Una importación futura deberá ser una operación separada, expresamente autorizada y validada nuevamente por el servidor.
+El parsing CSV/XLSX, el diagnóstico y la preview se ejecutan en Web Workers locales. **Nunca se envían binarios ni nombres de archivo.** Solo la confirmación envía a `POST /api/collections/imports` cabeceras, asignaciones y registros con valores originales y efectivos textuales. Estos últimos siguen crudos salvo que se haya pulsado **Aplicar normalización y validar**. PostgreSQL guarda filas JSONB con procedencia, no archivos en disco. Configuración y catálogo siguen siendo endpoints de metadatos, no de importación.
+
+### Consultar y gestionar colecciones
+
+En **Colecciones**, abrir una colección y recorrer sus registros paginados y ventanas de 25 columnas, incluso con esquemas fuente distintos. **Ver / editar** conserva todos los valores aunque la búsqueda oculte campos; originales y procedencia no se reescriben. **Agregar registro**, **Retirar** a papelera y **Restaurar** requieren acciones explícitas y control de revisión. No hay borrado definitivo ni eliminación de colecciones, fórmulas o pegado masivo tipo Excel. Ante un guardado manual de resultado desconocido, consultar y reconciliar con el servidor antes de volver a escribir; no reenviar a ciegas.
+
+[Recorrido y guardas de la interfaz](frontend/README.md#colecciones-persistidas) · [Contrato API, límites y transacciones](backend/COLLECTIONS_ARCHITECTURE.md).
 
 ### Idioma y conservación de datos
 
@@ -184,24 +190,24 @@ cd ../backend
 
 La auditoría de dependencias es una comprobación separada: `npm audit`. Los dos intentos descritos agotaron sus límites; no se ejecutan nuevos intentos automáticamente.
 
-Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. El reemplazo actual se especifica en `odd/tasks/global-validation.md`. Los registros históricos `odd/tasks/museum-dwc.md`, `odd/tasks/museum-evolution.md`, `odd/tasks/museum-refinement.md`, `odd/tasks/frontend-architecture.md` y `odd/tasks/backend-hexagonal.md` conservan las tareas, decisiones y evidencias del módulo inicial y de sus mejoras; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
+Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. La configuración global se especifica en `odd/tasks/global-validation.md`; la importación confirmada y las colecciones, en [collections-management.md](odd/tasks/collections-management.md). Los registros históricos `odd/tasks/museum-dwc.md`, `odd/tasks/museum-evolution.md`, `odd/tasks/museum-refinement.md`, `odd/tasks/frontend-architecture.md` y `odd/tasks/backend-hexagonal.md` conservan las tareas, decisiones y evidencias del módulo inicial y de sus mejoras; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
 
-## Arquitectura y siguiente integración
+## Arquitectura y autenticación futura
 
 ```text
 Aplicación de gestión Angular / PrimeNG
  ├─ TanStack Query → /api en servidor frontend → backend → metadatos REST de configuración global y catálogo
- └─ archivo local → Web Worker → parser → originales o copia normalizada explícitamente aplicada → motor de validación
-                                                          └─ diagnóstico → descarga local
-Spring Boot REST → configuración global transaccional → repositorio JPA → PostgreSQL
-                                    revisión + bloqueo + migraciones aditivas
+ ├─ archivo local → Web Workers → parsing / diagnóstico / preview → descarga local
+ └─ confirmación explícita / CRUD de colecciones → HttpClient → /api/collections → revalidación autoritativa
+Spring Boot REST → casos de uso transaccionales → repositorios JPA → PostgreSQL
+                    revisión + bloqueo + V5 aditiva para colecciones (V1–V4 intactas)
 ```
 
 Keycloak queda como una integración posterior, no como una pantalla de acceso simulada. Antes de exponer el sistema en una red:
 
-- Incorporar Spring Security OAuth2 Resource Server con validación de emisor, audiencia y JWT, y autorización para lectura y edición de la configuración. No confiar solo en las guardas de Angular.
-- Incorporar OIDC Authorization Code con PKCE en Angular y un único límite para agregar autorización a las solicitudes de metadatos. No guardar tokens en archivos ni diagnósticos.
+- Incorporar Spring Security OAuth2 Resource Server con validación de emisor, audiencia y JWT, y autorización para configuración, catálogo y lectura/escritura de colecciones. No confiar solo en las guardas de Angular.
+- Incorporar OIDC Authorization Code con PKCE en Angular y un único límite para agregar autorización a las solicitudes de API. No guardar tokens en archivos ni diagnósticos.
 - Incorporar identidad de auditoría y revisar CORS, estrategia CSRF, TLS, límites y control de frecuencia para el despliegue elegido.
-- Implementar la importación en un endpoint autenticado independiente: límites de archivo, tratamiento de contenido no confiable, configuración y contexto fijados, validación autoritativa en backend y persistencia transaccional. Un diagnóstico del navegador nunca debe autorizar escrituras en la base.
+- Proteger la importación y el CRUD existentes con autenticación/autorización y revisar límites y tratamiento de contenido no confiable. Conservar parsing local, configuración/contexto fijados, revalidación autoritativa y persistencia transaccional: un diagnóstico del navegador no autoriza por sí solo escrituras.
 
-El MVP no ofrece carga de archivos ni almacena registros biológicos. La edición de la configuración global no tiene autenticación y debe utilizarse **solo en localhost** hasta integrar Keycloak.
+El MVP no ofrece carga de archivos; sí almacena registros confirmados y permite su gestión. La configuración y las colecciones carecen de autenticación y deben utilizarse **solo en localhost** hasta integrar controles de acceso. Esta funcionalidad no convierte el MVP en un despliegue seguro de producción.

@@ -1,6 +1,6 @@
-# API de fuentes de registros biológicos del museo
+# API de configuración, catálogo y colecciones del museo
 
-Spring Boot **4.1.2**, Java **27**, Spring Data JPA, PostgreSQL y Flyway. Administra únicamente la configuración global de las fuentes de registros biológicos y el catálogo TDWG. El análisis CSV/XLSX y los registros biológicos permanecen en el navegador. Es un MVP local sin autenticación, no un servicio para Internet.
+Spring Boot **4.1.2**, Java **27**, Spring Data JPA, PostgreSQL y Flyway. Administra la configuración global de las fuentes de registros biológicos, el catálogo TDWG y las colecciones persistidas. El parsing CSV/XLSX, el análisis y la preview permanecen en el navegador. Solo la importación confirmada envía cabeceras, asignaciones y valores originales/efectivos textuales; el CRUD posterior gestiona esos registros. Nunca recibe binarios ni nombres de archivo. Es un MVP local sin autenticación, no un servicio para Internet.
 
 ## Ejecución local
 
@@ -40,7 +40,9 @@ CORS **no es autenticación**: clientes no navegador pueden omitir o falsificar 
 | GET | `/api/catalog/status` | sin cuerpo | 200, estado de la instantánea/intentos |
 | POST | `/api/catalog/sync` | cuerpo completamente vacío | 200, `{outcome,status}` |
 
-No hay rutas activas de perfiles, publicación, duplicación ni carga de archivos. `/api/profiles` y sus antiguas rutas devuelven 404, igual que `/api/upload`.
+La API de colecciones añade importación confirmada en `POST /api/collections/imports`, lecturas paginadas y alta/edición/papelera/restauración de registros bajo `/api/collections`. Revalida con configuración y catálogo vigentes: errores y duplicados de la misma colección bloquean, advertencias requieren consentimiento, importación atómica e idempotente. No permite borrar colecciones ni registros definitivamente. El [contrato de colecciones](COLLECTIONS_ARCHITECTURE.md) centraliza las rutas, cuerpos, errores, límites y transacciones; no usa el endpoint de configuración para datos biológicos.
+
+No hay rutas activas de perfiles, publicación, duplicación de configuración ni carga de archivos. `/api/profiles` y sus antiguas rutas devuelven 404, igual que `/api/upload`.
 
 ### Configuración completa
 
@@ -92,16 +94,17 @@ TDWG sigue siendo la única autoridad del vocabulario. Esta obligatoriedad es po
 - **V1/V2 no cambian:** conservan sus checksums en Flyway.
 - **V3** agrega `validation_configuration`, una única fila estable (`id=1`) con revisión y contextos JSONB.
 - **V4** elimina exclusivamente el trigger `immutable_published_profile`, la tabla `profiles` y la función dedicada `preserve_published_profile()`, sin `CASCADE`. Es el retiro irreversible autorizado de los datos históricos de perfiles; no elimina catálogo, configuración ni historial Flyway.
+- **V5** agrega colecciones, registros y recibos de importación, con sus índices y protección de origen. Guarda valores textuales y procedencia en JSONB, no archivos en disco; no modifica V1–V4 ni reintroduce perfiles. Detalles en [migración de colecciones](COLLECTIONS_ARCHITECTURE.md#migración-aditiva).
 
 La semilla se valida e inserta mediante JPA/HQL `on conflict (id) do nothing`. Reiniciar nunca sobrescribe una configuración editada. El bootstrap completo tiene una sola transacción; arranques concurrentes son idempotentes. La lectura usa transacción read-only y OSIV sigue deshabilitado.
 
-`optionalFields` se guarda en el JSONB existente, sin V5 ni modificación de V1–V4, tablas, columnas o semillas. Los defaults heredados siguen siendo obligatorios; su lista opcional inicial es vacía.
+`optionalFields` se guarda en el JSONB existente, sin migración propia ni modificación de V1–V4, tablas, columnas o semillas; V5 corresponde exclusivamente a colecciones. Los defaults heredados siguen siendo obligatorios; su lista opcional inicial es vacía.
 
 PUT ejecuta **lock → revisión → merge legado → validación → saveAndFlush** dentro de una única transacción que envuelve el caso de uso. El bloqueo es `PESSIMISTIC_WRITE`, no una transacción independiente por método de repositorio. La revisión es explícita, no `@Version`. MapStruct actualiza la misma entidad administrada ignorando su identidad.
 
 ## Arquitectura y generación Java
 
-[`recordsources`](RECORD_SOURCES_ARCHITECTURE.md) y [`catalog`](CATALOG_ARCHITECTURE.md) son funcionalidades independientes con núcleo `domain`/`application` Java puro, puertos propiedad de aplicación y adaptadores de infraestructura. No hay dependencias productivas cruzadas. `ConfigurationBeanConfig` y `CatalogBeanConfig` componen explícitamente los casos de uso, adaptadores y mappers. HTTP recibe únicamente el puerto decorado transaccionalmente.
+[`recordsources`](RECORD_SOURCES_ARCHITECTURE.md) y [`catalog`](CATALOG_ARCHITECTURE.md) son funcionalidades independientes con núcleo `domain`/`application` Java puro, puertos propiedad de aplicación y adaptadores de infraestructura. No hay dependencias productivas cruzadas. `ConfigurationBeanConfig` y `CatalogBeanConfig` componen explícitamente sus casos de uso, adaptadores y mappers. [`collections`](COLLECTIONS_ARCHITECTURE.md) sigue la misma frontera hexagonal, compuesta por `CollectionBeanConfig`: su adaptador de autoridad lee proyecciones JPA de configuración/catálogo sin importar tipos productivos de esos módulos ni escribir sus tablas. HTTP recibe únicamente los puertos decorados transaccionalmente.
 
 `recordsources` es el propietario Java de «Fuentes de registros biológicos», alineado con `features/record-sources` en Angular. El cambio de nombre organiza el código; no introduce CRUD de fuentes ni cambia `/api/validation-configuration`, los cinco valores de contexto, revisión, entidades, tablas, migraciones o semillas. S4 agrega únicamente `optionalFields` al contrato JSON, con compatibilidad de lectura y PUT legados descrita arriba. Los nombres `Configuration*` siguen describiendo los casos de uso de configuración; «Contexto» permanece en el análisis.
 
@@ -139,4 +142,4 @@ La evidencia ejecutada y sus limitaciones se registran en [VERIFICATION.md](../V
 
 ## Límites y futuro
 
-No hay autenticación, importación biológica en servidor ni CORS permisivo. Antes de exponer el servicio se necesitan autorización, identidad de auditoría, HTTPS, límites y roles restringidos de base. La futura autenticación debe proteger el límite HTTP; no se confía en cabeceras aportadas por el cliente. Los datos biológicos no deben agregarse al cuerpo de configuración como atajo de importación.
+Hay importación confirmada y gestión de registros, pero no autenticación ni CORS permisivo. Antes de exponer el servicio se necesitan autorización, identidad de auditoría, HTTPS, límites y roles restringidos de base. La futura autenticación debe proteger el límite HTTP; no se confía en cabeceras aportadas por el cliente. Los datos biológicos no deben agregarse al cuerpo de configuración como atajo de importación.

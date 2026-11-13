@@ -21,7 +21,7 @@ describe('Collection workspace', () => {
     TestBed.configureTestingModule({
       deferBlockBehavior: DeferBlockBehavior.Manual,
       providers: [provideRouter(routes), provideTanStackQuery(client),
-        { provide: CatalogMetadata, useValue: { catalog: async () => [] } },
+        { provide: CatalogMetadata, useValue: { catalog: async () => [], snapshot: async () => ({ terms: [], snapshotVersion: 1 }) } },
         { provide: RecordSourcesMetadata, useValue: { validationConfiguration: async () => configurationFixture([]) } }],
     });
   });

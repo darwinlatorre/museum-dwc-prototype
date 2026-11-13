@@ -26,13 +26,28 @@ export class MuseumLayout {
   readonly catalog = injectQuery(() => ({
     queryKey: ['catalog'], queryFn: ({ signal }) => this.catalogApi.catalog(signal), staleTime: 300000,
   }));
+  // Versioned metadata belongs to the shell, never to the biological data cache.
+  readonly catalogSnapshot = injectQuery(() => ({
+    queryKey: ['catalog', 'snapshot'], queryFn: ({ signal }) => this.catalogApi.snapshot(signal),
+    enabled: typeof this.catalogApi.snapshot === 'function', staleTime: 300000,
+  }));
   readonly configuration = injectQuery(() => ({
     queryKey: ['validation-configuration'],
     queryFn: ({ signal }) => this.sourcesApi.validationConfiguration(signal), staleTime: 30000,
   }));
-  readonly metadata = { terms: this.catalog.data, configuration: this.configuration.data };
+  readonly metadata = {
+    terms: this.catalog.data, configuration: this.configuration.data, snapshot: this.catalogSnapshot.data,
+    available: computed(() => !!this.configuration.data() && !!this.catalogSnapshot.data()
+      && !this.configuration.isError() && !this.catalogSnapshot.isError()
+      && !this.configuration.isFetching() && !this.catalogSnapshot.isFetching()),
+    refresh: async () => {
+      const [configuration, snapshot] = await Promise.all([this.configuration.refetch(), this.catalogSnapshot.refetch()]);
+      return configuration.isSuccess && snapshot.isSuccess;
+    },
+  };
   retry() {
     void this.catalog.refetch();
+    void this.catalogSnapshot.refetch();
     void this.configuration.refetch();
   }
 }

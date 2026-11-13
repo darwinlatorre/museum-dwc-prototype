@@ -1,0 +1,33 @@
+.collections-workspace {
+  min-width: 0;
+  max-width: 100%;
+  button, select, summary { min-height: 44px; }
+  .collection-list { list-style: none; padding: 0; }
+  .collection-list li { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1fr); gap: var(--museum-space-4); padding: var(--museum-space-4) 0; border-bottom: 1px solid var(--museum-line); }
+  .collection-link { font-weight: 600; }
+  .collection-pager { margin-block: var(--museum-space-4); }
+  .collection-sheet { max-width: 100%; max-height: 65dvh; overflow: auto; border: 1px solid var(--museum-line); border-radius: var(--museum-radius-lg); }
+  .collection-sheet:focus-visible { outline: 2px solid var(--museum-primary-700); outline-offset: 3px; }
+  table { border-collapse: separate; border-spacing: 0; min-width: 100%; width: max-content; }
+  caption { text-align: left; padding: var(--museum-space-3); }
+  th, td { text-align: left; vertical-align: top; padding: var(--museum-space-3); border-right: 1px solid var(--museum-line); border-bottom: 1px solid var(--museum-line); min-width: 12rem; max-width: 32rem; overflow-wrap: anywhere; }
+  thead th { position: sticky; top: 0; z-index: 2; background: var(--museum-table-heading); }
+  th:first-child { min-width: 7rem; max-width: 7rem; width: 7rem; }
+  thead th:first-child { left: 0; z-index: 3; }
+  tbody th { position: sticky; left: 0; z-index: 1; background: var(--museum-table-heading); }
+  td { background: var(--museum-surface); }
+  .record-id { display: block; font-weight: 400; font-size: .85rem; }
+  .record-trashed th { border-left: 4px solid var(--museum-text-muted); }
+  small { display: block; color: var(--museum-text-muted); }
+  .collection-editor { margin-block: var(--museum-space-6); border-top: 1px solid var(--museum-line); padding-top: var(--museum-space-4); }
+  fieldset { border: 0; min-width: 0; padding: 0; }
+  .collection-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--museum-space-4); margin-block: var(--museum-space-4); }
+  .collection-fields > [hidden] { display: none; }
+  textarea { width: 100%; white-space: pre-wrap; font: inherit; }
+  pre { max-width: 100%; margin: 0; padding: var(--museum-space-3); background: var(--museum-table-heading); }
+  .collection-add-field { margin-block: var(--museum-space-4); }
+  .collection-add-field app-dwc-picker { flex: 1 1 15rem; min-width: 0; }
+  .collection-consent { display: flex; align-items: center; gap: var(--museum-space-3); margin-block: var(--museum-space-4); }
+  dialog { max-width: min(40rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; border: 1px solid var(--museum-control-border); border-radius: var(--museum-radius-panel); padding: var(--museum-space-6); background: var(--museum-surface); color: var(--museum-text); }
+  @media (max-width: 800px) { .collection-list li, .collection-fields { grid-template-columns: minmax(0, 1fr); } th, td { max-width: 24rem; } }
+}

@@ -134,7 +134,7 @@ describe('analysis worker conserva protocolo y añade avisos al aplicar', () => 
     vi.stubGlobal('addEventListener', (_: string, callback: typeof listener) => { listener = callback; });
     vi.stubGlobal('postMessage', (reply: unknown) => replies.push(reply));
     await import('./analysis.worker');
-    await listener!({ data: { id: 42, kind: 'validate', data: count === 3 ? original : { headers: ['alias', 'hidden'], rows: Array.from({ length: count }, (_, i) => ({ row: i + 2, values: ['A', 'x'] })) }, mapping: { alias: 'occurrenceID' }, options: { ...options, trim: true, duplicates }, terms: ['occurrenceID', 'hidden'].map(name => ({ name, uri: name, category: 'Record', definition: name, status: 'recommended' })), configuration: configurationFixture([]), context: 'other' } } as MessageEvent);
+    await listener!({ data: { id: 42, session: 1, generation: 1, kind: 'validate', data: count === 3 ? original : { headers: ['alias', 'hidden'], rows: Array.from({ length: count }, (_, i) => ({ row: i + 2, values: ['A', 'x'] })) }, mapping: { alias: 'occurrenceID' }, options: { ...options, trim: true, duplicates }, terms: ['occurrenceID', 'hidden'].map(name => ({ name, uri: name, category: 'Record', definition: name, status: 'recommended' })), configuration: configurationFixture([]), context: 'other' } } as MessageEvent);
     return replies[0] as { kind: string; id: number; issues: { row: number; description: string; severity: string }[]; changes: unknown[]; message?: string };
   }
   it('distingue ambos criterios físicos, exporta claves vigentes sin Changes asesoras', async () => {

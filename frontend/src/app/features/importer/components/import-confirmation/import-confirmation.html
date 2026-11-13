@@ -1,0 +1,66 @@
+<section [class.wizard-final]="active()" aria-labelledby="import-summary-title">
+  <h3 id="import-summary-title">Resumen del análisis</h3>
+  <p>{{ rowCount() }} registros · {{ headers().length }} columnas · {{ errors() }} errores · {{ warnings() }} advertencias</p>
+  <p>Filas completas iguales: {{ duplicates().equalRows.groups }} grupos · {{ duplicates().equalRows.affectedRows }} registros.<br>
+    occurrenceID repetido: {{ duplicates().occurrenceIds.groups }} grupos · {{ duplicates().occurrenceIds.affectedRows }} registros.
+    Los criterios pueden solaparse; no se suman como registros únicos.</p>
+  <p>Configuración {{ configurationRevision() }} · Catálogo {{ catalogVersion() ?? 'sin versión confirmada' }}</p>
+  @if (!ready()) { <p class="notice" role="status">Necesita un análisis vigente y metadatos confirmados antes de importar.</p> }
+  @if (errors() || duplicateBlocked()) {
+    <p class="error" role="alert">Los errores y los duplicados bloquean la importación completa. Corrija los datos y vuelva a analizar.</p>
+  }
+  @if (receipt(); as result) {
+    <div class="notice" role="status">
+      <strong>Importación confirmada</strong>
+      <p>{{ result.inserted }} registros guardados · revisión {{ result.revision }}.</p>
+      <a [routerLink]="['/collections', result.collectionId]">Ver colección</a>
+    </div>
+  } @else {
+    <fieldset [disabled]="frozen()">
+      <legend>Destino de los registros</legend>
+      <button type="button" (click)="loadCollections()" [disabled]="loading()">Elegir colección existente</button>
+      @if (loading()) { <p role="status">Cargando colecciones…</p> }
+      @if (listError()) { <p class="error" role="alert">{{ listError() }}</p> }
+      <label>Colección<select aria-label="Colección de destino" [value]="destination()" (change)="destination.set(text($event))">
+        <option value="new">Crear colección nueva</option>
+        @for (collection of page()?.items ?? []; track collection.id) {
+          <option [value]="collection.id" [disabled]="collection.context !== context()">{{ collection.name }} · {{ collection.context === context() ? 'compatible' : 'otro contexto' }} · revisión {{ collection.revision }}</option>
+        }
+      </select></label>
+      @if (page(); as result) {
+        <div class="actions" aria-label="Páginas de colecciones">
+          <button type="button" [disabled]="result.page === 0 || loading()" (click)="loadCollections(result.page - 1)">Colecciones anteriores</button>
+          <span>Página {{ result.page + 1 }} · {{ result.totalElements }} colecciones</span>
+          <button type="button" [disabled]="(result.page + 1) * result.size >= result.totalElements || loading()" (click)="loadCollections(result.page + 1)">Colecciones siguientes</button>
+        </div>
+      }
+      @if (destination() === 'new') {
+        <label>Nombre de la colección<input aria-label="Nombre de la colección" [value]="name()" (input)="name.set(text($event))" maxlength="200"></label>
+      }
+      <p>Al confirmar, los registros, originales, cabeceras y asignaciones saldrán del navegador y se guardarán en tablas de PostgreSQL. No se enviará ni guardará el archivo CSV/XLSX ni su nombre.</p>
+      <label class="confirmation-consent"><input type="checkbox" [checked]="transferConsent()" (change)="transferConsent.set(checked($event))">Autorizo enviar y guardar estos registros en PostgreSQL.</label>
+      @if (warnings()) {
+        <label class="confirmation-consent"><input type="checkbox" [checked]="warningsConsent()" (change)="warningsConsent.set(checked($event))">He revisado y confirmo las advertencias del análisis.</label>
+      }
+    </fieldset>
+    <p>El servidor revalidará los datos y los duplicados de la misma colección. Todo o nada: si falla una fila, no se guarda ninguna.</p>
+    @if (message()) { <p class="error" role="alert">{{ message() }}</p> }
+    @if (serverIssues().length) {
+      <details><summary>Incidencias del servidor ({{ serverIssues().length }})</summary>
+        <ul>@for (issue of serverIssues(); track $index) { <li>{{ issue.field }} · {{ issue.row ?? 'Encabezado' }} · {{ issue.description }}</li> }</ul>
+      </details>
+    }
+    @if (status() === 'unknown') {
+      <button type="button" (click)="retry()">Reintentar la misma confirmación</button>
+    } @else {
+      <div class="actions">
+        <button type="button" [disabled]="!canConfirm()" (click)="confirm()">Confirmar e importar</button>
+        @if (needsRefresh()) { <button type="button" (click)="refresh()">Actualizar metadatos y volver a analizar</button> }
+        @if (status() === 'preparing') { <button type="button" (click)="cancel()">Cancelar preparación</button> }
+      </div>
+    }
+    @if (status() === 'preparing' || status() === 'sending') {
+      <p role="status">{{ status() === 'preparing' ? 'Preparando valores locales…' : 'Esperando confirmación del servidor… No cierre esta página.' }}</p>
+    }
+  }
+</section>

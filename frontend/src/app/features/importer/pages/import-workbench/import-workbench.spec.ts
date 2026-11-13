@@ -12,8 +12,11 @@ import type { Dataset } from '../../models/dataset';
 import type { PreviewRequest, PreviewResponse } from '../../models/normalization-preview';
 import type { WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
 import { ImportWorkbench } from './import-workbench';
+import { CollectionsApi } from '../../../collections/data-access/collections-api';
+import { CollectionApiError } from '../../../collections/models/collection';
+import { normalize } from '../../engine/normalizer';
 
-type ResponseBody<T = WorkerResponse> = T extends WorkerResponse ? Omit<T, 'id'> : never;
+type ResponseBody<T = WorkerResponse> = T extends WorkerResponse ? Omit<T, 'id' | 'session' | 'generation' | 'duplicates'> : never;
 class DelayedWorker {
   static all: DelayedWorker[] = [];
   static previewAutomatic = true;
@@ -26,11 +29,18 @@ class DelayedWorker {
   private original?: Dataset;
   private mapping: Record<string, string> = {};
   private snapshot?: PreviewSnapshot;
+  private analysis?: Extract<WorkerRequest, { kind: 'validate' }>;
+  private source?: Dataset;
   constructor() { DelayedWorker.all.push(this); }
   postMessage(request: WorkerRequest | PreviewRequest) {
     this.previewRole = request.kind.startsWith('preview-');
     this.request = request;
     this.requests.push(request);
+    if (request.kind === 'validate') { this.analysis = request; this.source = request.data ?? this.source; }
+    if (request.kind === 'prepare') queueMicrotask(() => {
+      const rows = normalize(this.source!, this.analysis!.options, this.analysis!.mapping).data.rows;
+      this.onmessage?.({ data: { ...request, kind: 'prepared', done: true, rows: rows.map((row, i) => ({ sourceRow: row.row, originalValues: this.source!.rows[i].values, values: row.values })) } } as MessageEvent<WorkerResponse>);
+    });
     if (this.previewRole && DelayedWorker.previewAutomatic) queueMicrotask(() => this.answerPreview(request as PreviewRequest));
   }
   answerPreview(request = this.request as PreviewRequest) {
@@ -46,7 +56,12 @@ class DelayedWorker {
   emitPreview(response: unknown) { this.onmessage?.({ data: response } as MessageEvent<PreviewResponse>); }
   terminate() { this.terminated = true; }
   respond(response: ResponseBody) {
-    this.onmessage?.({ data: { ...response, id: this.request.id } } as MessageEvent<WorkerResponse>);
+    const metadata = this.source && this.analysis ? buildNormalizationPreview(this.source, this.analysis.mapping, { ...this.analysis.options, duplicates: true }).metadata.duplicates : undefined;
+    const counts = (group: { groups: unknown[]; affectedRows: number } | undefined) => ({ groups: group?.groups.length ?? 0, affectedRows: group?.affectedRows ?? 0 });
+    this.onmessage?.({ data: { ...response, id: this.request.id,
+      ...('session' in this.request ? { session: this.request.session, generation: this.request.generation } : {}),
+      duplicates: { equalRows: counts(metadata?.equalRows), occurrenceIds: counts(metadata?.occurrenceIds) },
+    } } as MessageEvent<WorkerResponse>);
   }
 }
 async function setup(fields: string[] = [], data: Dataset = { headers: ['a', 'b'], rows: [{ row: 2, values: ['1', '2'] }] }) {
@@ -73,7 +88,7 @@ async function setup(fields: string[] = [], data: Dataset = { headers: ['a', 'b'
     await f.whenStable();
   };
   const respond = async () => {
-    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
+    DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.respond({ kind: 'result', issues: [], changes: [] });
     await f.whenStable();
   };
   return { f, root, button, click, chooseContext, respond };
@@ -107,7 +122,7 @@ describe('Preservación pública del análisis local', () => {
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
-  it('ordena seis pasos, exige un contexto único, valida antes de normalizar y deja Finalizar vacío', async () => {
+  it('ordena seis pasos, exige un contexto único, valida antes de normalizar y resume Finalizar sin transmitir', async () => {
     const { root, button, click, chooseContext, respond } = await setup();
     expect([...root.querySelectorAll('.steps button')].map(b => b.textContent?.replace(/^\s*\d+\s*/, '').trim())).toEqual([
       'Seleccionar archivo', 'Contexto', 'Mapear columnas', 'Diagnóstico', 'Normalizar', 'Finalizar',
@@ -127,11 +142,15 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('h3')?.textContent).toBe('Diagnóstico');
     await click('Normalizar');
     await click('Aplicar normalización y validar');
-    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
+    expect(DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
     await respond();
     expect(root.querySelector('h3')?.textContent).toBe('Normalización');
     await click('Finalizar');
-    expect(root.querySelector('.wizard-final')?.textContent?.trim()).toBe('');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('Resumen del análisis');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('1 registros');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('2 columnas');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('PostgreSQL');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('Confirmar e importar');
     expect(root.textContent).toContain('original.csv');
   });
 
@@ -291,7 +310,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelectorAll('#missing-cell-detail tbody tr')).toHaveLength(1);
     await click('Normalizar');
     await click('Aplicar normalización y validar');
-    expect(DelayedWorker.all.at(-1)!.request).toMatchObject({ kind: 'validate', data, options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true } });
+    expect(DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.request).toMatchObject({ kind: 'validate', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true } });
     await respond();
     await click('Ver diagnóstico');
     expect(root.querySelector('.missing-summary')?.textContent).toContain('4 de 4');
@@ -1059,6 +1078,134 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('app-import')).toBe(workbench);
     expect(preview.requests.filter(request => request.kind === 'preview-init')).toHaveLength(1);
     f.destroy(); expect(preview.terminated).toBe(true);
+  });
+
+  async function confirmation(data: Dataset = { headers: ['occurrenceID'], rows: [{ row: 19, values: [' 0001 '] }] }, issues: Extract<WorkerResponse, { kind: 'result' }>['issues'] = []) {
+    const api = { list: vi.fn(async (page = 0, size = 50, signal?: AbortSignal) => { signal?.throwIfAborted(); return { items: [
+      { id: 'compatible', name: 'Existente', context: 'collection', revision: 12, activeCount: 4, trashCount: 1 },
+      { id: 'incompatible', name: 'Otro contexto', context: 'permit', revision: 2, activeCount: 0, trashCount: 0 },
+    ], page, size, totalElements: 51 }; }), import: vi.fn(async (body: unknown, signal?: AbortSignal) => {
+      signal?.throwIfAborted();
+      return { idempotencyKey: (body as { idempotencyKey: string }).idempotencyKey, collectionId: 'saved', revision: 1, inserted: data.rows.length };
+    }) };
+    TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: CollectionsApi, useValue: api }] });
+    const view = await setup([], data);
+    view.f.componentRef.setInput('catalogVersion', 5); await view.f.whenStable();
+    await view.chooseContext(); await view.click('Mapear columnas'); await view.click('Validar localmente');
+    DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues, changes: [] }); await view.f.whenStable();
+    await view.click('Finalizar');
+    const text = async (label: string, value: string) => {
+      const field = view.root.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+      field.value = value; field.dispatchEvent(new Event('input')); await view.f.whenStable();
+    };
+    const consent = async (prefix: string) => {
+      const label = [...view.root.querySelectorAll('label')].find(label => label.textContent?.trim().startsWith(prefix))!;
+      label.querySelector<HTMLInputElement>('input')!.click(); await view.f.whenStable();
+    };
+    return { ...view, api, text, consent, data };
+  }
+
+  it.each([false, true])('solo transmite al confirmar; valores crudos o Apply explícito=%s con originales y procedencia exactos', async apply => {
+    const view = await confirmation();
+    const original = structuredClone(view.data);
+    expect(view.api.import).not.toHaveBeenCalled();
+    if (apply) {
+      await view.click('Normalizar'); await view.click('Aplicar normalización y validar'); await view.respond(); await view.click('Finalizar');
+    }
+    await view.text('Nombre de la colección', ' Nueva sin recortar ');
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    await view.consent('Autorizo');
+    await view.click('Confirmar e importar');
+    expect(view.api.import).toHaveBeenCalledTimes(1);
+    expect(view.api.import.mock.calls[0][0]).toEqual({ collectionId: null, name: ' Nueva sin recortar ', context: 'collection', expectedRevision: null,
+      configurationRevision: 7, catalogVersion: 5, idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/), warningsConfirmed: false,
+      headers: ['occurrenceID'], mapping: {}, rows: [{ sourceRow: 19, originalValues: [' 0001 '], values: [apply ? '0001' : ' 0001 '] }] });
+    expect(view.data).toEqual(original);
+    expect(view.root.textContent).toContain('Importación confirmada');
+    expect(view.root.querySelector('a[href="/collections/saved"]')).toBeTruthy();
+  });
+
+  it.each(['error', 'fila', 'id'])('bloquea el lote sin enviar por %s, aun con consentimiento', async rule => {
+    const data = { headers: ['occurrenceID', 'locality'], rows: [{ row: 2, values: ['ID', 'a'] }, { row: 7, values: [rule === 'error' ? 'otro' : 'ID', rule === 'fila' ? 'a' : 'b'] }] };
+    const view = await confirmation(data, rule === 'error' ? [{ field: 'locality', row: 2, severity: 'ERROR', context: 'collection', configurationRevision: 7, description: 'Error sintético' }] : []);
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    await view.click('Confirmar e importar');
+    expect(view.api.import).not.toHaveBeenCalled();
+    expect(view.root.querySelector('.wizard-final')?.textContent).toContain('bloquean la importación completa');
+  });
+
+  it('confirma advertencias por separado y elige colección compatible paginada con revisión exacta', async () => {
+    const view = await confirmation(undefined, [{ field: 'x', row: null, severity: 'WARNING', context: 'system', configurationRevision: 7, description: 'Aviso' }]);
+    await view.click('Elegir colección existente');
+    const select = view.root.querySelector<HTMLSelectElement>('[aria-label="Colección de destino"]')!;
+    expect(select.querySelector<HTMLOptionElement>('option[value=incompatible]')?.disabled).toBe(true);
+    expect(view.button('Colecciones siguientes').disabled).toBe(false);
+    select.value = 'compatible'; select.dispatchEvent(new Event('change')); await view.f.whenStable();
+    await view.consent('Autorizo'); expect(view.button('Confirmar e importar').disabled).toBe(true);
+    await view.consent('He revisado'); await view.click('Confirmar e importar');
+    expect(view.api.import.mock.calls[0][0]).toMatchObject({ collectionId: 'compatible', name: null, expectedRevision: 12, warningsConfirmed: true });
+    expect(view.api.list.mock.calls[0]).toHaveLength(3);
+  });
+
+  it('doble clic no duplica y una respuesta perdida conserva payload y UUID para reintento explícito', async () => {
+    const view = await confirmation();
+    view.api.import.mockRejectedValueOnce(new CollectionApiError({ status: 0 }, true));
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    view.button('Confirmar e importar').click(); view.button('Confirmar e importar').click(); await view.f.whenStable();
+    expect(view.api.import).toHaveBeenCalledTimes(1);
+    expect(view.root.textContent).toContain('Resultado desconocido');
+    const first = view.api.import.mock.calls[0][0];
+    await view.click('Reintentar la misma confirmación');
+    expect(view.api.import).toHaveBeenCalledTimes(2);
+    expect(view.api.import.mock.calls[1][0]).toBe(first);
+    expect(view.root.textContent).toContain('Importación confirmada');
+  });
+
+  it('rechazo conocido permite nueva confirmación con otra clave; autoridad cambiada exige refrescar y reanalizar', async () => {
+    const view = await confirmation();
+    view.api.import.mockRejectedValueOnce(new CollectionApiError({ status: 422, code: 'VALIDATION_FAILED', detail: 'Errores del servidor.' }, false));
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo'); await view.click('Confirmar e importar');
+    expect(view.root.textContent).toContain('No se guardó ninguna fila');
+    const first = view.api.import.mock.calls[0][0] as { idempotencyKey: string };
+    await view.text('Nombre de la colección', 'Otra');
+    view.api.import.mockRejectedValueOnce(new CollectionApiError({ status: 409, code: 'CATALOG_CHANGED', detail: 'El catálogo TDWG cambió; vuelva a analizar los datos.' }, false));
+    await view.click('Confirmar e importar');
+    expect((view.api.import.mock.calls[1][0] as { idempotencyKey: string }).idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    await view.click('Actualizar metadatos y volver a analizar');
+    expect(view.button('Finalizar').disabled).toBe(true);
+  });
+
+  it('invalida la confirmación cuando cambia la versión del catálogo, sin transmisión automática', async () => {
+    const view = await confirmation();
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    view.f.componentRef.setInput('catalogVersion', 6); await view.f.whenStable();
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    expect(view.api.import).not.toHaveBeenCalled();
+  });
+
+  it('una nueva generación requiere consentimiento nuevo; no reutiliza la autorización de advertencias', async () => {
+    const view = await confirmation();
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    await view.click('Mapear columnas'); await view.click('Validar localmente'); await view.respond(); await view.click('Finalizar');
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    expect(view.root.querySelector<HTMLInputElement>('.confirmation-consent input')?.checked).toBe(false);
+    expect(view.api.import).not.toHaveBeenCalled();
+  });
+
+  it('rechaza límites de texto antes de HTTP, sin truncar ni alterar originales', async () => {
+    const source = { headers: ['scientificName'], rows: [{ row: 19, values: ['a'.repeat(100001)] }] };
+    const view = await confirmation(source);
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo'); await view.click('Confirmar e importar');
+    expect(view.api.import).not.toHaveBeenCalled();
+    expect(view.root.textContent).toContain('texto no admitido'); expect(source.rows[0].values[0]).toHaveLength(100001);
+  });
+
+  it('pagina colecciones por solicitud pública sin enviar filas y conserva el control nativo', async () => {
+    const view = await confirmation(); await view.click('Elegir colección existente'); await view.click('Colecciones siguientes');
+    expect(view.api.list.mock.calls.map(call => call[0])).toEqual([0, 1]);
+    expect(view.api.import).not.toHaveBeenCalled();
   });
 
   it('explains which workbook sheet to analyze and reads the selected sheet locally', async () => {
