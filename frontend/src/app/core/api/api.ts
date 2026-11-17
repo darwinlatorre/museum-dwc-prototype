@@ -9,13 +9,15 @@ export const BASE_URL = new InjectionToken<string>('baseUrl', {
 
 function apiError(error: unknown): Error {
   if (!(error instanceof HttpErrorResponse) || error.status === 0) {
-    return new Error('No se pudo conectar con el servidor. Actualice los datos antes de volver a intentarlo.');
+    return new Error('No pudimos cargar o guardar los datos. Revise su conexión y actualice los datos antes de volver a intentarlo.');
   }
   const body: unknown = error.error;
   const problem = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const text = [problem['detail'], problem['title'], typeof body === 'string' ? body : undefined]
     .find((value): value is string => typeof value === 'string' && value.trim().length > 0);
-  return new Error(`API ${error.status}: ${text?.slice(0, 500) || 'Error del servidor'}. No se guardaron los cambios. Actualice los datos antes de volver a intentarlo.`);
+  return Object.assign(new Error(`No se pudo completar la solicitud: ${text?.slice(0, 500) || 'Inténtelo de nuevo más tarde'}. Actualice los datos antes de volver a intentarlo.`), {
+    status: error.status, code: problem['code'],
+  });
 }
 
 /** Metadata only: this service deliberately has no upload method. */

@@ -12,7 +12,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideRouter(routes),
     provideTanStackQuery(
-      new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } }),
+      new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } }),
     ),
     providePrimeNG({
       translation: spanish,

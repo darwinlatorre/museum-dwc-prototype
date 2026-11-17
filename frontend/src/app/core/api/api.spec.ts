@@ -45,22 +45,33 @@ describe('HTTP de metadatos', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(['catalog'], ['anterior']);
     const pending = client.fetchQuery({ queryKey: ['catalog'], queryFn: () => catalog.catalog() });
-    const check = expect(pending).rejects.toThrow(new Error(`API ${status}: ${'x'.repeat(500)}. No se guardaron los cambios. Actualice los datos antes de volver a intentarlo.`));
+    const check = expect(pending).rejects.toMatchObject({ status, message: `No se pudo completar la solicitud: ${'x'.repeat(500)}. Actualice los datos antes de volver a intentarlo.` });
     http.expectOne('https://api.example.test/api/catalog').flush({ detail: 'x'.repeat(600), title: 'Título' }, { status, statusText: 'Error' });
     await check; expect(client.getQueryData(['catalog'])).toEqual(['anterior']); client.clear();
   });
 
   it.each([{ title: 'Conflicto' }, { arbitrary: {} }, 'texto plano', { detail: '  ', title: 'Título' }])('no convierte errores en [object Object]: %j', async body => {
-    const text = typeof body === 'string' ? body : 'title' in body ? body.title : 'Error del servidor';
-    const pending = catalog.catalog(); const check = expect(pending).rejects.toThrow(new Error(
-      `API 500: ${text}. No se guardaron los cambios. Actualice los datos antes de volver a intentarlo.`));
+    const text = typeof body === 'string' ? body : 'title' in body ? body.title : 'Inténtelo de nuevo más tarde';
+    const pending = catalog.catalog(); const check = expect(pending).rejects.toMatchObject({ status: 500,
+      message: `No se pudo completar la solicitud: ${text}. Actualice los datos antes de volver a intentarlo.` });
     http.expectOne('https://api.example.test/api/catalog').flush(body, { status: 500, statusText: 'Error' }); await check;
   });
 
   it('informa fallo de red sin serializar objetos', async () => {
     const pending = catalog.catalog(); const check = expect(pending).rejects.toThrow(new Error(
-      'No se pudo conectar con el servidor. Actualice los datos antes de volver a intentarlo.'));
+      'No pudimos cargar o guardar los datos. Revise su conexión y actualice los datos antes de volver a intentarlo.'));
     http.expectOne('https://api.example.test/api/catalog').error(new ProgressEvent('error')); await check;
+  });
+
+  it('conserva el código del error sin mostrar jerga ni afirmar un guardado fallido con resultado incierto', async () => {
+    const pending = sources.updateValidationConfiguration(configurationFixture([]));
+    const checked = expect(pending).rejects.toMatchObject({
+      message: 'No se pudo completar la solicitud: Revise eventDate. Actualice los datos antes de volver a intentarlo.',
+      code: 'INVALID_CONFIGURATION', status: 400,
+    });
+    http.expectOne('https://api.example.test/api/validation-configuration').flush(
+      { code: 'INVALID_CONFIGURATION', detail: 'Revise eventDate' }, { status: 400, statusText: 'Bad Request' });
+    await checked;
   });
 
   it('no inicia HTTP con señal ya cancelada', async () => {
@@ -94,7 +105,7 @@ describe('HTTP de metadatos', () => {
   it.each([true, false])('retira listener al terminar (éxito=%s)', async success => {
     const controller = new AbortController(); const remove = vi.spyOn(controller.signal, 'removeEventListener');
     const pending = catalog.catalog(controller.signal);
-    const checked = success ? expect(pending).resolves.toEqual([]) : expect(pending).rejects.toThrow('API 409');
+    const checked = success ? expect(pending).resolves.toEqual([]) : expect(pending).rejects.toThrow('No se pudo completar la solicitud');
     const request = http.expectOne('https://api.example.test/api/catalog');
     if (success) request.flush([]); else request.flush({}, { status: 409, statusText: 'Conflict' });
     await checked; expect(remove).toHaveBeenCalledTimes(1);

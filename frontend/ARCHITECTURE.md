@@ -41,6 +41,13 @@ confirmación. Cancelar conserva URL, vista y entrada; aceptar destruye el edito
 y descarta ese borrador. La protección beforeunload pertenece al propio editor.
 
 `app.config.ts` compone explícitamente HttpClient y un solo cliente Query.
+Las consultas fallidas no se reintentan automáticamente: una nueva lectura requiere
+una acción explícita o la invalidación prevista por el flujo. Las mutaciones conservan
+su política sin reenvíos automáticos. Los consumidores de una misma clave comparten
+la solicitud en curso y su cancelación mediante AbortSignal.
+Los errores de transporte muestran una explicación sin jerga, conservan los detalles
+de validación y exponen `status`/`code` por separado; no afirman que una escritura
+incierta no se haya guardado.
 No hay caché de `httpResource`: el navegador usa `/api` de mismo origen.
 `src/environments/environment.ts` y `environment.development.ts` fijan esa base
 para normal/development; se conserva `fileReplacements`. Cambiar la base requiere
@@ -65,7 +72,7 @@ El motor no importa transporte ni vistas: parsing, análisis y preview son local
   `new URL('../../engine/analysis.worker', import.meta.url)`; Angular debe empaquetarlo
   como módulo independiente. Tras validar, el worker permanece vivo con originales y valores efectivos, session/generation y preparación paginada `prepare` para la confirmación; las páginas están acotadas por filas y texto. Invalidar/cancelar termina esa sesión y descarta respuestas obsoletas. El diagnóstico sigue crudo salvo Aplicar explícito; preparar no normaliza. El worker conserva sus imports locales del motor.
 - El controlador local `pages/import-workbench/normalization-preview-state.ts` conserva solo metadata y ventana actual, original de sesión y referencias al worker persistente. El workbench crea `new URL('../../engine/normalization-preview.worker', import.meta.url)`, independiente del worker persistente de análisis. Init envía original/mapping una vez; update solo opciones; page solo ventana con índices físicos explícitos. Ambos comparten contador de mensajes, pero no guardas de generación: paginar/ocultar no invalida validación. Session/generation/id y la identidad del worker descartan respuestas antiguas; error/cancelación requieren reintento manual. No hay dataset de preview en Query ni API, ni persistencia por cambiar formatos o vistas.
-- El shell obtiene el catálogo versionado con estado → términos → estado; acepta solo la misma `snapshotVersion` activa en ambas lecturas. Transmite términos/version a análisis y colecciones; si cambia la instantánea o configuración, exige reanalizar, no atribuye una versión nueva a un diagnóstico anterior.
+- El shell obtiene el catálogo versionado con estado → términos → estado; acepta solo la misma `snapshotVersion` activa en ambas lecturas. La consulta `['catalog', 'snapshot']` es la única adquisición del shell: después de aceptar la versión, publica sus términos en `['catalog']`, cuyo observador no descarga otra lista. La invalidación por prefijo `['catalog']` conserva la actualización versionada; un fallo conserva ambas últimas lecturas válidas, pero bloquea el uso de metadatos hasta actualizar explícitamente. Transmite términos/version a análisis y colecciones; si cambia la instantánea o configuración, exige reanalizar, no atribuye una versión nueva a un diagnóstico anterior.
 - La confirmación conserva cuerpo y UUID ante resultado incierto para reintentar la misma importación idempotente. En cambio, un guardado manual incierto bloquea escrituras y reenvíos hasta consultar el servidor y reconocer explícitamente la reconciliación humana. Guardas de navegación/beforeunload conservan borradores; no hay reintentos ciegos.
 - `normalizationVisible` comunica el paso derivado al shell; la clase ancha requiere además sección activa workbench. El input `active` cierra detalles al ocultarlo, sin desmontar ni reinicializar su worker. No hay mutaciones imperativas de clases ni selectores `:has`.
 - Los HTML grandes están junto a `catalog.ts`, `validation-configuration.ts` y al workbench;

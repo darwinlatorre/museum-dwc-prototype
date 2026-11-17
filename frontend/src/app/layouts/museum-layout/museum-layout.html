@@ -17,7 +17,7 @@
   </nav>
   <div class="sidebar-note">
     <strong>Análisis local, guardado explícito</strong>
-    <p>Los archivos se analizan en el navegador. Solo los registros confirmados se guardan en el servidor local.</p>
+    <p>Puede revisar sus archivos aquí sin enviarlos. Solo se guardan los registros cuando usted lo confirma.</p>
     <span>Espacio de trabajo Darwin Core</span>
   </div>
 </aside>
@@ -27,20 +27,16 @@
     <span class="environment">Espacio de investigación</span>
   </header>
   <main id="main" tabindex="-1" [class.normalization-wide]="analysisActive() && normalizationVisible()">
-    @if (catalog.isPending() || configuration.isPending()) {
+    @if (catalogSnapshot.isPending() || configuration.isPending()) {
       <p role="status" class="notice">Cargando catálogo y configuración de validación…</p>
     }
-    @if (catalog.isError() || configuration.isError()) {
+    @if (catalogSnapshot.isError() || configuration.isError()) {
       <section class="error" role="alert">
-        <h2>Metadatos del servidor no disponibles</h2>
-        <p>{{ catalog.error()?.message || configuration.error()?.message }}</p>
-        <p>No hay configuración de respaldo local. Inicie la API y vuelva a conectarse para cargar los datos actuales del servidor.</p>
+        <h2>No pudimos cargar los datos necesarios</h2>
+        <p>{{ catalogSnapshot.error()?.message || configuration.error()?.message }}</p>
+        <p>Necesitamos el catálogo y las reglas de revisión actuales para continuar. Compruebe que la aplicación esté disponible y vuelva a intentarlo.</p>
         <button (click)="retry()">Reintentar conexión</button>
       </section>
-    }
-    @if (catalogSnapshot.isError()) {
-      <p class="error" role="alert">{{ catalogSnapshot.error()?.message }}
-        <button (click)="retry()">Actualizar metadatos</button></p>
     }
     <router-outlet [routerOutletData]="metadata" />
     @if (catalog.data(); as terms) {
@@ -54,6 +50,6 @@
     }
   </main>
   <footer>Universidad del Cauca · Museo de Historia Natural
-    <span>La configuración global requiere un entorno local de confianza.</span>
+    <span>Utilice este espacio solo con personas de confianza.</span>
   </footer>
 </div>

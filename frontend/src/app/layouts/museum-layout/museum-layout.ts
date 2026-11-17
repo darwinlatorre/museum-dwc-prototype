@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
-import { injectQuery } from '@tanstack/angular-query-experimental';
+import { injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { CatalogMetadata } from '../../features/catalog/services/catalog-metadata';
 import { RecordSourcesMetadata } from '../../features/record-sources/services/record-sources-metadata';
 import { ImportWorkbench } from '../../features/importer/pages/import-workbench/import-workbench';
@@ -23,13 +23,19 @@ export class MuseumLayout {
   readonly normalizationVisible = signal(false);
   private readonly catalogApi = inject(CatalogMetadata);
   private readonly sourcesApi = inject(RecordSourcesMetadata);
+  private readonly client = inject(QueryClient);
+  // This public key observes the accepted terms; only the versioned reader fetches them.
   readonly catalog = injectQuery(() => ({
-    queryKey: ['catalog'], queryFn: ({ signal }) => this.catalogApi.catalog(signal), staleTime: 300000,
+    queryKey: ['catalog'], queryFn: ({ signal }) => this.catalogApi.catalog(signal),
+    enabled: false, staleTime: 300000,
   }));
-  // Versioned metadata belongs to the shell, never to the biological data cache.
+  // Prefix invalidation still refreshes the snapshot, without a second terms request.
   readonly catalogSnapshot = injectQuery(() => ({
-    queryKey: ['catalog', 'snapshot'], queryFn: ({ signal }) => this.catalogApi.snapshot(signal),
-    enabled: typeof this.catalogApi.snapshot === 'function', staleTime: 300000,
+    queryKey: ['catalog', 'snapshot'], queryFn: async ({ signal }) => {
+      const snapshot = await this.catalogApi.snapshot(signal);
+      this.client.setQueryData(['catalog'], snapshot.terms);
+      return snapshot;
+    }, enabled: typeof this.catalogApi.snapshot === 'function', staleTime: 300000,
   }));
   readonly configuration = injectQuery(() => ({
     queryKey: ['validation-configuration'],
@@ -46,7 +52,6 @@ export class MuseumLayout {
     },
   };
   retry() {
-    void this.catalog.refetch();
     void this.catalogSnapshot.refetch();
     void this.configuration.refetch();
   }

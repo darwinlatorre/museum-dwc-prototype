@@ -45,8 +45,8 @@ describe('Collection workspace', () => {
   it('muestra carga, error real y reintenta metadatos sin respaldo sintético', async () => {
     const client = TestBed.inject(QueryClient);
     client.removeQueries();
-    let resolve!: (terms: never[]) => void;
-    vi.spyOn(TestBed.inject(CatalogMetadata), 'catalog').mockReturnValue(new Promise<never[]>(done => { resolve = done; }));
+    let resolve!: (snapshot: { terms: never[]; snapshotVersion: number }) => void;
+    vi.spyOn(TestBed.inject(CatalogMetadata), 'snapshot').mockReturnValue(new Promise(done => { resolve = done; }));
     const configuration = vi.spyOn(TestBed.inject(RecordSourcesMetadata), 'validationConfiguration')
       .mockRejectedValueOnce(new Error('Sin configuración')).mockResolvedValue(configurationFixture([]));
     const harness = await RouterTestingHarness.create('/catalogo');
@@ -55,9 +55,10 @@ describe('Collection workspace', () => {
     await vi.waitFor(() => expect(client.getQueryState(['validation-configuration'])?.status).toBe('error'));
     await harness.fixture.whenStable();
     expect(root.querySelector('[role=alert]')?.textContent).toContain('Sin configuración');
-    expect(root.textContent).toContain('No hay configuración de respaldo local.');
+    expect(root.textContent).toContain('Necesitamos el catálogo y las reglas de revisión actuales para continuar.');
+    expect(root.querySelector('[role=alert]')?.textContent).not.toMatch(/API|HTTP|PostgreSQL|worker/);
     expect(root.querySelector('app-catalog')).toBeNull();
-    resolve([]);
+    resolve({ terms: [], snapshotVersion: 1 });
     await vi.waitFor(() => expect(client.getQueryState(['catalog'])?.status).toBe('success'));
     await harness.fixture.whenStable();
     [...root.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Reintentar conexión')!.click();
