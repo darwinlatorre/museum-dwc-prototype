@@ -38,6 +38,31 @@ describe('cliente público de colecciones sin caché biológica', () => {
       expect(await pending).toEqual({ result: 'literal' });
     }
   });
+  it.each([
+    [0, true, 'No pudimos confirmar si se completó la acción'],
+    [503, true, 'No pudimos confirmar si se completó la acción'],
+    [422, false, 'No se pudo completar la acción'],
+  ])('explica el resultado sin detalles públicos para HTTP%s', async (status, unknownOutcome, message) => {
+    const api = TestBed.inject(CollectionsApi), http = TestBed.inject(HttpTestingController);
+    const before = structuredClone(body);
+    const pending = api.import(body);
+    const assertion = expect(pending).rejects.toMatchObject({ message, problem: { status }, unknownOutcome });
+    const request = http.expectOne({ url: '/api/collections/imports', method: 'POST' });
+    expect(request.request.body).toEqual(before);
+    request.flush({}, { status, statusText: 'Error' });
+    await assertion;
+    http.expectNone('/api/collections/imports');
+    expect(body).toEqual(before);
+  });
+  it.each(['detail', 'title'] as const)('conserva el mensaje público %s y el código antes que el texto de respaldo', async field => {
+    const api = TestBed.inject(CollectionsApi), http = TestBed.inject(HttpTestingController);
+    const pending = api.import(body);
+    const assertion = expect(pending).rejects.toMatchObject({ message: 'Mensaje público literal.',
+      problem: { status: 409, code: 'PUBLIC_CODE', [field]: 'Mensaje público literal.' }, unknownOutcome: false });
+    http.expectOne('/api/collections/imports').flush({ [field]: 'Mensaje público literal.', code: 'PUBLIC_CODE' }, { status: 409, statusText: 'Conflict' });
+    await assertion;
+    http.expectNone('/api/collections/imports');
+  });
   it('respeta defaults de paginación y AbortSignal previo/durante la solicitud', async () => {
     const api = TestBed.inject(CollectionsApi), http = TestBed.inject(HttpTestingController);
     const controller = new AbortController();
@@ -145,7 +170,7 @@ describe('instantánea versionada sin romper consumidores del catálogo', () => 
   });
   it('rechaza una lectura atravesada por activación; no atribuye la versión nueva a términos viejos', async () => {
     const api = TestBed.inject(CatalogMetadata), http = TestBed.inject(HttpTestingController);
-    const pending = api.snapshot(); const assertion = expect(pending).rejects.toThrow('El catálogo TDWG cambió durante la lectura');
+    const pending = api.snapshot(); const assertion = expect(pending).rejects.toThrow('El catálogo TDWG cambió. Actualice los datos y vuelva a analizar el archivo.');
     http.expectOne('/api/catalog/status').flush({ active: { snapshotVersion: 3 } }); await Promise.resolve();
     http.expectOne('/api/catalog').flush([]); await Promise.resolve();
     http.expectOne('/api/catalog/status').flush({ active: { snapshotVersion: 4 } }); await assertion;

@@ -12,7 +12,7 @@ export class CatalogMetadata {
     const terms = await this.catalog(signal);
     const after = await this.api.request<CatalogSyncResult['status']>('catalog/status', 'GET', undefined, signal);
     if (!before.active || !after.active || before.active.snapshotVersion !== after.active.snapshotVersion)
-      throw new Error('El catálogo TDWG cambió durante la lectura; actualice los metadatos y vuelva a analizar.');
+      throw new Error('El catálogo TDWG cambió. Actualice los datos y vuelva a analizar el archivo.');
     return { terms, snapshotVersion: after.active.snapshotVersion };
   }
   syncCatalog = () => this.api.request<CatalogSyncResult>('catalog/sync', 'POST');

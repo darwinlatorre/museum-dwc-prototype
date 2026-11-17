@@ -33,7 +33,7 @@
     >Buscar en todos los atributos<input
       type="search"
       [formField]="filters.search"
-      placeholder="Nombre, definición, URI, categoría o estado"
+      placeholder="Nombre, definición, enlace, categoría o estado"
   /></label>
   <label
     >Categoría<select [formField]="filters.category">
@@ -62,7 +62,7 @@
 >
   <ng-template #header
     ><tr>
-      <th>Término / URI</th>
+      <th>Término / enlace oficial</th>
       <th>Definición (original en inglés)</th>
       <th>Categoría (fuente)</th>
       <th>Estado (fuente)</th>

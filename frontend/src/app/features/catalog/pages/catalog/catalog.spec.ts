@@ -37,6 +37,18 @@ describe('Sincronización manual del catálogo', () => {
       .toContain('Actualizar no modifica la configuración de validación ni los archivos.');
   });
 
+  it('ofrece búsqueda y enlaces oficiales con lenguaje claro sin alterar las citas', async () => {
+    const { fixture } = setup();
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('input[type=search]')?.closest('label')?.textContent).toContain('Buscar en todos los atributos');
+    expect(root.querySelector('input[type=search]')?.getAttribute('placeholder')).toBe('Nombre, definición, enlace, categoría o estado');
+    expect(root.querySelector('th')?.textContent).toBe('Término / enlace oficial');
+    expect(root.querySelector('a')?.getAttribute('href')).toBe(term.uri);
+    expect(root.querySelector('a')?.textContent).toBe(term.uri);
+    expect(root.querySelector('[lang=en]')?.textContent).toBe(term.definition);
+  });
+
   it('envía un POST sin cuerpo, impide doble clic y refresca la caché tras confirmar éxito', async () => {
     const { fixture, invalidate, button, http } = setup();
     await fixture.whenStable();

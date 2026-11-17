@@ -9,8 +9,8 @@
     </div>
   </header>
   @if (dirty() && configuration().revision !== draft()?.revision) {
-    <p class="notice" role="status">Hay una revisión más reciente en el servidor. Sus cambios locales se conservan;
-      actualice antes de volver a guardar.</p>
+    <p class="notice" role="status">Hay una configuración más reciente. Sus cambios sin guardar se conservan.
+      Use Cargar configuración guardada antes de volver a guardar; sus cambios solo se reemplazarán si la carga se completa.</p>
   }
   <div class="configuration-workspace">
     <aside class="configuration-panel" aria-labelledby="sources-title">
@@ -32,14 +32,14 @@
         <div><h3 id="fields-title">{{ label(context()) }}</h3><p>{{ fields().length }} campos · {{ required().length }} obligatorios · {{ optional().length }} opcionales</p></div>
         <span class="configuration-state">Fuente seleccionada</span>
       </div>
-      <p>El botón de estado alterna entre Obligatorio y Opcional; el campo permanece guardado y visible. Quitar lo retira de esta fuente, no del catálogo.</p>
+      <p>Use Obligatorio u Opcional para cambiar si un campo se exige en la revisión de datos; el campo sigue en la lista. Quitar lo retira de esta fuente, no del catálogo.</p>
       <p class="field-label">Agregar campo obligatorio</p>
       <div class="configuration-add">
         <app-dwc-picker [terms]="terms()" label="Agregar campo obligatorio" [(value)]="field"
           [disabled]="mutation.isPending() || refreshing()" />
         <button type="button" (click)="add()" [disabled]="!!fieldError() || mutation.isPending() || refreshing()">Agregar campo</button>
       </div>
-      <p>Elija un término DwC o escriba un valor libre. Máximo 200 caracteres; 500 campos por fuente.</p>
+      <p>Elija un campo Darwin Core (DwC) o escriba el nombre de otro campo. Máximo 200 caracteres; 500 campos por fuente.</p>
       @if (field() && fieldError()) { <p class="error" role="alert">{{ fieldError() }}</p> }
       <div class="configuration-search">
         <label for="configuration-search">Buscar entre los campos configurados</label>
@@ -61,31 +61,30 @@
               [disabled]="mutation.isPending() || refreshing()" (click)="remove(field)">Quitar</button>
           </div></li>
         } @empty {
-          <li>{{ fields().length ? 'Ningún campo coincide con la búsqueda.' : 'No hay campos configurados para este contexto.' }}</li>
+          <li>{{ fields().length ? 'Ningún campo coincide con la búsqueda.' : 'No hay campos configurados para esta fuente.' }}</li>
         }
       </ul>
     </section>
   </div>
   <section class="configuration-savebar" aria-labelledby="configuration-save-title">
     <h3 id="configuration-save-title">Guardar los cambios de las cinco fuentes</h3>
-    <p>No se guardan automáticamente. Solo se envían metadatos, nunca archivos ni registros biológicos.</p>
+    <p>Solo se guarda la elección de campos obligatorios y opcionales de las cinco fuentes, no archivos ni registros. Los cambios no se guardan automáticamente.</p>
     <div class="actions">
       <button class="primary" type="button" (click)="save()" [disabled]="!dirty() || mutation.isPending() || refreshing()">
         {{ mutation.isPending() ? 'Guardando…' : 'Guardar configuración' }}</button>
       <button type="button" (click)="refresh()" [disabled]="mutation.isPending() || refreshing()">
-        {{ refreshing() ? 'Actualizando…' : dirty() ? 'Actualizar del servidor y descartar cambios locales' : 'Actualizar del servidor' }}</button>
+        {{ refreshing() ? 'Cargando…' : 'Cargar configuración guardada' }}</button>
     </div>
     @if (mutation.isError()) { <p class="error" role="alert">{{ mutation.error()?.message }}</p> }
     @if (refreshError()) { <p class="error" role="alert">{{ refreshError() }}</p> }
     <p role="status" aria-live="polite">{{ notice() }}</p>
   </section>
   <details class="workbench-help"><summary>Alcance de la configuración</summary>
-    <p>Se guarda la configuración completa de los cinco contextos con su revisión vigente.
-      Una revisión obsoleta se rechaza sin sobrescribir cambios ajenos. Actualizar descarta sus cambios
-      únicamente después de una lectura correcta del servidor.</p>
+    <p>Se guardan los campos elegidos de las cinco fuentes. Si alguien guardó otros cambios antes,
+      se rechaza el guardado para no borrar cambios de otra persona. Cargar configuración guardada reemplaza sus cambios solo cuando se haya podido obtener la configuración guardada. Si falla, sus cambios se conservan.</p>
     <p>Solo los campos obligatorios generan incidencias por datos ausentes; los opcionales permanecen configurados. La obligatoriedad configurada orienta el diagnóstico, no certifica una publicación SiB ni modifica
       el vocabulario TDWG. Las comprobaciones básicas de fechas y coordenadas siguen activas.</p>
-    <p>Al salir con cambios o una entrada sin agregar, se solicita confirmación. Guardar y actualizar
-      bloquean la edición hasta finalizar; un fallo conserva el borrador.</p>
+    <p>Al salir con cambios o una entrada sin agregar, se solicita confirmación. Mientras se guarda o se carga la configuración,
+      no se puede editar; un fallo conserva sus cambios.</p>
   </details>
 </section>

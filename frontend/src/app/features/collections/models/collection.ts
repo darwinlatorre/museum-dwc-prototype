@@ -27,7 +27,7 @@ export interface CollectionProblem { status: number; title?: string; detail?: st
 export class CollectionApiError extends Error {
   constructor(readonly problem: CollectionProblem, readonly unknownOutcome: boolean) {
     super(problem.detail || problem.title || (unknownOutcome
-      ? 'No se pudo confirmar el resultado de la solicitud.' : 'El servidor rechazó la solicitud.'));
+      ? 'No pudimos confirmar si se completó la acción' : 'No se pudo completar la acción'));
     this.name = 'CollectionApiError';
   }
 }
