@@ -42,7 +42,12 @@ export class ImportWorkbench implements OnDestroy {
   importLocked = signal(false);
   analysisRevision = signal(0);
   duplicates = signal<DuplicateCounts>({ equalRows: { groups: 0, affectedRows: 0 }, occurrenceIds: { groups: 0, affectedRows: 0 } });
-  readonly importReady = computed(() => this.issues() !== undefined && !this.busy() && this.configurationAvailable() && this.catalogAvailable() && this.catalogVersion() !== null);
+  private readonly appliedResult = signal<{ session: number; generation: number; id: number } | undefined>(undefined);
+  private readonly normalizationApplied = computed(() => {
+    const result = this.appliedResult();
+    return result !== undefined && result.session === this.session && result.generation === this.generation && result.id === this.validationId;
+  });
+  readonly importReady = computed(() => this.normalizationApplied() && this.issues() !== undefined && !this.busy() && this.configurationAvailable() && this.catalogAvailable() && this.catalogVersion() !== null);
   private preparation?: { id: number; offset: number; rows: SourceRecord[]; resolve: (rows: SourceRecord[]) => void; reject: (reason: Error) => void };
   readonly prepareImport = (): Promise<SourceRecord[]> => {
     if (!this.importReady() || !this.worker) return Promise.reject(new Error('Vuelva a analizar los datos antes de importar.'));
@@ -152,12 +157,12 @@ export class ImportWorkbench implements OnDestroy {
     if (!this.context() || !this.configurationAvailable()) return false;
     if (index === 2) return true;
     if (!this.mappingValid()) return false;
-    return this.issues() !== undefined;
+    return this.issues() !== undefined && (index !== 5 || (this.normalizationApplied() && !this.busy()));
   }
   visit(index: number) {
     if (this.canVisit(index)) {
+      if (index === 4 && this.step() !== 4) this.previewState.start(this.options());
       this.step.set(index);
-      if (index === 4) this.previewState.start(this.options());
     }
   }
   private worker?: Worker;
@@ -217,6 +222,7 @@ export class ImportWorkbench implements OnDestroy {
     this.preparation?.reject(new Error('Preparación cancelada.'));
   }
   invalidate() {
+    this.appliedResult.set(undefined);
     this.generation++;
     this.analysisRevision.update(value => value + 1);
     this.preparation?.reject(new Error('La sesión de análisis ya no está vigente.'));
@@ -235,7 +241,7 @@ export class ImportWorkbench implements OnDestroy {
     this.invalidate();
     this.error.set('Procesamiento cancelado. No se enviaron datos al servidor.');
   }
-  private dispatch(request: WorkerRequest) {
+  private dispatch(request: WorkerRequest, normalizing = false) {
     const reuse = request.kind === 'validate' && !!this.worker;
     if (!reuse) this.worker?.terminate();
     this.error.set('');
@@ -243,6 +249,7 @@ export class ImportWorkbench implements OnDestroy {
     const worker = reuse ? this.worker! : new Worker(new URL('../../engine/analysis.worker', import.meta.url), { type: 'module' });
     this.worker = worker;
     if (request.kind === 'validate') {
+      this.appliedResult.set(undefined);
       if (!reuse) this.session++;
       this.generation++;
       request = { ...request, session: this.session, generation: this.generation, ...(reuse ? { data: undefined } : {}) };
@@ -279,6 +286,7 @@ export class ImportWorkbench implements OnDestroy {
         this.duplicates.set(data.duplicates);
         this.issues.set(data.issues);
         this.changes.set(data.changes);
+        if (normalizing) this.appliedResult.set({ session: data.session, generation: data.generation, id: data.id });
         this.step.set(this.resultStep);
       }
     };
@@ -287,6 +295,7 @@ export class ImportWorkbench implements OnDestroy {
         this.busy.set(false);
         this.preparation?.reject(new Error('No se pudo preparar la importación. Los originales se conservan.'));
         this.preparation = undefined;
+        this.appliedResult.set(undefined);
         this.issues.set(undefined);
         this.error.set(
           'El proceso local no pudo analizar este archivo. Pruebe con un CSV más pequeño.',
@@ -351,7 +360,7 @@ export class ImportWorkbench implements OnDestroy {
       terms: this.terms(),
       context,
       options: this.diagnosticOptions(),
-    });
+    }, normalizing);
   }
   download(kind: 'json' | 'csv') {
     const issues = this.issues();

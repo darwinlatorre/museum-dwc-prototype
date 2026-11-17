@@ -137,9 +137,9 @@ export class ImportConfirmation implements OnDestroy {
       if (operation !== this.operation) return;
       if (!(error instanceof CollectionApiError) || error.unknownOutcome) {
         this.status.set('unknown');
-        this.message.set('Resultado desconocido: la respuesta se perdió o el servidor no confirmó el resultado. Puede que los registros ya estén guardados. Reintente la misma confirmación, sin crear otra importación.');
+        this.message.set('Resultado desconocido: no recibimos la confirmación del guardado. Puede que los registros ya estén guardados. Reintente la misma confirmación, sin crear otra importación.');
       } else {
-        this.status.set('failed'); this.message.set(`${error.message} No se guardó ninguna fila de esta solicitud.`);
+        this.status.set('failed'); this.message.set(`${error.message} No se guardó ninguna fila de este intento.`);
         this.serverIssues.set(error.problem.issues ?? []);
         this.needsRefresh.set(['CONFIGURATION_CHANGED', 'CATALOG_CHANGED', 'REVISION_CONFLICT', 'AUTHORITY_UNAVAILABLE'].includes(error.problem.code ?? ''));
         this.request = undefined;

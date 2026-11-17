@@ -11,7 +11,7 @@ export class NormalizationPreviewState {
   readonly status = signal<'idle' | 'calculating' | 'ready' | 'cancelled' | 'error'>('idle');
   readonly error = signal('');
   readonly paging = signal(false);
-  readonly hideEmpty = signal(false);
+  readonly hideEmpty = signal(true);
   // Requested selection and confirmed window are deliberately separate while paging.
   readonly rowFilter = signal<'all' | 'changed'>('changed');
   readonly window = signal<PreviewWindow>({ offset: 0, limit: 10, columnIndices: [], rowFilter: 'changed' });
@@ -60,6 +60,7 @@ export class NormalizationPreviewState {
     this.revision.update(value => value + 1);
   }
   start(options: Normalization) {
+    if (!this.hideEmpty()) this.setHideEmpty(true);
     this.options = { ...options };
     if (!this.original || this.status() !== 'idle') return;
     this.calculate();
@@ -140,7 +141,7 @@ export class NormalizationPreviewState {
       ? { ...token, kind: 'preview-init', original: this.original, mapping: this.mapping, options: this.options, window }
       : { ...token, kind: 'preview-update', options: this.options, window };
     try { this.worker!.postMessage(request); }
-    catch { this.fail('No se pudo enviar el cálculo al worker local. Los originales se conservan.'); }
+    catch { this.fail('No se pudo calcular la vista previa. Los originales se conservan.'); }
   }
   private fail(message: string) {
     this.status.set('error');

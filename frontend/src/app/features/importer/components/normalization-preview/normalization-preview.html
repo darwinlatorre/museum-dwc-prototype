@@ -10,7 +10,7 @@
   <details class="workbench-help normalization-settings">
     <summary>Formatos y reglas</summary>
     <p>Copia desde originales. Solo Aplicar actualiza el diagnóstico; los formatos y vistas no validan automáticamente.</p>
-    <p>Seis reglas siempre activas por destino Darwin Core, sin convertir identificadores ni inventar datum, unidades o fechas. Los formatos no reconocidos se conservan.</p>
+    <p>Se aplican seis reglas según el campo Darwin Core elegido, sin cambiar identificadores ni inventar fechas, unidades o el sistema de referencia de las coordenadas. Los formatos no reconocidos se conservan.</p>
   <ul class="normalization-rules" aria-label="Reglas siempre activas">
     @for (rule of rules; track rule.key) {
       <li>{{ rule.label }}</li>
@@ -19,8 +19,8 @@
   <div class="normalization-formats">
     @if (options().dates) {
       <label>Interpretación de fechas<select [value]="options().dateOrder || 'safe'" (change)="dateOrder($event)">
-        <option value="safe">Segura: no interpretar fechas ambiguas</option><option value="DMY">Día / mes / año (DMY)</option><option value="MDY">Mes / día / año (MDY)</option>
-      </select><small>03/04/2024 se conserva en modo seguro. DMY elige 3 de abril; MDY, 4 de marzo. ISO válido conserva su precisión.</small></label>
+        <option value="safe">Conservar fechas con más de una interpretación</option><option value="DMY">Día / mes / año</option><option value="MDY">Mes / día / año</option>
+      </select><small>03/04/2024 se conserva si no elige un orden. Día / mes / año significa 3 de abril; mes / día / año, 4 de marzo. No se añaden días ni meses que falten.</small></label>
     }
     @if (options().coordinates || options().numbers) {
       <label>Separador decimal<select [value]="options().decimalMode || 'safe'" (change)="decimalMode($event)">
@@ -69,13 +69,13 @@
       </details>
     }
     @if (state().ready() && state().window().rowFilter === 'changed' && state().viewTotal() === 0) {
-      <div class="normalization-empty" role="status"><p>Sin cambios</p><button type="button" (click)="showAll()">Mostrar todos</button></div>
+      <div class="normalization-empty" role="status"><p>Sin cambios. Pulse «Aplicar normalización y validar» para completar la revisión y poder finalizar.</p><button type="button" (click)="showAll()">Mostrar todos</button></div>
     }
     @if (state().visibleColumns().length === 0) { <p>Todas las columnas están ocultas. Los {{ metadata.totalRows }} registros siguen presentes. Desactive «Ocultar columnas sin datos» para restaurarlas.</p> }
     @if (state().visibleColumns().length > 50) {
       <div class="normalization-column-nav" aria-label="Ventana de columnas">
         <button [disabled]="!state().ready() || !state().canMoveColumns(-1)" (click)="state().moveColumns(-1)">Columnas anteriores</button>
-        <span>Hasta 50 columnas por ventana; índice físico en cada encabezado.</span>
+        <span>Hasta 50 columnas a la vez; cada encabezado indica su posición en el archivo.</span>
         <button [disabled]="!state().ready() || !state().canMoveColumns(1)" (click)="state().moveColumns(1)">Columnas siguientes</button>
       </div>
     }

@@ -34,7 +34,7 @@
       <summary>Formatos, límites y privacidad</summary>
       <p>CSV (UTF-8 separado por comas) o XLSX. Hasta 10 MiB, 50.000 filas de datos y 500 columnas.
         Una fila de encabezados con nombres únicos y no vacíos.</p>
-      <p>Los archivos se analizan en un Web Worker dedicado del navegador. No se envían registros durante el análisis. Solo una confirmación explícita en Finalizar permite guardarlos en PostgreSQL.</p>
+      <p>Los archivos se revisan en este dispositivo. No se envían registros durante el análisis. Solo al confirmar en Finalizar autoriza enviarlos y guardarlos en una colección.</p>
     </details>
     <label class="file-picker"
       >Archivo de la colección<input
@@ -70,7 +70,7 @@
           configuración global. Los encabezados faltantes se diagnostican después del mapeo.</p>
         <p>Las fechas y coordenadas siempre se verifican cuando tienen valor.
           Este diagnóstico no constituye una certificación del SiB. No invente datos desconocidos;
-          las extensiones GGBN no se validan en este MVP.</p>
+          los campos adicionales de GGBN no se revisan en esta herramienta.</p>
       </details>
       <app-record-context [context]="context()" (contextChanged)="setContext($event)" />
       <p>Configuración global · revisión {{ configuration().revision }}</p>
@@ -271,6 +271,7 @@
         <p-button label="Aplicar normalización y validar" [disabled]="busy() || !previewState.ready()" (onClick)="validate(true)" />
         <p-button label="Finalizar" [disabled]="!canVisit(5) || busy()" (onClick)="visit(5)" />
       </div>
+      @if (!canVisit(5)) { <p role="status">Para continuar, pulse «Aplicar normalización y validar», incluso si no hay cambios.</p> }
     }
   }
   @if (context(); as selectedContext) {

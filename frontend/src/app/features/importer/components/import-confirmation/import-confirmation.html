@@ -5,7 +5,7 @@
     occurrenceID repetido: {{ duplicates().occurrenceIds.groups }} grupos · {{ duplicates().occurrenceIds.affectedRows }} registros.
     Los criterios pueden solaparse; no se suman como registros únicos.</p>
   <p>Configuración {{ configurationRevision() }} · Catálogo {{ catalogVersion() ?? 'sin versión confirmada' }}</p>
-  @if (!ready()) { <p class="notice" role="status">Necesita un análisis vigente y metadatos confirmados antes de importar.</p> }
+  @if (!ready()) { <p class="notice" role="status">Antes de guardar, aplique la normalización y revise el diagnóstico actualizado.</p> }
   @if (errors() || duplicateBlocked()) {
     <p class="error" role="alert">Los errores y los duplicados bloquean la importación completa. Corrija los datos y vuelva a analizar.</p>
   }
@@ -37,16 +37,16 @@
       @if (destination() === 'new') {
         <label>Nombre de la colección<input aria-label="Nombre de la colección" [value]="name()" (input)="name.set(text($event))" maxlength="200"></label>
       }
-      <p>Al confirmar, los registros, originales, cabeceras y asignaciones saldrán del navegador y se guardarán en tablas de PostgreSQL. No se enviará ni guardará el archivo CSV/XLSX ni su nombre.</p>
-      <label class="confirmation-consent"><input type="checkbox" [checked]="transferConsent()" (change)="transferConsent.set(checked($event))">Autorizo enviar y guardar estos registros en PostgreSQL.</label>
+      <p>Al confirmar, enviará los registros revisados y sus valores originales para guardarlos en la colección. Se conservarán los nombres de las columnas y los campos elegidos. El archivo y su nombre permanecen en este dispositivo.</p>
+      <label class="confirmation-consent"><input type="checkbox" [checked]="transferConsent()" (change)="transferConsent.set(checked($event))">Autorizo enviar y guardar estos registros en la colección.</label>
       @if (warnings()) {
         <label class="confirmation-consent"><input type="checkbox" [checked]="warningsConsent()" (change)="warningsConsent.set(checked($event))">He revisado y confirmo las advertencias del análisis.</label>
       }
     </fieldset>
-    <p>El servidor revalidará los datos y los duplicados de la misma colección. Todo o nada: si falla una fila, no se guarda ninguna.</p>
+    <p>Antes de guardar, el sistema volverá a revisar los datos y buscará duplicados en la misma colección. Todo o nada: si una fila no cumple los requisitos, no se guarda ninguna.</p>
     @if (message()) { <p class="error" role="alert">{{ message() }}</p> }
     @if (serverIssues().length) {
-      <details><summary>Incidencias del servidor ({{ serverIssues().length }})</summary>
+      <details><summary>Resultados de la revisión al guardar ({{ serverIssues().length }})</summary>
         <ul>@for (issue of serverIssues(); track $index) { <li>{{ issue.field }} · {{ issue.row ?? 'Encabezado' }} · {{ issue.description }}</li> }</ul>
       </details>
     }
@@ -55,12 +55,12 @@
     } @else {
       <div class="actions">
         <button type="button" [disabled]="!canConfirm()" (click)="confirm()">Confirmar e importar</button>
-        @if (needsRefresh()) { <button type="button" (click)="refresh()">Actualizar metadatos y volver a analizar</button> }
+        @if (needsRefresh()) { <button type="button" (click)="refresh()">Actualizar información y volver a analizar</button> }
         @if (status() === 'preparing') { <button type="button" (click)="cancel()">Cancelar preparación</button> }
       </div>
     }
     @if (status() === 'preparing' || status() === 'sending') {
-      <p role="status">{{ status() === 'preparing' ? 'Preparando valores locales…' : 'Esperando confirmación del servidor… No cierre esta página.' }}</p>
+      <p role="status">{{ status() === 'preparing' ? 'Preparando valores locales…' : 'Esperando confirmación del guardado… No cierre esta página.' }}</p>
     }
   }
 </section>

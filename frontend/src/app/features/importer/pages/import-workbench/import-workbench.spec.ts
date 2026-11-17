@@ -149,7 +149,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('.wizard-final')?.textContent).toContain('Resumen del análisis');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('1 registros');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('2 columnas');
-    expect(root.querySelector('.wizard-final')?.textContent).toContain('PostgreSQL');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('guardar estos registros en la colección');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('Confirmar e importar');
     expect(root.textContent).toContain('original.csv');
   });
@@ -164,7 +164,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelectorAll('.normalization-rules input')).toHaveLength(0);
     const init = DelayedWorker.all.find(worker => worker.previewRole)!.requests[0];
     expect(init).toMatchObject({ kind: 'preview-init', options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'safe', decimalMode: 'safe' } });
-    expect(switches.every(control => !control.checked)).toBe(true);
+    expect(switches.every(control => control.checked)).toBe(true);
     expect([...root.querySelectorAll('button')].some(button => button.textContent?.trim() === 'Todos')).toBe(true);
     expect(root.textContent).not.toContain('primeros 20');
   });
@@ -172,7 +172,8 @@ describe('Preservación pública del análisis local', () => {
   it('mantiene las seis reglas activas al elegir formatos sin validar automáticamente ni alterar originales', async () => {
     const data = { headers: ['eventDate', 'decimalLatitude', 'sampleSizeValue', 'occurrenceID', 'scientificName', 'vacío'], rows: [2, 19].map(row => ({ row, values: ['03/04/2024', '1,234', '2,500', '0007', ' Aus bus ', ' n/A '] })) };
     const original = JSON.stringify(data);
-    const { root, preview, mode, click } = await normalization(data);
+    const { root, preview, mode, click, toggle } = await normalization(data);
+    await toggle('Ocultar columnas sin datos (solo vista)');
     const analyses = () => DelayedWorker.all.filter(worker => !worker.previewRole);
     const count = analyses().length;
     expect(root.querySelector('.normalization-grid tbody')?.textContent).toContain('03/04/2024');
@@ -606,11 +607,10 @@ describe('Preservación pública del análisis local', () => {
       { row: 7, values: headers.map((_, i) => i === 59 ? 'NULL' : '') },
       { row: 91, values: headers.map((_, i) => i === 0 ? 'presente' : '') },
     ] };
-    const { root, preview, toggle } = await normalization(data);
+    const { root, preview } = await normalization(data);
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
     expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('7');
     expect(root.querySelectorAll('.normalization-changed')).toHaveLength(0);
-    await toggle('Ocultar columnas sin datos (solo vista)');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { rowFilter: 'changed', columnIndices: [0] } });
     expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('7');
     expect(root.querySelectorAll('.normalization-grid td')).toHaveLength(1);
@@ -697,6 +697,8 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('.normalization-empty')).toBeNull();
     expect(button('Aplicar normalización y validar').disabled).toBe(true);
     preview.answerPreview(); await f.whenStable();
+    // Empty sources also confirm the automatically requested hidden-column window.
+    if (preview.request.kind === 'preview-page') { preview.answerPreview(); await f.whenStable(); }
     expect(root.querySelector('.normalization-empty')?.textContent).toContain('Sin cambios');
     expect(root.querySelector('.normalization-range')?.textContent).toContain('0–0 de 0');
     for (const name of ['Primera página', 'Página anterior', 'Página siguiente', 'Última página']) expect(button(name).disabled).toBe(true);
@@ -741,6 +743,7 @@ describe('Preservación pública del análisis local', () => {
   it('filtra las 500 columnas por metadata actual sin perder índices ni registros totalmente ocultos', async () => {
     const data = { headers: Array.from({ length: 500 }, (_, i) => i === 499 ? 'eventDate' : `col${i}`), rows: [{ row: 42, values: Array.from({ length: 500 }, (_, i) => i === 499 ? '03/04/2024' : ' ') }] };
     const { root, preview, toggle, click, mode } = await normalization(data);
+    await toggle('Ocultar columnas sin datos (solo vista)');
     await click('Columnas siguientes');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { columnIndices: Array.from({ length: 50 }, (_, i) => i + 50) } });
     await toggle('Ocultar columnas sin datos (solo vista)');
@@ -759,7 +762,6 @@ describe('Preservación pública del análisis local', () => {
   it('conserva filas físicas cuando las 500 columnas quedan ocultas por las reglas fijas', async () => {
     const data = { headers: Array.from({ length: 500 }, (_, i) => `col${i}`), rows: [{ row: 42, values: Array.from({ length: 500 }, (_, i) => i === 499 ? 'NULL' : ' ') }] };
     const { root, preview, toggle } = await normalization(data);
-    await toggle('Ocultar columnas sin datos (solo vista)');
     expect(root.textContent).toContain('Todas las columnas están ocultas');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
     expect(root.querySelectorAll('.normalization-grid td')).toHaveLength(0);
@@ -772,7 +774,6 @@ describe('Preservación pública del análisis local', () => {
   it('muestra índices no contiguos y dos avisos superpuestos con sus filas físicas fuera de página', async () => {
     const data = { headers: ['occurrenceID', 'vacía', 'eventDate'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i * 4 + 2, values: ['ID', '', '2024'] })) };
     const { root, preview, toggle } = await normalization(data);
-    await toggle('Ocultar columnas sin datos (solo vista)');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { columnIndices: [0, 2] } });
     expect(root.textContent).toContain('Filas completas iguales: 1 grupos · 12 registros');
     expect(root.textContent).toContain('occurrenceID repetido: 1 grupos · 12 registros');
@@ -970,7 +971,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.textContent).toContain('Cargando ventana');
     preview.answerPreview(latest); await f.whenStable();
     expect(root.textContent).not.toContain('Cargando ventana');
-    expect(root.querySelectorAll('.normalization-grid thead th')).toHaveLength(2);
+    expect(root.querySelectorAll('.normalization-grid thead th')).toHaveLength(3);
     expect(latest.generation).toBe(older.generation);
     expect(latest.id).toBeGreaterThan(older.id);
   });
@@ -1080,7 +1081,7 @@ describe('Preservación pública del análisis local', () => {
     f.destroy(); expect(preview.terminated).toBe(true);
   });
 
-  async function confirmation(data: Dataset = { headers: ['occurrenceID'], rows: [{ row: 19, values: [' 0001 '] }] }, issues: Extract<WorkerResponse, { kind: 'result' }>['issues'] = []) {
+  async function confirmation(data: Dataset = { headers: ['occurrenceID'], rows: [{ row: 19, values: [' 0001 '] }] }, issues: Extract<WorkerResponse, { kind: 'result' }>['issues'] = [], apply = true) {
     const api = { list: vi.fn(async (page = 0, size = 50, signal?: AbortSignal) => { signal?.throwIfAborted(); return { items: [
       { id: 'compatible', name: 'Existente', context: 'collection', revision: 12, activeCount: 4, trashCount: 1 },
       { id: 'incompatible', name: 'Otro contexto', context: 'permit', revision: 2, activeCount: 0, trashCount: 0 },
@@ -1093,6 +1094,11 @@ describe('Preservación pública del análisis local', () => {
     view.f.componentRef.setInput('catalogVersion', 5); await view.f.whenStable();
     await view.chooseContext(); await view.click('Mapear columnas'); await view.click('Validar localmente');
     DelayedWorker.all.at(-1)!.respond({ kind: 'result', issues, changes: [] }); await view.f.whenStable();
+    if (apply) {
+      await view.click('Normalizar'); await view.click('Aplicar normalización y validar');
+      DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.respond({ kind: 'result', issues, changes: [] });
+      await view.f.whenStable();
+    }
     await view.click('Finalizar');
     const text = async (label: string, value: string) => {
       const field = view.root.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
@@ -1105,13 +1111,78 @@ describe('Preservación pública del análisis local', () => {
     return { ...view, api, text, consent, data };
   }
 
-  it.each([false, true])('solo transmite al confirmar; valores crudos o Apply explícito=%s con originales y procedencia exactos', async apply => {
+  it('oculta vacías en cada apertura, permite mostrarlas y solo solicita páginas', async () => {
+    const view = await normalization({ headers: ['a', 'vacía'], rows: [{ row: 2, values: [' x ', ''] }] });
+    const control = () => view.root.querySelector<HTMLInputElement>('input[role=switch]')!;
+    expect(control().checked).toBe(true);
+    expect(view.root.querySelectorAll('.normalization-grid thead th')).toHaveLength(2);
+    await view.toggle('Ocultar columnas sin datos (solo vista)');
+    expect(control().checked).toBe(false);
+    expect(view.root.querySelectorAll('.normalization-grid thead th')).toHaveLength(3);
+    const count = view.preview.requests.length;
+    await view.click('Ver diagnóstico'); await view.click('Normalizar');
+    expect(control().checked).toBe(true);
+    expect(view.root.querySelectorAll('.normalization-grid thead th')).toHaveLength(2);
+    expect(view.preview.requests.slice(count).every(request => request.kind === 'preview-page' && !('original' in request) && !('options' in request))).toBe(true);
+    expect(view.preview.requests.filter(request => request.kind === 'preview-init')).toHaveLength(1);
+  });
+
+  it('bloquea Finalizar y la confirmación cruda o solo vista sin cambios de revisión ni envíos', async () => {
+    const view = await confirmation(undefined, [], false);
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    const revision = view.f.componentInstance.analysisRevision();
+    for (const preview of [false, true]) {
+      if (preview) await view.click('Normalizar');
+      expect(view.button('Finalizar').disabled).toBe(true);
+      await view.click('Finalizar');
+      expect(view.root.querySelector('.wizard-final')).toBeNull();
+      expect(view.button('Confirmar e importar').disabled).toBe(true);
+      await view.click('Confirmar e importar');
+      expect(view.api.import).not.toHaveBeenCalled();
+      expect(view.f.componentInstance.analysisRevision()).toBe(revision);
+    }
+    expect(DelayedWorker.all.flatMap(worker => worker.requests).filter(request => request.kind === 'prepare')).toHaveLength(0);
+  });
+
+  it('Aplicar exitoso sin cambios habilita Finalizar y presentación no invalida el resultado', async () => {
+    const view = await confirmation({ headers: ['occurrenceID', 'vacía'], rows: [{ row: 19, values: ['0001', ''] }] });
+    expect(view.button('Finalizar').disabled).toBe(false);
+    const revision = view.f.componentInstance.analysisRevision();
+    await view.click('Normalizar'); await view.click('Todos');
+    view.root.querySelector<HTMLInputElement>('input[role=switch]')!.click(); await view.f.whenStable();
+    await view.click('Ver diagnóstico'); await view.click('Ver todas las incidencias');
+    const filter = view.root.querySelector<HTMLInputElement>('input[type=search]')!;
+    filter.value = 'nada'; filter.dispatchEvent(new Event('input')); await view.f.whenStable();
+    expect(view.button('Finalizar').disabled).toBe(false);
+    expect(view.f.componentInstance.analysisRevision()).toBe(revision);
+    await view.click('Finalizar'); await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    await view.click('Confirmar e importar');
+    expect(view.api.import).toHaveBeenCalledTimes(1);
+    expect(view.api.import.mock.calls[0][0]).toMatchObject({ rows: [{ originalValues: ['0001', ''], values: ['0001', ''] }] });
+  });
+
+  it.each(['cancelar', 'error', 'rechazo', 'generación'])('Aplicar %s no habilita Finalizar ni confirma con elegibilidad anterior', async failure => {
+    const view = await confirmation(undefined, [], false);
+    await view.click('Normalizar'); await view.click('Aplicar normalización y validar');
+    const worker = DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!;
+    if (failure === 'cancelar') await view.click('Cancelar procesamiento');
+    else if (failure === 'error') { worker.onerror?.(); await view.f.whenStable(); }
+    else if (failure === 'rechazo') { worker.respond({ kind: 'error', message: 'No se pudo completar la revisión.' }); await view.f.whenStable(); }
+    else { view.f.componentRef.setInput('catalogVersion', 6); await view.f.whenStable(); }
+    worker.respond({ kind: 'result', issues: [], changes: [] }); await view.f.whenStable();
+    expect(view.button('Finalizar').disabled).toBe(true);
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    const revision = view.f.componentInstance.analysisRevision();
+    await view.click('Confirmar e importar');
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    expect(view.api.import).not.toHaveBeenCalled();
+    expect(view.f.componentInstance.analysisRevision()).toBe(revision);
+  });
+
+  it('solo transmite tras Aplicar y confirmar, con originales y procedencia exactos', async () => {
     const view = await confirmation();
     const original = structuredClone(view.data);
     expect(view.api.import).not.toHaveBeenCalled();
-    if (apply) {
-      await view.click('Normalizar'); await view.click('Aplicar normalización y validar'); await view.respond(); await view.click('Finalizar');
-    }
     await view.text('Nombre de la colección', ' Nueva sin recortar ');
     expect(view.button('Confirmar e importar').disabled).toBe(true);
     await view.consent('Autorizo');
@@ -1119,7 +1190,7 @@ describe('Preservación pública del análisis local', () => {
     expect(view.api.import).toHaveBeenCalledTimes(1);
     expect(view.api.import.mock.calls[0][0]).toEqual({ collectionId: null, name: ' Nueva sin recortar ', context: 'collection', expectedRevision: null,
       configurationRevision: 7, catalogVersion: 5, idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/), warningsConfirmed: false,
-      headers: ['occurrenceID'], mapping: {}, rows: [{ sourceRow: 19, originalValues: [' 0001 '], values: [apply ? '0001' : ' 0001 '] }] });
+      headers: ['occurrenceID'], mapping: {}, rows: [{ sourceRow: 19, originalValues: [' 0001 '], values: ['0001'] }] });
     expect(view.data).toEqual(original);
     expect(view.root.textContent).toContain('Importación confirmada');
     expect(view.root.querySelector('a[href="/collections/saved"]')).toBeTruthy();
@@ -1173,8 +1244,42 @@ describe('Preservación pública del análisis local', () => {
     await view.click('Confirmar e importar');
     expect((view.api.import.mock.calls[1][0] as { idempotencyKey: string }).idempotencyKey).not.toBe(first.idempotencyKey);
     expect(view.button('Confirmar e importar').disabled).toBe(true);
-    await view.click('Actualizar metadatos y volver a analizar');
+    await view.click('Actualizar información y volver a analizar');
     expect(view.button('Finalizar').disabled).toBe(true);
+  });
+
+  it.each(['contexto', 'mapeo', 'formato', 'configuración', 'catálogo', 'disponibilidad', 'archivo'])('un resultado aplicado pierde elegibilidad al cambiar %s sin enviar ni preparar', async change => {
+    const view = await confirmation();
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    expect(view.button('Confirmar e importar').disabled).toBe(false);
+    if (change === 'contexto') { await view.click('Contexto'); await view.chooseContext('other'); }
+    else if (change === 'mapeo') {
+      await view.click('Mapear columnas');
+      const input = view.root.querySelector<HTMLInputElement>('input[aria-label="Mapear occurrenceID"]')!;
+      input.value = 'catalogNumber'; input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', bubbles: true }));
+    } else if (change === 'formato') {
+      await view.click('Normalizar');
+      const select = view.root.querySelector<HTMLSelectElement>('.normalization-formats select')!;
+      select.value = 'DMY'; select.dispatchEvent(new Event('change'));
+    } else if (change === 'configuración') view.f.componentRef.setInput('configuration', { ...configurationFixture([]), revision: 8 });
+    else if (change === 'catálogo') view.f.componentRef.setInput('catalogVersion', 6);
+    else if (change === 'disponibilidad') view.f.componentRef.setInput('catalogAvailable', false);
+    else {
+      await view.click('Cambiar archivo');
+      const input = view.root.querySelector<HTMLInputElement>('input[type=file]')!;
+      Object.defineProperty(input, 'files', { value: [new File(['a\nx'], 'nuevo.csv')] });
+      input.dispatchEvent(new Event('change')); await view.f.whenStable();
+      DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.respond({ kind: 'parsed', data: view.data });
+    }
+    await view.f.whenStable();
+    expect(view.button('Finalizar').disabled).toBe(true);
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    const revision = view.f.componentInstance.analysisRevision();
+    await view.click('Confirmar e importar');
+    expect(view.api.import).not.toHaveBeenCalled();
+    expect(view.f.componentInstance.analysisRevision()).toBe(revision);
+    expect(DelayedWorker.all.flatMap(worker => worker.requests).filter(request => request.kind === 'prepare')).toHaveLength(0);
   });
 
   it('invalida la confirmación cuando cambia la versión del catálogo, sin transmisión automática', async () => {
@@ -1188,7 +1293,9 @@ describe('Preservación pública del análisis local', () => {
   it('una nueva generación requiere consentimiento nuevo; no reutiliza la autorización de advertencias', async () => {
     const view = await confirmation();
     await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
-    await view.click('Mapear columnas'); await view.click('Validar localmente'); await view.respond(); await view.click('Finalizar');
+    await view.click('Mapear columnas'); await view.click('Validar localmente'); await view.respond();
+    expect(view.button('Finalizar').disabled).toBe(true);
+    await view.click('Normalizar'); await view.click('Aplicar normalización y validar'); await view.respond(); await view.click('Finalizar');
     expect(view.button('Confirmar e importar').disabled).toBe(true);
     expect(view.root.querySelector<HTMLInputElement>('.confirmation-consent input')?.checked).toBe(false);
     expect(view.api.import).not.toHaveBeenCalled();
