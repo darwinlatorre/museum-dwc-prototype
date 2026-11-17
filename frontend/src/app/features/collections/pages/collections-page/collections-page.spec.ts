@@ -56,6 +56,78 @@ describe('Colecciones por controles públicos', () => {
   });
   afterEach(() => { http.verify({ ignoreCancelled: true }); TestBed.resetTestingModule(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
+  it('oculta vacías de toda la página antes de paginar columnas y alterna sin solicitudes', async () => {
+    const wide = { ...row, headers: Array.from({ length: 31 }, (_, i) => `campo${i}`), mapping: {},
+      values: Array.from({ length: 31 }, (_, i) => i === 30 ? '0' : ''), originalValues: Array(31).fill('') };
+    harness = await RouterTestingHarness.create(`/collections/${id}`); http.expectOne(`/api/collections/${id}`).flush(info); await settle();
+    flushPage([wide, { ...wide, id: 'otra', values: wide.values.map((v, i) => i === 29 ? ' ' : v) }]); await settle();
+    const toggle = root().querySelector<HTMLInputElement>('[aria-label="Ocultar columnas sin datos"]')!;
+    expect(toggle?.checked).toBe(true);
+    expect(root().querySelectorAll('thead th.literal')).toHaveLength(2);
+    expect(root().querySelector('thead')?.textContent).toContain('campo30');
+    toggle.click(); await settle(); expect(root().querySelectorAll('thead th.literal')).toHaveLength(25);
+    await click('Columnas siguientes'); toggle.click(); await settle();
+    expect(root().querySelectorAll('thead th.literal')).toHaveLength(2); http.expectNone(() => true);
+  });
+  it('formulario completo es diálogo enfocado y Escape devuelve foco sin escribir', async () => {
+    await open(); await edit();
+    expect(root().querySelector('dialog.collection-editor-dialog[open]')).not.toBeNull();
+    expect(document.activeElement?.id).toBe('record-editor-title');
+    root().querySelector('form')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await settle();
+    expect(root().querySelector('dialog')).toBeNull(); expect(document.activeElement?.textContent).toContain('Ver / editar');
+    http.expectNone(() => true);
+  });
+  it('doble clic edita celda sin guardar al perder foco; Enter envía una vez todos los valores', async () => {
+    await open(); root().querySelector('[data-cell]')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
+    expect(root().querySelector('dialog')).toBeNull();
+    await input('[aria-label="Editar occurrenceID"]', ' 0009\n ');
+    const cell = root().querySelector<HTMLInputElement>('[aria-label="Editar occurrenceID"]')!;
+    cell.dispatchEvent(new FocusEvent('blur')); await settle(); http.expectNone(() => true);
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
+    const request = http.expectOne({ method: 'PUT', url: `/api/collections/${id}/records/${row.id}` });
+    expect(request.request.body.values).toEqual([' 0009\n ', ...row.values.slice(1)]);
+    expect(cell.matches(':disabled')).toBe(true);
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await settle();
+    expect(root().querySelector('.inline-cell')).not.toBeNull();
+    request.flush({ ...info, revision: 8 }); await settle(); flushPage(); await settle();
+    expect(root().querySelector('[aria-label="Editar occurrenceID"]')).toBeNull(); expect(row.originalValues[0]).toBe(' 0001 ');
+  });
+  it('teclado abre celda; rechazo conserva borrador, originales y cuentas; Escape cancela sin escribir', async () => {
+    await open(); root().querySelector('[data-cell] button')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
+    await input('[aria-label="Editar occurrenceID"]', 'dup'); await click('Guardar celda');
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code: 'VALIDATION_FAILED', detail: 'No válido' }, { status: 422, statusText: 'Error' }); await settle();
+    expect(root().querySelector<HTMLInputElement>('[aria-label="Editar occurrenceID"]')?.value).toBe('dup');
+    expect(root().textContent).toContain('26 activos'); expect(root().textContent).toContain('Revisión 7');
+    vi.spyOn(window, 'confirm').mockReturnValue(false); await click('Ver / editar'); http.expectNone(() => true);
+    expect(root().querySelector('[aria-label="Editar occurrenceID"]')).not.toBeNull();
+    root().querySelector('[aria-label="Editar occurrenceID"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await settle();
+    expect(root().querySelector('[aria-label="Editar occurrenceID"]')).toBeNull();
+    expect(document.activeElement).toBe(root().querySelector('[data-cell] button')); http.expectNone(() => true);
+  });
+  it('celda táctil conserva advertencias y valores ocultos sin reenvío automático', async () => {
+    await open();
+    const touch = new Event('pointerup', { bubbles: true }); Object.defineProperty(touch, 'pointerType', { value: 'touch' });
+    root().querySelector('[data-cell] button')!.dispatchEvent(touch); await settle();
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
+    await input('[aria-label="Editar occurrenceID"]', ' 00A '); await click('Guardar celda');
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code: 'WARNINGS_UNCONFIRMED', issues: [{ field: 'nota', row: 19, severity: 'WARNING', description: 'Revise' }] }, { status: 422, statusText: 'Advertencias' }); await settle();
+    expect(button('Guardar celda').disabled).toBe(true); expect(root().textContent).toContain('Revise');
+    root().querySelector<HTMLInputElement>('[aria-label="Confirmar advertencias"]')!.click(); await settle(); await click('Guardar celda');
+    const request = http.expectOne(`/api/collections/${id}/records/${row.id}`);
+    expect(request.request.body).toEqual({ expectedRevision: 7, configurationRevision: 3, catalogVersion: 5, warningsConfirmed: true, values: [' 00A ', ...row.values.slice(1)] });
+    request.error(new ProgressEvent('error')); await settle();
+    expect(button('Guardar celda').disabled).toBe(true); expect(root().textContent).toContain('Resultado desconocido');
+    await click('Guardar celda'); http.expectNone(() => true);
+  });
+  it('detalle pendiente de celda se cancela al navegar; no abre editor tardío ni escribe', async () => {
+    await open(); root().querySelector('[data-cell]')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+    const pending = http.expectOne(`/api/collections/${id}/records/${row.id}`);
+    await TestBed.inject(Router).navigateByUrl('/other'); await settle();
+    expect(pending.cancelled).toBe(true); expect(root().querySelector('textarea')).toBeNull(); http.expectNone(request => request.method !== 'GET');
+  });
   it('lista paginada, contexto, cuentas y enlace directo, sin leer registros', async () => {
     harness = await RouterTestingHarness.create('/collections');
     expect(root().textContent).toContain('Cargando colecciones');
@@ -107,10 +179,10 @@ describe('Colecciones por controles públicos', () => {
   it.each(['REVISION_CONFLICT', 'CONFIGURATION_CHANGED', 'CATALOG_CHANGED'])('conflicto %s exige actualización explícita sin descartar ante fallo', async code => {
     await open(); await edit(); await input('textarea[data-value="0"]', '0009'); await click('Guardar cambios');
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code, detail: 'Actualice' }, { status: 409, statusText: 'Conflicto' }); await settle();
-    expect(button('Guardar cambios').disabled).toBe(true); await click('Actualizar y reanalizar borrador');
+    expect(button('Guardar cambios').disabled).toBe(true); await click('Actualizar y revisar cambios');
     http.expectOne(`/api/collections/${id}`).flush({}, { status: 503, statusText: 'No disponible' }); await settle();
     expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')?.value).toBe('0009'); expect(button('Guardar cambios').disabled).toBe(true);
-    await click('Actualizar y reanalizar borrador'); http.expectOne(`/api/collections/${id}`).flush({ ...info, revision: 9 }); await settle();
+    await click('Actualizar y revisar cambios'); http.expectOne(`/api/collections/${id}`).flush({ ...info, revision: 9 }); await settle();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle(); flushPage(); await settle();
     await click('Guardar cambios'); const request = http.expectOne(`/api/collections/${id}/records/${row.id}`); expect(request.request.body.expectedRevision).toBe(9);
     request.flush({ ...info, revision: 10 }); await settle(); flushPage(); await settle();
@@ -119,10 +191,11 @@ describe('Colecciones por controles públicos', () => {
     await open(); await click('Agregar registro'); await input('textarea[data-value="0"]', '0009'); await click('Guardar nuevo registro');
     http.expectOne(`/api/collections/${id}/records`).error(new ProgressEvent('error')); await settle();
     expect(root().textContent).toContain('Resultado desconocido'); expect(button('Guardar nuevo registro').disabled).toBe(true);
+    expect(root().querySelector('.collection-editor-dialog')?.getAttribute('aria-modal')).toBeNull();
     expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')?.value).toBe('0009');
-    await click('Actualizar para reconciliar'); http.expectOne(`/api/collections/${id}`).flush({ ...info, revision: 8, activeCount: 27 }); await settle(); flushPage(); await settle();
+    await click('Actualizar para comprobar'); http.expectOne(`/api/collections/${id}`).flush({ ...info, revision: 8, activeCount: 27 }); await settle(); flushPage(); await settle();
     expect(root().textContent).toContain('Revisión 8'); expect(button('Guardar nuevo registro').disabled).toBe(true);
-    await click('He comprobado los registros del servidor'); expect(root().querySelector('form')).toBeNull();
+    await click('He comprobado los registros guardados'); expect(root().querySelector('form')).toBeNull();
   });
   it('retirar requiere confirmación, cancelar no escribe; restaura con revisiones y consentimiento', async () => {
     await open(); await click('Retirar'); expect(root().querySelector('[role=dialog]')?.textContent).toContain('papelera');
@@ -145,7 +218,7 @@ describe('Colecciones por controles públicos', () => {
   });
   it('agrega campo libre literal y conserva columnas del esquema seleccionado más obligatorios', async () => {
     await open(); await click('Agregar registro'); vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const select = root().querySelector<HTMLSelectElement>('[aria-label="Esquema del nuevo registro"]')!;
+    const select = root().querySelector<HTMLSelectElement>('[aria-label="Campos del nuevo registro"]')!;
     select.value = row.id; select.dispatchEvent(new Event('change')); await settle();
     expect(root().querySelectorAll('textarea')).toHaveLength(3);
     await input('app-dwc-picker input', ' Campo libre '); await click('Agregar campo');
@@ -157,10 +230,10 @@ describe('Colecciones por controles públicos', () => {
   });
   it('colección sin activos puede tomar esquema de papelera sin descargar la colección completa', async () => {
     harness = await RouterTestingHarness.create(`/collections/${id}`); http.expectOne(`/api/collections/${id}`).flush({ ...info, activeCount: 0 }); await settle(); flushPage([], 0, 0); await settle();
-    await click('Agregar registro'); await click('Buscar esquema en papelera');
+    await click('Agregar registro'); await click('Buscar campos en papelera');
     flushPage([{ ...row, trashed: true }], 0, 1, 'TRASHED'); await settle();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const select = root().querySelector<HTMLSelectElement>('[aria-label="Esquema del nuevo registro"]')!; select.value = row.id; select.dispatchEvent(new Event('change')); await settle();
+    const select = root().querySelector<HTMLSelectElement>('[aria-label="Campos del nuevo registro"]')!; select.value = row.id; select.dispatchEvent(new Event('change')); await settle();
     expect(root().querySelectorAll('textarea')).toHaveLength(3); expect(root().textContent).toContain('no de toda la colección');
     http.expectNone(request => request.method !== 'GET');
   });
@@ -200,7 +273,7 @@ describe('Colecciones por controles públicos', () => {
     await open(); await edit(); await input('textarea[data-value="0"]', 'borrador');
     const shell = harness.routeDebugElement!.componentInstance as Shell;
     shell.metadata.configuration.set({ revision: 4, contexts: [{ context: 'other', requiredFields: ['occurrenceID'] }] }); await settle();
-    expect(button('Guardar cambios').disabled).toBe(true); expect(root().textContent).toContain('Los metadatos cambiaron');
+    expect(button('Guardar cambios').disabled).toBe(true); expect(root().textContent).toContain('Las reglas cambiaron');
     expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')!.value).toBe('borrador'); http.expectNone(request => request.method === 'PUT');
   });
   it('retirar la última fila devuelve foco al encabezado cuando desaparece su disparador', async () => {

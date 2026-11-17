@@ -54,7 +54,18 @@ export class CollectionsPage implements OnDestroy {
   readonly schemas = signal<CollectionRecord[]>([]);
   readonly values = new FormArray<FormControl<string>>([]);
   readonly contextLabel = contextLabel;
-  readonly columns = computed(() => [...new Set((this.records()?.items ?? []).flatMap(record => this.fields(record)))]);
+  readonly hideEmpty = signal(true);
+  readonly inlineIndex = signal<number | undefined>(undefined);
+  readonly columns = computed(() => {
+    const records = this.records()?.items ?? [];
+    const all = [...new Set(records.flatMap(record => this.fields(record)))];
+    // Only the loaded page determines presentation; whitespace is retained as data.
+    return this.hideEmpty() ? all.filter(column => records.some(record => {
+      const index = this.fields(record).indexOf(column);
+      return index >= 0 && ((record.values[index] ?? '') !== ''
+        || (this.editor()?.record?.id === record.id && this.inlineIndex() === index));
+    })) : all;
+  });
   readonly columnPage = signal(0);
   readonly visibleColumns = computed(() => this.columns().slice(this.columnPage() * 25, (this.columnPage() + 1) * 25));
   private readonly cellValues = computed(() => new Map((this.records()?.items ?? []).map(record =>
@@ -75,6 +86,13 @@ export class CollectionsPage implements OnDestroy {
   private pageOperation = 0;
   private recordOperation = 0;
   private origin?: HTMLElement;
+  private cellOrigin?: { recordId: string; column: string };
+  private returnFocus() {
+    const cell = this.cellOrigin;
+    const target = cell ? [...this.element.nativeElement.querySelectorAll<HTMLElement>('td[data-cell]')]
+      .find(element => element.dataset['record'] === cell.recordId && element.dataset['column'] === cell.column)?.querySelector<HTMLElement>('button') : this.origin;
+    (target?.isConnected ? target : this.element.nativeElement.querySelector<HTMLElement>('#collections-title'))?.focus();
+  }
   private dirty = false;
   private destroyed = false;
   constructor() {
@@ -87,7 +105,7 @@ export class CollectionsPage implements OnDestroy {
       this.cancelReads(); this.id.set(params.get('id')); this.page.set(0); this.filter.set('ACTIVE');
       this.collection.set(undefined); this.records.set(undefined); this.list.set(undefined); this.clearEditor();
       this.uncertain.set(this.navigation.uncertainCollections.has(this.id() ?? '')); this.reconciled.set(false); this.confirmation.set(undefined);
-      this.message.set(this.uncertain() ? 'Resultado desconocido pendiente de reconciliación con el servidor.' : '');
+      this.message.set(this.uncertain() ? 'No sabemos si los cambios se guardaron. Actualice y compruebe los registros antes de continuar.' : '');
       void this.load();
     });
     inject(DestroyRef).onDestroy(() => { this.destroyed = true; });
@@ -132,8 +150,20 @@ export class CollectionsPage implements OnDestroy {
     } catch (error) { if (operation === this.pageOperation && !controller.signal.aborted) this.readError.set(this.errorText(error)); }
     finally { if (operation === this.pageOperation) this.loading.set(false); }
   }
+  toggleEmpty() { this.hideEmpty.update(value => !value); this.columnPage.set(0); }
+  returnToCell() {
+    const editor = this.editor(), index = this.inlineIndex();
+    if (!editor || index === undefined) return;
+    this.columnPage.set(Math.max(0, Math.floor(this.columns().indexOf(this.fields(editor)[index]) / 25)));
+    this.focusEditor();
+  }
+  cellIndex(record: CollectionRecord, column: string) { return this.fields(record).indexOf(column); }
+  inlineKey(event: KeyboardEvent) {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (!this.busy() && !this.uncertain()) { this.clearEditor(); afterNextRender(() => this.returnFocus(), { injector: this.injector }); } }
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); void this.save(); }
+  }
   changeColumns(direction: number) {
-    this.columnPage.update(page => Math.max(0, Math.min(Math.ceil(this.columns().length / 25) - 1, page + direction)));
+    this.columnPage.update(page => Math.max(0, Math.min(Math.max(0, Math.ceil(this.columns().length / 25) - 1), page + direction)));
   }
   changePage(page: number) {
     if (this.busy() || (!this.uncertain() && !this.discard())) return;
@@ -149,39 +179,42 @@ export class CollectionsPage implements OnDestroy {
     if (!this.uncertain() && !this.discard()) { select.value = this.filter(); return; }
     this.filter.set(select.value as TrashFilter); this.page.set(0); this.records.set(undefined); void this.loadPage();
   }
-  async edit(record: CollectionRecord, event: Event) {
-    if (!this.discard()) return;
-    this.origin = event.currentTarget as HTMLElement;
+  async edit(record: CollectionRecord, event: Event, column?: string) {
+    if (column !== undefined && this.editor()?.record?.id === record.id && this.inlineIndex() === this.cellIndex(record, column)) return;
+    if (this.busy() || this.recordLoading() || this.uncertain() || (column !== undefined && (record.trashed || this.cellIndex(record, column) < 0)) || !this.discard()) return;
+    this.cellOrigin = column === undefined ? undefined : { recordId: record.id, column };
+    const target = event.currentTarget as HTMLElement;
+    this.origin = target.matches('td') ? target.querySelector<HTMLElement>('button') ?? target : target;
     this.recordController?.abort(); const controller = this.recordController = new AbortController(), operation = ++this.recordOperation;
     this.recordLoading.set(true); this.message.set('');
     try {
       const current = await this.api.record(this.id()!, record.id, controller.signal);
       if (operation !== this.recordOperation) return;
-      this.startEditor('edit', current.headers, current.mapping, current);
+      this.startEditor('edit', current.headers, current.mapping, current, column === undefined ? undefined : this.cellIndex(current, column));
     } catch (error) { if (!controller.signal.aborted) this.message.set(this.errorText(error)); }
     finally { if (operation === this.recordOperation) this.recordLoading.set(false); }
   }
   add(event: Event) {
     if (!this.discard() || !this.collection() || !this.metadata()?.available() || this.uncertain()) return;
-    this.origin = event.currentTarget as HTMLElement;
+    this.cellOrigin = undefined; this.origin = event.currentTarget as HTMLElement;
     this.schemas.set(this.records()?.items ?? []);
     this.startEditor('add', this.required(), {});
   }
   private required() {
     return this.metadata().configuration()?.contexts.find(context => context.context === this.collection()?.context)?.requiredFields ?? [];
   }
-  private startEditor(kind: 'add' | 'edit', headers: string[], mapping: Record<string, string>, record?: CollectionRecord) {
+  private startEditor(kind: 'add' | 'edit', headers: string[], mapping: Record<string, string>, record?: CollectionRecord, inlineIndex?: number) {
     const configuration = this.metadata().configuration(), snapshot = this.metadata().snapshot();
-    if (!configuration || !snapshot || !this.collection()) { this.message.set('Actualice los metadatos antes de editar.'); return; }
+    if (!configuration || !snapshot || !this.collection()) { this.message.set('Actualice las reglas antes de editar.'); return; }
     this.clearEditor();
     this.editor.set({ kind, record, headers: [...headers], mapping: { ...mapping }, revision: this.collection()!.revision,
       configurationRevision: configuration.revision, catalogVersion: snapshot.snapshotVersion });
     (record?.values ?? headers.map(() => '')).forEach(value => this.values.push(new FormControl(value, { nonNullable: true }), { emitEvent: false }));
-    this.dirty = kind === 'add'; this.focusEditor();
+    this.inlineIndex.set(inlineIndex); this.dirty = kind === 'add'; this.focusEditor();
   }
   chooseSchema(event: Event) {
     const selected = this.schemas().find(record => record.id === this.text(event));
-    if (!selected || !this.editor() || !window.confirm('¿Sustituir los campos y valores del nuevo borrador por este esquema vacío?')) return;
+    if (!selected || !this.editor() || !window.confirm('¿Reemplazar los campos y textos del nuevo registro por estos campos vacíos?')) return;
     // A manual record has no imported source: use the selected effective fields as its concrete headers.
     this.startEditor('add', [...new Set([...this.fields(selected), ...this.required()])], {});
   }
@@ -191,7 +224,7 @@ export class CollectionsPage implements OnDestroy {
     try {
       const page = await this.api.records(this.id()!, 0, 25, 'TRASHED', session.signal);
       if (session !== this.session) return;
-      this.schemas.set(page.items); this.message.set('Esquemas de los primeros 25 registros en papelera. Para otros, cierre el editor y pagine en Papelera o Todos.');
+      this.schemas.set(page.items); this.message.set('Campos de los primeros 25 registros en papelera. Para ver otros, cierre el formulario y cambie de página en Papelera o Todos.');
     } catch (error) { if (!session.signal.aborted) this.message.set(this.errorText(error)); }
     finally { if (session === this.session) this.recordLoading.set(false); }
   }
@@ -221,10 +254,10 @@ export class CollectionsPage implements OnDestroy {
   }
   confirmAction(kind: 'trash' | 'restore', record: CollectionRecord, event: Event) {
     if (!this.discard() || this.uncertain() || this.busy()) return;
-    this.origin = event.currentTarget as HTMLElement; this.issues.set([]); this.warnings.set(false); this.message.set('');
+    this.cellOrigin = undefined; this.origin = event.currentTarget as HTMLElement; this.issues.set([]); this.warnings.set(false); this.message.set('');
     this.confirmation.set({ kind, record });
     afterNextRender(() => {
-      const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('dialog');
+      const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('.collection-confirm-dialog');
       if (dialog?.showModal) dialog.showModal();
       else dialog?.setAttribute('open', '');
       dialog?.querySelector<HTMLButtonElement>('button')?.focus();
@@ -245,30 +278,31 @@ export class CollectionsPage implements OnDestroy {
   }
   private async mutate(send: () => Promise<CollectionInfo>) {
     // Invalidate older reads before accepting the authoritative mutation response.
+    const session = this.session;
     this.cancelReads(); this.busy.set(true); this.message.set('');
     try {
       const result = await send();
-      if (this.destroyed) return;
+      if (this.destroyed || session !== this.session || session.signal.aborted) return;
       this.collection.set(result); this.client.setQueryData(['collections', result.id], result);
       void this.client.invalidateQueries({ queryKey: ['collections'], refetchType: 'none' });
       this.clearEditor(); this.confirmation.set(undefined); this.message.set('Cambios guardados.');
       await this.loadPage();
-      afterNextRender(() => {
-        const target = this.origin?.isConnected ? this.origin : this.element.nativeElement.querySelector<HTMLElement>('#collections-title');
-        target?.focus();
-      }, { injector: this.injector });
+      afterNextRender(() => this.returnFocus(), { injector: this.injector });
     } catch (error) {
-      if (this.destroyed) return;
+      if (this.destroyed || session !== this.session || session.signal.aborted) return;
       if (!(error instanceof CollectionApiError) || error.unknownOutcome) {
         this.confirmation.set(undefined);
         this.navigation.uncertainCollections.add(this.id()!);
         this.uncertain.set(true); this.reconciled.set(false);
-        this.message.set('Resultado desconocido: puede que el servidor haya guardado la operación. No se repetirá. Actualice y compruebe los registros antes de escribir de nuevo.');
+        // Keep the draft but release the modal so every page can be checked before acknowledgement.
+        const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('.collection-editor-dialog');
+        if (dialog?.open) { dialog.close?.(); dialog.setAttribute('open', ''); }
+        this.message.set('Resultado desconocido: puede que los cambios se hayan guardado. No los enviaremos otra vez. Actualice y compruebe los registros antes de continuar.');
       } else {
         this.message.set(`${error.message} No se guardaron cambios de esta solicitud.`); this.issues.set(error.problem.issues ?? []);
         this.blocked.set(['REVISION_CONFLICT', 'CONFIGURATION_CHANGED', 'CATALOG_CHANGED', 'AUTHORITY_UNAVAILABLE', 'RECORD_TRASHED', 'RECORD_ACTIVE'].includes(error.problem.code ?? ''));
       }
-    } finally { this.busy.set(false); }
+    } finally { if (session === this.session) this.busy.set(false); }
   }
   async refreshDraft() {
     if (this.busy()) return;
@@ -277,7 +311,7 @@ export class CollectionsPage implements OnDestroy {
     try {
       const info = await this.api.detail(this.id()!, session.signal);
       if (session !== this.session) return;
-      if (!await this.metadata().refresh()) throw new Error('No se pudieron actualizar los metadatos. El borrador se conserva.');
+      if (!await this.metadata().refresh()) throw new Error('No se pudieron actualizar las reglas. Sus cambios se conservan.');
       if (session !== this.session) return;
       const action = this.confirmation();
       const recordId = editor?.record?.id ?? action?.record.id;
@@ -293,7 +327,7 @@ export class CollectionsPage implements OnDestroy {
       await this.loadPage();
       if (this.readError()) throw new Error(this.readError());
       this.reconciled.set(this.uncertain());
-      this.message.set(this.uncertain() ? 'Compruebe el resultado en los registros del servidor. No vuelva a enviar el borrador incierto.' : 'Borrador conservado con revisiones actuales. Guardar solicita una nueva validación del servidor.');
+      this.message.set(this.uncertain() ? 'Compruebe los registros guardados en todas las páginas necesarias. No vuelva a enviar estos cambios.' : 'Sus cambios se conservan. Puede volver a guardarlos para comprobarlos con las reglas actuales.');
     } catch (error) { if (!session.signal.aborted) { this.readError.set(this.errorText(error)); this.blocked.set(true); } }
     finally { if (session === this.session) this.loading.set(false); }
   }
@@ -301,28 +335,35 @@ export class CollectionsPage implements OnDestroy {
     if (!this.reconciled()) return;
     this.navigation.uncertainCollections.delete(this.id()!);
     this.uncertain.set(false); this.reconciled.set(false); this.blocked.set(false); this.confirmation.set(undefined); this.clearEditor();
-    this.message.set('Reconciliación confirmada. El borrador incierto no se reenviará.'); this.origin?.focus();
+    this.message.set('Comprobación confirmada. No volveremos a enviar los cambios anteriores.'); this.origin?.focus();
   }
   private clearEditor() {
-    this.editor.set(undefined); this.values.clear({ emitEvent: false }); this.dirty = false; this.search.set(''); this.field.set('');
+    this.inlineIndex.set(undefined); this.editor.set(undefined); this.values.clear({ emitEvent: false }); this.dirty = false; this.search.set(''); this.field.set('');
     this.issues.set([]); this.warnings.set(false); this.blocked.set(false);
   }
   canLeave() {
     if (this.busy()) return false;
     return !(this.dirty || this.field() || this.uncertain()) || window.confirm(this.uncertain()
-      ? 'El resultado es desconocido. ¿Salir y reconciliar con el servidor antes de otra escritura?' : 'Hay cambios sin guardar. ¿Descartar el borrador?');
+      ? 'No sabemos si los cambios se guardaron. ¿Salir y comprobar los registros antes de continuar?' : 'Hay cambios sin guardar. ¿Descartar el borrador?');
   }
   private discard() {
     if (this.busy() || this.uncertain() || !this.canLeave()) return false;
     this.clearEditor(); return true;
   }
-  cancelEditor() { if (this.discard()) this.origin?.focus(); }
+  cancelEditor() { if (this.discard()) afterNextRender(() => this.returnFocus(), { injector: this.injector }); }
   escape(event: Event) { event.preventDefault(); this.cancelEditor(); }
   beforeUnload(event: BeforeUnloadEvent) {
     if (this.dirty || this.field() || this.busy() || this.uncertain()) { event.preventDefault(); event.returnValue = ''; }
   }
   private focusEditor() {
-    afterNextRender(() => this.element.nativeElement.querySelector<HTMLElement>('#record-editor-title')?.focus(), { injector: this.injector });
+    afterNextRender(() => {
+      if (this.inlineIndex() !== undefined) {
+        this.element.nativeElement.querySelector<HTMLElement>('.inline-cell textarea')?.focus(); return;
+      }
+      const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('.collection-editor-dialog');
+      if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
+      this.element.nativeElement.querySelector<HTMLElement>('#record-editor-title')?.focus();
+    }, { injector: this.injector });
   }
   private errorText(error: unknown) { return error instanceof Error ? error.message : 'No se pudo completar la lectura.'; }
   ngOnDestroy() {

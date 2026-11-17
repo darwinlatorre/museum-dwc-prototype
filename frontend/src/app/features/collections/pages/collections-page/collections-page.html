@@ -8,7 +8,7 @@
   @if (readError()) { <p role="alert" class="error">{{ readError() }} Los datos anteriores y el borrador se conservan.</p> }
   @if (message()) { <p role="status" class="notice">{{ message() }}</p> }
   @if (loading()) { <p role="status">{{ id() ? 'Cargando registros y revisión…' : 'Cargando colecciones…' }}</p> }
-  @if (recordLoading()) { <p role="status">Cargando registro o esquema…</p> }
+  @if (recordLoading()) { <p role="status">Cargando campos del registro…</p> }
   @if (id()) {
     @if (collection(); as collection) {
       <h3 class="literal">{{ collection.name }}</h3>
@@ -24,10 +24,12 @@
           </select>
         </label>
       </div>
-      @if (!metadata().available()) { <p class="error">Metadatos no disponibles: actualice antes de guardar.</p> }
+      @if (!metadata().available()) { <p class="error">No se pudieron cargar las reglas. Actualice antes de guardar.</p> }
       @if (records(); as records) {
         @if (records.items.length) {
-          <p id="collection-sheet-help">Desplace la hoja para ver todas las columnas. Abra un registro para consultar originales y editar valores completos. Orden estable por UUID.</p>
+          <div class="collection-sheet-tools"><p id="collection-sheet-help">Doble clic en una celda para editar. Con teclado, use Enter; en pantalla táctil, toque la celda. Abra el formulario para ver el registro completo y sus originales.</p>
+            <label><input type="checkbox" aria-label="Ocultar columnas sin datos" [checked]="hideEmpty()" (change)="toggleEmpty()" /> Ocultar columnas sin datos</label>
+          </div>
           @if (columns().length > 25) {
             <nav class="actions" aria-label="Paginación de columnas">
               <button type="button" (click)="changeColumns(-1)" [disabled]="columnPage() === 0">Columnas anteriores</button>
@@ -38,11 +40,23 @@
           <div class="collection-sheet" role="region" aria-label="Hoja de registros" aria-describedby="collection-sheet-help" tabindex="0" [attr.aria-busy]="loading()">
             <table>
               <caption>{{ records.totalElements }} registros · Página {{ records.page + 1 }} · {{ filter() === 'TRASHED' ? 'Papelera' : filter() === 'ALL' ? 'Todos' : 'Activos' }}</caption>
-              <thead><tr><th scope="col">Registro / origen</th>@for (column of visibleColumns(); track column) { <th scope="col" class="literal">{{ column }}</th> }<th scope="col">Acciones</th></tr></thead>
+              <thead><tr><th scope="col">Fila</th>@for (column of visibleColumns(); track column) { <th scope="col" class="literal">{{ column }}</th> }<th scope="col">Acciones</th></tr></thead>
               <tbody>@for (record of records.items; track record.id) {
                 <tr [class.record-trashed]="record.trashed">
-                  <th scope="row" [attr.aria-label]="'Registro ' + record.id + '. Fila ' + record.sourceRow + (record.trashed ? '. En papelera' : '. Activo')"><span class="record-id" [title]="record.id">{{ record.id.slice(0, 8) }}…</span><small>Fila {{ record.sourceRow }} · {{ record.trashed ? 'En papelera' : 'Activo' }}</small></th>
-                  @for (column of visibleColumns(); track column) { <td data-cell class="literal">{{ cell(record, column) }}</td> }
+                  <th scope="row">{{ record.sourceRow }} @if (record.trashed) { <small>En papelera</small> }</th>
+                  @for (column of visibleColumns(); track column) {
+                    <td data-cell [attr.data-record]="record.id" [attr.data-column]="column" class="literal" (dblclick)="edit(record, $event, column)">
+                      @if (inlineIndex() !== undefined && editor()?.record?.id === record.id && cellIndex(record, column) === inlineIndex()) {
+                        <fieldset class="inline-cell" [disabled]="busy() || uncertain()" aria-label="Editar celda">
+                          <textarea [attr.aria-label]="'Editar ' + column" [formControl]="values.at(inlineIndex()!)" (keydown)="inlineKey($event)" rows="2"></textarea>
+                          <div class="actions"><button type="button" (click)="save()" [disabled]="!canWrite()">Guardar celda</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar</button></div>
+                          <small>Enter guarda · Mayús + Enter añade una línea · Escape cancela</small>
+                        </fieldset>
+                      } @else {
+                        <button type="button" class="cell-value" [attr.aria-label]="'Editar ' + column + ', fila ' + record.sourceRow + ': ' + cell(record, column)" [title]="cell(record, column)" (keydown.enter)="$event.preventDefault(); edit(record, $event, column)" (keydown.space)="$event.preventDefault(); edit(record, $event, column)" (pointerup)="$event.pointerType === 'touch' && edit(record, $event, column)" [disabled]="busy() || recordLoading() || uncertain() || record.trashed || cellIndex(record, column) < 0">{{ cell(record, column) }}</button>
+                      }
+                    </td>
+                  }
                   <td><div class="actions">
                     <button type="button" (click)="edit(record, $event)" [disabled]="busy() || recordLoading() || uncertain()">Ver / editar</button>
                     @if (record.trashed) { <button type="button" (click)="confirmAction('restore', record, $event)" [disabled]="busy() || uncertain()">Restaurar</button> }
@@ -57,7 +71,7 @@
     }
   } @else {
     @if (list(); as list) {
-      <p>{{ list.totalElements }} colecciones · Orden estable por UUID</p>
+      <p>{{ list.totalElements }} colecciones</p>
       <ul class="collection-list">@for (collection of list.items; track collection.id) {
         <li><a class="collection-link literal" [routerLink]="['/collections', collection.id]">{{ collection.name }}</a>
           <span>{{ contextLabel(collection.context) }} · {{ collection.activeCount }} activos · {{ collection.trashCount }} en papelera</span>
@@ -73,31 +87,43 @@
       <label>Por página <select aria-label="Registros por página" [value]="size()" (change)="changeSize($event)" [disabled]="busy() || loading()"><option value="25">25</option><option value="50">50</option></select></label>
     </nav>
   }
-  @if (metadataChanged()) { <p role="alert" class="error">Los metadatos cambiaron. Conserve el borrador y actualice antes de volver a guardar.</p> }
-  @if ((blocked() || metadataChanged()) && !uncertain()) { <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar y reanalizar borrador</button> }
+  @if (metadataChanged()) { <p role="alert" class="error">Las reglas cambiaron. Sus cambios se conservan; actualice antes de guardar.</p> }
+  @if ((blocked() || metadataChanged()) && !uncertain()) { <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar y revisar cambios</button> }
   @if (uncertain()) {
     <div class="error" role="alert">
-      <strong>Resultado desconocido</strong><p>No hay reintento automático. Compruebe todas las páginas necesarias del servidor; el borrador incierto no se reenviará.</p>
-      <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar para reconciliar</button>
-      @if (reconciled()) { <button type="button" (click)="acknowledgeReconciliation()">He comprobado los registros del servidor</button> }
+      <strong>Resultado desconocido</strong><p>Puede que los cambios se hayan guardado. No los enviaremos otra vez. Revise los registros en todas las páginas necesarias antes de continuar.</p>
+      <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar para comprobar</button>
+      @if (reconciled()) { <button type="button" (click)="acknowledgeReconciliation()">He comprobado los registros guardados</button> }
     </div>
   }
   @if (editor(); as editor) {
+    @if (inlineIndex() === undefined) {
+    <dialog class="collection-editor-dialog" [attr.aria-modal]="uncertain() ? null : 'true'" aria-labelledby="record-editor-title" (cancel)="escape($event)">
     <form class="collection-editor" (submit)="$event.preventDefault(); save()" (keydown.escape)="escape($event)" aria-labelledby="record-editor-title">
       <h3 id="record-editor-title" tabindex="-1">{{ editor.kind === 'add' ? 'Nuevo registro' : 'Detalle y edición del registro' }}</h3>
-      @if (editor.record; as record) { <p>UUID {{ record.id }} · Fila de origen {{ record.sourceRow }} · {{ record.trashed ? 'En papelera: solo lectura' : 'Activo' }}</p> }
-      <p>Valores literales, sin normalización automática. Guardar valida en el servidor.</p>
+      @if (editor.record; as record) { <p>Fila de origen {{ record.sourceRow }} · {{ record.trashed ? 'En papelera: solo lectura' : 'Activo' }}</p> }
+      <p>Los textos se conservan tal como los escriba.</p>
+      @if (message()) { <p role="status" class="notice">{{ message() }}</p> }
+      @if (metadataChanged()) { <p role="alert" class="error">Las reglas cambiaron. Actualice antes de guardar; sus cambios se conservan.</p> }
+      @if ((blocked() || metadataChanged()) && !uncertain()) { <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar y revisar cambios</button> }
+      @if (uncertain()) {
+        <div class="error" role="alert"><strong>Resultado desconocido</strong><p>Puede que los cambios se hayan guardado. No los enviaremos otra vez. Actualice y revise los registros antes de continuar.</p>
+          <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar para comprobar</button>
+          @if (reconciled()) { <p>Revise los registros de la tabla. Al continuar, se cerrará este borrador sin volver a enviarlo.</p><button type="button" (click)="acknowledgeReconciliation()">He comprobado los registros guardados</button> }
+        </div>
+      }
+      @if (issues().length) { <ul role="alert">@for (issue of issues(); track $index) { <li>{{ issue.severity === 'ERROR' ? 'Error' : 'Advertencia' }} · {{ issue.field }} · {{ issue.row === null ? 'Campo' : 'Fila ' + issue.row }}: {{ issue.description }}</li> }</ul> }
       <fieldset [disabled]="busy() || uncertain() || editor.record?.trashed === true">
         <legend>Valores de trabajo</legend>
         @if (editor.kind === 'add') {
           <div class="form-grid">
-            <label>Esquema de un registro disponible en esta página
-              <select aria-label="Esquema del nuevo registro" (change)="chooseSchema($event)"><option value="">Campos obligatorios actuales / selección libre</option>@for (record of schemas(); track record.id) { <option [value]="record.id">{{ record.id }} · {{ record.headers.length }} columnas</option> }</select>
+            <label>Usar los campos de un registro de esta página
+              <select aria-label="Campos del nuevo registro" (change)="chooseSchema($event)"><option value="">Campos obligatorios / elegir otros</option>@for (record of schemas(); track record.id) { <option [value]="record.id">Fila {{ record.sourceRow }} · {{ record.headers.length }} campos</option> }</select>
             </label>
-            <button type="button" (click)="trashSchemas()" [disabled]="recordLoading()">Buscar esquema en papelera</button>
+            <button type="button" (click)="trashSchemas()" [disabled]="recordLoading()">Buscar campos en papelera</button>
           </div>
           <div class="actions collection-add-field"><app-dwc-picker [terms]="metadata().snapshot()?.terms ?? []" label="Agregar campo DwC o libre" [value]="field()" (valueChange)="field.set($event)" [disabled]="busy() || uncertain()" /><button type="button" (click)="addField()" [disabled]="!field()">Agregar campo</button></div>
-          <p>Se ofrecen esquemas de esta página, no de toda la colección. Puede buscar otros mediante Papelera / Todos y su paginación.</p>
+          <p>Se ofrecen campos de esta página, no de toda la colección. Puede buscar otros mediante Papelera / Todos y su paginación.</p>
         }
         <label>Buscar campos del editor<input aria-label="Buscar campos del editor" [value]="search()" (input)="search.set(text($event))" /></label>
         <div class="collection-fields">@for (control of values.controls; track control; let index = $index) {
@@ -106,26 +132,31 @@
             <textarea [id]="'record-value-' + index" [attr.data-value]="index" [formControl]="control" rows="3"></textarea>
             @if (editor.record; as record) { <details><summary>Original de {{ editor.headers[index] }}</summary><pre class="literal">{{ record.originalValues[index] }}</pre></details> }
           </div>
-        } @empty { <p>Elija o agregue al menos un campo para definir el esquema.</p> }</div>
+        } @empty { <p>Elija o agregue al menos un campo.</p> }</div>
       </fieldset>
-      <label class="collection-consent"><input type="checkbox" aria-label="Confirmar advertencias" [checked]="warnings()" (change)="warnings.set(!warnings())" [disabled]="busy() || uncertain()" /> He revisado y confirmo las advertencias del servidor</label>
+      <label class="collection-consent"><input type="checkbox" aria-label="Confirmar advertencias" [checked]="warnings()" (change)="warnings.set(!warnings())" [disabled]="busy() || uncertain()" /> He revisado y confirmo las advertencias</label>
       <div class="actions"><button type="submit" [disabled]="!canWrite() || values.length === 0 || editor.record?.trashed === true">{{ editor.kind === 'add' ? 'Guardar nuevo registro' : 'Guardar cambios' }}</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar edición</button></div>
     </form>
+    </dialog>
+    } @else {
+      <div class="actions inline-draft" aria-label="Edición de celda en curso"><span>Está editando {{ fields(editor)[inlineIndex()!] }}, fila {{ editor.record?.sourceRow }}.</span><button type="button" (click)="returnToCell()">Volver a la celda</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar edición</button></div>
+      <label class="collection-consent"><input type="checkbox" aria-label="Confirmar advertencias" [checked]="warnings()" (change)="warnings.set(!warnings())" [disabled]="busy() || uncertain()" /> He revisado y confirmo las advertencias</label>
+    }
   }
   @if (issues().length && !confirmation()) {
     <ul class="collection-issues" aria-label="Incidencias del servidor" role="alert">@for (issue of issues(); track $index) { <li><strong>{{ issue.severity === 'ERROR' ? 'Error' : 'Advertencia' }}</strong> · <span class="literal">{{ issue.field }}</span> · {{ issue.row === null ? 'Campo' : 'Fila ' + issue.row }}: {{ issue.description }}</li> }</ul>
   }
   @if (confirmation(); as confirmation) {
-    <dialog role="dialog" aria-modal="true" aria-labelledby="collection-confirm-title" (cancel)="$event.preventDefault(); closeConfirmation()" (keydown.escape)="$event.preventDefault(); closeConfirmation()">
+    <dialog class="collection-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="collection-confirm-title" (cancel)="$event.preventDefault(); closeConfirmation()" (keydown.escape)="$event.preventDefault(); closeConfirmation()">
       <h3 id="collection-confirm-title">{{ confirmation.kind === 'trash' ? 'Retirar a la papelera' : 'Restaurar registro' }}</h3>
-      <p class="literal">{{ confirmation.record.id }}</p>
-      <p>{{ confirmation.kind === 'trash' ? 'El registro no se borrará definitivamente.' : 'Se revalidará con la configuración y catálogo actuales. Los duplicados activos bloquean la restauración.' }}</p>
+      <p>Fila {{ confirmation.record.sourceRow }}</p>
+      <p>{{ confirmation.kind === 'trash' ? 'El registro no se borrará definitivamente.' : 'Se comprobará con las reglas actuales. No se puede restaurar si duplica un registro activo.' }}</p>
       @if (message()) { <p role="alert">{{ message() }}</p> }
-      <ul>@for (issue of issues(); track $index) { <li>{{ issue.severity }} · {{ issue.field }} · {{ issue.row === null ? 'Campo' : 'Fila ' + issue.row }}: {{ issue.description }}</li> }</ul>
+      <ul>@for (issue of issues(); track $index) { <li>{{ issue.severity === 'ERROR' ? 'Error' : 'Advertencia' }} · {{ issue.field }} · {{ issue.row === null ? 'Campo' : 'Fila ' + issue.row }}: {{ issue.description }}</li> }</ul>
       @if (confirmation.kind === 'restore') { <label><input type="checkbox" aria-label="Confirmar advertencias" [checked]="warnings()" (change)="warnings.set(!warnings())" /> He revisado y confirmo las advertencias</label> }
       <div class="actions"><button type="button" (click)="closeConfirmation()" [disabled]="busy() || uncertain()">{{ confirmation.kind === 'trash' ? 'Cancelar retiro' : 'Cancelar restauración' }}</button><button type="button" (click)="applyAction()" [disabled]="!canWrite()">{{ confirmation.kind === 'trash' ? 'Confirmar retiro' : 'Confirmar restauración' }}</button></div>
-      @if (blocked()) { <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar y reanalizar borrador</button> }
-      @if (uncertain()) { <p>Resultado desconocido: no repita la operación.</p><button type="button" (click)="refreshDraft()" [disabled]="loading()">Actualizar para reconciliar</button>@if (reconciled()) { <button type="button" (click)="acknowledgeReconciliation()">He comprobado los registros del servidor</button> } }
+      @if (blocked()) { <button type="button" (click)="refreshDraft()" [disabled]="loading() || busy()">Actualizar y revisar cambios</button> }
+      @if (uncertain()) { <p>Resultado desconocido: no repita la operación.</p><button type="button" (click)="refreshDraft()" [disabled]="loading()">Actualizar para comprobar</button>@if (reconciled()) { <button type="button" (click)="acknowledgeReconciliation()">He comprobado los registros guardados</button> } }
     </dialog>
   }
 </section>
