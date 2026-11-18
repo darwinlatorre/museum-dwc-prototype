@@ -42,6 +42,31 @@ La hoja de normalización tiene fila física y encabezados anclados dentro de un
 
 `shared/lib/table-sort.ts` es cálculo puro sin Angular, transporte ni modelos biológicos: números reales en orden numérico; strings por puntos Unicode sin trim, casefold ni coerción numérica; ausentes y texto vacío al final en ambos sentidos. Es compatible con PostgreSQL `COLLATE C`. `nextTableOrder` alterna el estado controlado y `sortTableRows` decora/copía filas con claves calculadas una vez y desempate estable, sin modificar la colección del dueño. Catálogo, mapeo y tres tablas de diagnóstico comparten las cabeceras; Fila comienza ascendente en detalles e incidencias. Los consumidores ordenan antes de paginar. Los datos no se mutan por ordenar. Esta utilidad puede importarse desde workers porque no depende de vistas.
 
+### Anchos de columna locales
+
+`shared/ui/table-resize/table-resize.ts` exporta `ResizableTable` y `ResizableColumn`. Es un único mecanismo para tablas nativas y plantillas proyectadas de PrimeNG: `museumResizableTable` en la tabla/contenedor PrimeNG y `museumResizableColumn` en **cada cabecera hoja**, también fila física y acciones sin ordenamiento. No se aplica al separador de mapeo con `colspan`. `resizeLabel` es obligatorio; `initialColumnWidth` opcional expresa píxeles (240 por defecto). El controlador mantiene un `colgroup`, ancho total explícito y layout fijo; el scroll queda en el contenedor existente. Las reglas específicas de estado sustituyen mínimos/porcentajes legados sin quitar posiciones sticky. Mapeo comienza con 166/300/366 px, equivalentes a sus proporciones 20/36/44 sobre 52rem a 16px.
+
+El botón ↔ está siempre visible: arrastre con ratón/toque, flechas izquierda/derecha (16px), Inicio/Fin (96/960px), o clic para introducir un ancho numérico y pulsar **Aplicar ancho**, sin arrastrar. El control anuncia etiqueta, valor, unidades y límites. **Restablecer ancho** o doble clic devuelve el ancho inicial; Escape/Cerrar devuelve foco al control. El popover nativo usa la capa superior, sin recortarse dentro del scroll; existe cierre explícito también sin esa API. Cancelar un puntero revierte el gesto; desmontar la cabecera o cambiar el contexto cancela sus listeners. Ningún gesto ordena la tabla ni abre el editor de celdas. El observador solo mira miembros/orden de la fila de cabeceras, nunca valores del cuerpo, atributos o estilos; no hay bucle RAF.
+
+Contrato de integración (importar ambas directivas en el consumidor):
+
+```html
+<div class="normalization-scroll">
+  <table museumResizableTable [resizeContext]="datasetSession()">
+    <thead><tr>
+      <th museumResizableColumn="physical-row" resizeLabel="Fila de origen" [initialColumnWidth]="128">Fila</th>
+      @for (column of visibleColumns(); track column.index) {
+        <th [museumResizableColumn]="'' + column.index" [resizeLabel]="column.header"
+          museumSortHeader [label]="column.header"> </th>
+      }
+    </tr></thead>
+    <!-- El consumidor conserva cuerpo, ordenamiento y paginación. -->
+  </table>
+</div>
+```
+
+Las claves son únicas y estables por tabla: en Normalizar, índice **fuente**, no posición de ventana ni destino DwC; en Colecciones, clave del esquema. Mantener ventanas de 25/50 y wrappers de scroll. `[resizeContext]` acepta identidad opaca de vista y solo cambia con un dataset/colección nueva, nunca al paginar, filtrar, ordenar o cambiar ventana. Omitido, los anchos duran lo que dure esa instancia. Una cabecera oculta puede desmontarse y recuperar su ancho al volver; varias tablas montadas son independientes. La memoria es exclusivamente local del controlador: nada de localStorage, API, Query, worker, filas, nombres de archivo ni preview; ajustar disposición no valida ni aplica normalización. No se crea mecanismo de guardado ni se cambia `compareTableValues`.
+
 ## Colecciones: especialización acotada
 
 `collections-page.scss`, importado globalmente después de `importer.scss`, limita sus reglas a `.collections-workspace`. Reutiliza paleta, espacios, radios, formularios y selector DwC existentes, sin tokens ni colores nuevos. La hoja contiene el scroll horizontal/vertical, cabeceras y primera columna sticky (también su esquina); las ventanas de 25 columnas son presentación, no un recorte de datos. La fila de origen identifica cada registro sin exponer identificadores técnicos en las ayudas. Celdas acotadas con elipsis, relleno reducido y acciones agrupadas aprovechan el ancho; cabeceras, fila y acciones quedan ancladas al desplazar. El texto completo se conserva y está disponible en edición/formulario. Valores literales no ejecutan fórmulas. Ocultar columnas sin datos comienza activo, evalúa toda la página antes de las ventanas y no altera los valores; los espacios y `0` cuentan como datos.

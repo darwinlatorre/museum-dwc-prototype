@@ -28,6 +28,17 @@ describe('Sistema de diseño del museo', () => {
     expect(css).toMatch(/museum-sort-heading[^{}]*button[^{}]*\{[^}]*min-height:\s*44px/s);
   });
 
+  it('sizes whole columns without defeating sticky positioning or legacy mapping minimums', () => {
+    expect(css).toMatch(/museum-resizable-root table\.museum-resizable-table\s*\{[^}]*table-layout:\s*fixed;[^}]*min-width:\s*0;/s);
+    expect(css).toMatch(/museum-resizable-root \.p-datatable-table-container\s*\{[^}]*overflow:\s*auto/s);
+    expect(css).toMatch(/museum-resize-handle\s*\{[^}]*min-height:\s*44px;[^}]*touch-action:\s*none/s);
+    expect(css).toMatch(/museum-column-width\[hidden\]\s*\{[^}]*display:\s*none/s);
+    const resizeRules = css.slice(css.indexOf('table.museum-resizable-root'), css.indexOf(".museum-sort-heading[aria-sort="));
+    expect(resizeRules).not.toContain('!important');
+    expect(resizeRules).not.toContain('position: relative');
+    expect(css).toMatch(/\.mapping-table \.p-datatable-table\s*\{[^}]*min-width:\s*52rem/s);
+  });
+
   it('conecta toda la escala primaria del preset con la única paleta CSS', () => {
     const primary = {
       50: 'var(--museum-primary-50)', 100: 'var(--museum-primary-100)',
