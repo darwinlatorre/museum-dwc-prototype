@@ -1,5 +1,13 @@
 # Evidencia de verificación del MVP
 
+## Tablas coherentes — verificación parcial y pausa humana
+
+- Pedido nuevo S1–S7 en `odd/tasks/table-consistency.md`, orden global elegido. En raíz solo primitivas `11a3cdb` y proyección compatible `d8cb0d1`: RED7FAIL/5PASS→12/12,355suite/lint/build; proyección RED1FAIL/3PASS→13/13/lint. Bundle686,35kB/500warning. No familiaridad visual completa, menú plegable ni ancho global implementados aún.
+- Colecciones A `1732556`, worktree `.browser/table-consistency/wt-collections`: escritor147backend/361frontend,21/57focalizadas,lint/build/package PASS. Independiente `mwlo32y9-c-vgjh`: **2/2 HTTP/PostgreSQL17.12 +3/3 frontend PASS**, orden global/páginas1, literales Unicode/vacíos, entradaSQL literal, dirección inválida400 y GETestado/revisiones/contadores/originales idénticos; respuestas tardías/editor/alta incierta protegidos. Primer fallo propio de fixtures/oráculo del verificador corregido; no REDproducto. Sin navegador de este cambio.
+- Normalizar B `b9ed1b6`, worktree `.browser/table-consistency/wt-normalization`: escritorRED8FAIL/197PASS→202/205parcial→**205/205 focal y364/364integrales**, lint/build PASS; cabecera DwC/origen intacta. Independiente `mwlod65u-e-irm0`: primero0tests por TS2345 de fixture; única corrección, **4PASS/1FAIL por instrumentación de caché**, no defecto reproducido. Protocolo público/globalpaging/literales/sourceindices/ventanas10inválidas/tokens/strong+small/col50–52/sin reenvío/API/Aplicar PASS; reutilización dinámica de caché no demostrada. No hilo real ni navegador nuevo; no GREEN independiente integral.
+- ASSESS de cada unidad: medium→high por esc2A/esc4B, `reviewDue:false/under_budget`; sin START/aprobación nativa. Fuente en worktrees limpia/committed; **A/B no integrados en raíz**. Scratch propios conservados `/var/tmp/tcv.XCYFZu` y `/var/tmp/normverify.OQp5MH`; padre no los leyó ni eliminó. No cambios a datos vivos, servicios, dependencias ni publicación.
+- Pausa explícita: «Si alcansas, pausa despues de la verificacion se me acaban los tokens y luego ya te digo para teromar.» **Needs your decision al retomar:** comprobación acotada de caché, después integración, T4(tablas restantes/ancho/menú/textos) y T5(costuras/navegador/cierre). No más verificación automática en esta pausa; historial de intentos y límites preservado.
+
 ## Comprobación adicional solicitada de Risk3 — aprobada
 
 - Nueva ejecución autorizada literalmente: «Intenta de nuevo no te demores». `gentle-ai-verify` tarea `mwlln5hw-8-v9fi`, candidato522cf8e: **4/4 probes PASS, exit0**, compilación Angular aprobada. Mismas aserciones que el intento anterior, sin ampliar timeouts.
