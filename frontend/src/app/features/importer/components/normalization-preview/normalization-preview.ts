@@ -1,5 +1,6 @@
 import { Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { ResizableColumn, ResizableTable } from '../../../../shared/ui/table-resize/table-resize';
 import type { Normalization, NormalizationKind } from '../../models/normalization';
 import type { PreviewCell } from '../../models/normalization-preview';
 import type { NormalizationPreviewState } from '../../pages/import-workbench/normalization-preview-state';
@@ -8,7 +9,7 @@ let nextPanel = 0;
 @Component({
   selector: 'app-normalization-preview',
   templateUrl: './normalization-preview.html',
-  imports: [TableHeader],
+  imports: [TableHeader, ResizableTable, ResizableColumn],
   styles: [`.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }`],
   host: { '(document:keydown.escape)': 'escape($event)' },
 })

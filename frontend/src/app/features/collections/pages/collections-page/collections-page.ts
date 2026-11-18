@@ -6,6 +6,7 @@ import { ActivatedRoute, ROUTER_OUTLET_DATA, RouterLink } from '@angular/router'
 import { QueryClient } from '@tanstack/angular-query-experimental';
 import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
 import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { ResizableColumn, ResizableTable } from '../../../../shared/ui/table-resize/table-resize';
 import type { RecordSort } from '../../data-access/collections-api';
 import { label as contextLabel } from '../../../../core/i18n/localization';
 import { CollectionsApi } from '../../data-access/collections-api';
@@ -20,7 +21,7 @@ type Editor = { kind: 'add' | 'edit'; record?: CollectionRecord; headers: string
 type Confirmation = { kind: 'trash' | 'restore'; record: CollectionRecord };
 
 @Component({
-  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker, TableHeader],
+  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker, TableHeader, ResizableTable, ResizableColumn],
   templateUrl: './collections-page.html',
   host: { '(window:beforeunload)': 'beforeUnload($event)' },
 })
@@ -72,6 +73,14 @@ export class CollectionsPage implements OnDestroy {
   });
   readonly columnPage = signal(0);
   readonly visibleColumns = computed(() => this.columns().slice(this.columnPage() * 25, (this.columnPage() + 1) * 25));
+  readonly inlineRecovery = computed(() => {
+    const editor = this.editor(), index = this.inlineIndex();
+    if (!editor || index === undefined) return false;
+    return !this.visibleColumns().includes(this.fields(editor)[index])
+      || !this.records()?.items.some(record => record.id === editor.record?.id)
+      || this.blocked() || this.uncertain() || this.metadataChanged()
+      || !!this.message() || this.issues().length > 0;
+  });
   private readonly cellValues = computed(() => new Map((this.records()?.items ?? []).map(record =>
     [record.id, new Map(this.fields(record).map((field, index) => [field, record.values[index]]))])));
   readonly total = computed(() => (this.id() ? this.records() : this.list())?.totalElements ?? 0);

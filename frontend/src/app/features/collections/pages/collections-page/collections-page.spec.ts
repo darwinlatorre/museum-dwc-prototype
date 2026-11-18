@@ -39,6 +39,10 @@ describe('Colecciones por controles públicos', () => {
     const element = root().querySelector<HTMLInputElement>(selector)!;
     element.value = value; element.dispatchEvent(new Event('input', { bubbles: true })); await settle();
   };
+  const submitInline = async () => {
+    root().querySelector('.inline-cell textarea')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await settle();
+  };
   const open = async () => {
     harness = await RouterTestingHarness.create(`/collections/${id}`);
     http.expectOne(`/api/collections/${id}`).flush(info); await settle(); flushPage(); await settle();
@@ -57,6 +61,31 @@ describe('Colecciones por controles públicos', () => {
   });
   afterEach(() => { http.verify({ ignoreCancelled: true }); TestBed.resetTestingModule(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
+  it('inline editing has no ordinary draft action bar or consent prose', async () => {
+    await open();
+    root().querySelector('[data-cell]')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
+    expect(root().querySelector('.inline-cell textarea')).not.toBeNull();
+    expect(root().querySelector('.inline-draft')).toBeNull();
+    expect(root().querySelector('.collection-consent')).toBeNull();
+    http.expectNone(() => true);
+  });
+  it('resizes source columns across windows without sorting reading or writing records', async () => {
+    const wide = { ...row, headers: Array.from({ length: 30 }, (_, i) => `field${i}`), mapping: {},
+      values: Array.from({ length: 30 }, (_, i) => `00${i}`), originalValues: Array(30).fill(' original ') };
+    harness = await RouterTestingHarness.create(`/collections/${id}`);
+    http.expectOne(`/api/collections/${id}`).flush(info); await settle(); flushPage([wide]); await settle();
+    const resize = () => root().querySelector<HTMLElement>('[role="slider"][aria-label="Ancho de field0"]')!;
+    expect(resize()).not.toBeNull();
+    resize().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); await settle();
+    const width = resize().getAttribute('aria-valuenow');
+    expect(root().querySelectorAll('colgroup col')[1].getAttribute('style')).toContain(`${width}px`);
+    await click('Columnas siguientes'); await click('Columnas anteriores');
+    expect(resize().getAttribute('aria-valuenow')).toBe(width);
+    expect(root().querySelector('thead th')?.getAttribute('aria-sort')).toBe('ascending');
+    expect(wide.values).toEqual(Array.from({ length: 30 }, (_, i) => `00${i}`));
+    expect(wide.originalValues).toEqual(Array(30).fill(' original ')); http.expectNone(() => true);
+  });
   it('cabeceras ordenan globalmente, reinician filas y conservan ventana y metadatos sin escribir', async () => {
     const wide = { ...row, headers: Array.from({ length: 31 }, (_, i) => `campo${i}`), mapping: {},
       values: Array.from({ length: 31 }, (_, i) => `0${i}`), originalValues: Array(31).fill(' original ') };
@@ -203,7 +232,7 @@ describe('Colecciones por controles públicos', () => {
   it('teclado abre celda; rechazo conserva borrador, originales y cuentas; Escape cancela sin escribir', async () => {
     await open(); root().querySelector('[data-cell] button')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
-    await input('[aria-label="Editar occurrenceID"]', 'dup'); await click('Guardar cambios');
+    await input('[aria-label="Editar occurrenceID"]', 'dup'); await submitInline();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code: 'VALIDATION_FAILED', detail: 'No válido' }, { status: 422, statusText: 'Error' }); await settle();
     expect(root().querySelector<HTMLInputElement>('[aria-label="Editar occurrenceID"]')?.value).toBe('dup');
     expect(root().textContent).toContain('26 activos'); expect(root().textContent).toContain('Revisión 7');
@@ -217,7 +246,7 @@ describe('Colecciones por controles públicos', () => {
     await open();
     root().querySelector('[data-cell] button')!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true })); await settle();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
-    await input('[aria-label="Editar occurrenceID"]', ' 00A '); await click('Guardar cambios');
+    await input('[aria-label="Editar occurrenceID"]', ' 00A '); await submitInline();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code: 'WARNINGS_UNCONFIRMED', issues: [{ field: 'nota', row: 19, severity: 'WARNING', description: 'Revise' }] }, { status: 422, statusText: 'Advertencias' }); await settle();
     expect(button('Guardar cambios').disabled).toBe(true); expect(root().textContent).toContain('Revise');
     root().querySelector<HTMLInputElement>('[aria-label="Confirmar advertencias"]')!.click(); await settle(); await click('Guardar cambios');
@@ -251,8 +280,9 @@ describe('Colecciones por controles públicos', () => {
     const cell = root().querySelector<HTMLTextAreaElement>('.inline-cell textarea');
     expect.soft(cell?.closest('td')?.getAttribute('data-record')).toBe(second.id);
     expect.soft(cell?.value).toBe('SECOND');
-    expect.soft(root().querySelector('.inline-draft')?.textContent).toContain('fila 20');
-    await click('Guardar cambios');
+    expect.soft(cell?.closest('tr')?.querySelector('th')?.textContent?.trim()).toBe('20');
+    expect.soft(root().querySelector('.inline-draft')).toBeNull();
+    await submitInline();
     const save = http.expectOne(request => request.method === 'PUT');
     expect.soft(save.request.url).toBe(`/api/collections/${id}/records/${second.id}`);
     expect(save.request.body).toEqual({ expectedRevision: 7, configurationRevision: 3, catalogVersion: 5, warningsConfirmed: false, values: second.values });

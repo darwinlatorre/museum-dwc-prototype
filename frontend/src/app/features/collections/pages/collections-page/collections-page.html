@@ -40,9 +40,9 @@
             </nav>
           }
           <div class="collection-sheet" role="region" aria-label="Hoja de registros" aria-describedby="collection-sheet-help" tabindex="0" [attr.aria-busy]="loading()">
-            <table class="museum-data-table">
+            <table class="museum-data-table" museumResizableTable [resizeContext]="id()">
               <caption>{{ records.totalElements }} registros · Página {{ records.page + 1 }} · {{ filter() === 'TRASHED' ? 'Papelera' : filter() === 'ALL' ? 'Todos' : 'Activos' }}</caption>
-              <thead><tr><th scope="col" museumSortHeader label="Fila" [direction]="sortDirection(null)" [disabled]="busy() || uncertain() || !!confirmation()" (sortRequested)="sortBy(null)"></th>@for (column of visibleColumns(); track column) { <th scope="col" class="literal" museumSortHeader [label]="column" [direction]="sortDirection(column)" [disabled]="busy() || uncertain() || !!confirmation()" (sortRequested)="sortBy(column)"></th> }<th scope="col" class="museum-table-actions">Acciones</th></tr></thead>
+              <thead><tr><th scope="col" museumResizableColumn="physical-row" resizeLabel="Fila" [initialColumnWidth]="128" museumSortHeader label="Fila" [direction]="sortDirection(null)" [disabled]="busy() || uncertain() || !!confirmation()" (sortRequested)="sortBy(null)"></th>@for (column of visibleColumns(); track column) { <th scope="col" class="literal" [museumResizableColumn]="'field:' + column" [resizeLabel]="column" [initialColumnWidth]="192" museumSortHeader [label]="column" [direction]="sortDirection(column)" [disabled]="busy() || uncertain() || !!confirmation()" (sortRequested)="sortBy(column)"></th> }<th scope="col" class="museum-table-actions" museumResizableColumn="actions" resizeLabel="Acciones" [initialColumnWidth]="240">Acciones</th></tr></thead>
               <tbody>@for (record of records.items; track record.id) {
                 <tr [class.record-trashed]="record.trashed">
                   <th scope="row">{{ record.sourceRow }} @if (record.trashed) { <small>En papelera</small> }</th>
@@ -140,7 +140,7 @@
       <div class="actions"><button type="submit" [disabled]="!canWrite() || values.length === 0 || editor.record?.trashed === true">{{ editor.kind === 'add' ? 'Guardar nuevo registro' : 'Guardar cambios' }}</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar edición</button></div>
     </form>
     </dialog>
-    } @else {
+    } @else if (inlineRecovery()) {
       <div class="actions inline-draft" aria-label="Edición de celda en curso"><span>Está editando {{ fields(editor)[inlineIndex()!] }}, fila {{ editor.record?.sourceRow }}.</span><button type="button" (click)="returnToCell()">Volver a la celda</button><button type="button" class="collection-primary" (click)="save()" [disabled]="!canWrite()">Guardar cambios</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar edición</button></div>
       <label class="collection-consent"><input type="checkbox" aria-label="Confirmar advertencias" [checked]="warnings()" (change)="warnings.set(!warnings())" [disabled]="busy() || uncertain()" /> He revisado y confirmo las advertencias</label>
     }

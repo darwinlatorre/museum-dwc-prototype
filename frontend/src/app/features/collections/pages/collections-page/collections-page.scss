@@ -33,7 +33,7 @@
   thead th:last-child { z-index: 3; }
   td:last-child .actions { flex-wrap: nowrap; gap: var(--museum-space-1); }
   td:last-child button { padding: var(--museum-space-1) var(--museum-space-2); white-space: nowrap; flex: 0 0 auto; }
-  .cell-value { display: block; width: 100%; max-width: 16rem; min-height: 28px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--museum-text); text-align: left; font: inherit; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+  .cell-value { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 28px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--museum-text); text-align: left; font: inherit; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
   .cell-value:disabled { opacity: 1; }
   .cell-value:not(:disabled):hover { background: var(--museum-table-heading); }
   .collection-cell-box { position: relative; }

@@ -36,6 +36,21 @@ async function setup(extraColumns = 0) {
   return { state, worker, messages, reply, fixture, root, header };
 }
 describe('cabeceras de Normalizar y ventana confirmada', () => {
+  it('resizes a source column without asking the worker or modifying preview values', async () => {
+    const p = await setup();
+    const before = structuredClone(p.state.rows());
+    const count = p.messages.length;
+    const handle = p.root.querySelector<HTMLElement>('[role="slider"][aria-label="Ancho de alias"]');
+    expect(handle).not.toBeNull();
+    handle!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await p.fixture.whenStable();
+    const width = handle!.getAttribute('aria-valuenow');
+    expect(p.root.querySelectorAll('colgroup col')[1].getAttribute('style')).toContain(`${width}px`);
+    expect(p.messages).toHaveLength(count);
+    expect(p.state.rows()).toEqual(before);
+    expect(p.header('Fila de origen').closest('th')?.getAttribute('aria-sort')).toBe('ascending');
+    p.state.destroy();
+  });
   it('separates preview formats and table presentation without recalculating on disclosure', async () => {
     const p = await setup();
     const count = p.messages.length;
