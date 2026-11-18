@@ -4,12 +4,13 @@ import { injectMutation, QueryClient } from '@tanstack/angular-query-experimenta
 import { TableModule } from 'primeng/table';
 import { CatalogMetadata } from '../../services/catalog-metadata';
 import type { Term } from '../../models/catalog-term';
+import { ResizableTable, ResizableColumn } from '../../../../shared/ui/table-resize/table-resize';
 import { TableHeader } from '../../../../shared/ui/table-header/table-header';
 import { nextTableOrder, sortTableRows, type TableOrder } from '../../../../shared/lib/table-sort';
 type CatalogColumn = 'name' | 'definition' | 'category' | 'status';
 @Component({
   selector: 'app-catalog',
-  imports: [FormField, TableModule, TableHeader],
+  imports: [FormField, TableModule, TableHeader, ResizableTable, ResizableColumn],
   templateUrl: './catalog.html',
 })
 export class Catalog {

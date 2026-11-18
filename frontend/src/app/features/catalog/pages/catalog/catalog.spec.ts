@@ -28,6 +28,35 @@ afterEach(() => {
 });
 
 describe('Sincronización manual del catálogo', () => {
+  it('resizes a whole column without sorting, changing terms or sending requests', async () => {
+    const { fixture, http, client } = setup();
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const trigger = root.querySelector<HTMLButtonElement>('[aria-label="Ancho de Término / enlace oficial"]');
+    expect(trigger).not.toBeNull();
+    trigger!.click();
+    await fixture.whenStable();
+    const input = root.querySelector<HTMLInputElement>('.museum-column-width input')!;
+    input.value = '360';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector<HTMLButtonElement>('.museum-column-width .museum-width-apply')!.click();
+    await fixture.whenStable();
+    expect(root.querySelector<HTMLTableColElement>('col')?.style.width).toBe('360px');
+    expect(fixture.componentInstance.order()).toBeNull();
+    expect(client.getQueryData(['catalog'])).toEqual([term]);
+    expect(root.querySelector('a')?.textContent).toBe(term.uri);
+    const search = root.querySelector<HTMLInputElement>('input[type=search]')!;
+    search.value = 'no match'; search.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+    expect(root.querySelector('a')).toBeNull();
+    expect(root.querySelector<HTMLTableColElement>('col')?.style.width).toBe('360px');
+    search.value = ''; search.dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector<HTMLButtonElement>('[aria-label="Ordenar por Término / enlace oficial"]')!.click();
+    await fixture.whenStable();
+    expect(root.querySelector<HTMLTableColElement>('col')?.style.width).toBe('360px');
+    expect(root.querySelector('a')?.textContent).toBe(term.uri);
+    http.expectNone(() => true);
+  });
   it('distingue vocabulario de configuración global sin conservar perfiles retirados', async () => {
     const { fixture } = setup();
     await fixture.whenStable();
@@ -43,7 +72,7 @@ describe('Sincronización manual del catálogo', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('input[type=search]')?.closest('label')?.textContent).toContain('Buscar en todos los atributos');
     expect(root.querySelector('input[type=search]')?.getAttribute('placeholder')).toBe('Nombre, definición, enlace, categoría o estado');
-    expect(root.querySelector('th')?.textContent).toBe('Término / enlace oficial');
+    expect(root.querySelector('th [aria-label="Ordenar por Término / enlace oficial"]')?.textContent).toBe('Término / enlace oficial');
     expect(root.querySelector('a')?.getAttribute('href')).toBe(term.uri);
     expect(root.querySelector('a')?.textContent).toBe(term.uri);
     expect(root.querySelector('[lang=en]')?.textContent).toBe(term.definition);

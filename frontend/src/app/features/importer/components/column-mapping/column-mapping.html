@@ -1,12 +1,12 @@
 @if (rows().length) {
   <p class="mapping-summary">{{ populatedCount() }} campos con datos · {{ headers().length - populatedCount() }} campos sin datos</p>
 }
-<p-table #table class="mapping-table museum-data-table" [value]="columns()" [first]="first()" (onPage)="first.set($event.first)" [paginator]="true" [rows]="12" [rowsPerPageOptions]="[12, 25, 50, 100]" [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} columnas">
+<p-table #table museumResizableTable [resizeContext]="headers()" class="mapping-table museum-data-table" [value]="columns()" [first]="first()" (onPage)="first.set($event.first)" [paginator]="true" [rows]="12" [rowsPerPageOptions]="[12, 25, 50, 100]" [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} columnas">
   <ng-template #header>
     <tr>
-      <th museumSortHeader label="Encabezado de origen" [direction]="order()?.column === 'header' ? order()!.direction : null" (sortRequested)="sort('header')"></th>
-      <th museumSortHeader label="Campo Darwin Core de destino" [direction]="order()?.column === 'target' ? order()!.direction : null" (sortRequested)="sort('target')"></th>
-      <th museumSortHeader label="Posible equivalencia" [direction]="order()?.column === 'suggestion' ? order()!.direction : null" (sortRequested)="sort('suggestion')"></th>
+      <th museumResizableColumn="header" resizeLabel="Encabezado de origen" [initialColumnWidth]="166" museumSortHeader label="Encabezado de origen" [direction]="order()?.column === 'header' ? order()!.direction : null" (sortRequested)="sort('header')"></th>
+      <th museumResizableColumn="target" resizeLabel="Campo Darwin Core de destino" [initialColumnWidth]="300" museumSortHeader label="Campo Darwin Core de destino" [direction]="order()?.column === 'target' ? order()!.direction : null" (sortRequested)="sort('target')"></th>
+      <th museumResizableColumn="suggestion" resizeLabel="Posible equivalencia" [initialColumnWidth]="366" museumSortHeader label="Posible equivalencia" [direction]="order()?.column === 'suggestion' ? order()!.direction : null" (sortRequested)="sort('suggestion')"></th>
     </tr>
   </ng-template>
   <ng-template #body let-column let-rowIndex="rowIndex">

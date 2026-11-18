@@ -47,7 +47,7 @@
   </select></label>
   <button type="button" (click)="reset()">Restablecer filtros</button>
 </div>
-<p-table class="museum-data-table"
+<p-table museumResizableTable class="museum-data-table"
   [value]="filtered()" [first]="first()" (onPage)="first.set($event.first)"
   [paginator]="true"
   [rows]="15"
@@ -58,10 +58,10 @@
 >
   <ng-template #header
     ><tr>
-      <th museumSortHeader label="Término / enlace oficial" [direction]="order()?.column === 'name' ? order()!.direction : null" (sortRequested)="sort('name')"></th>
-      <th museumSortHeader label="Definición (original en inglés)" [direction]="order()?.column === 'definition' ? order()!.direction : null" (sortRequested)="sort('definition')"></th>
-      <th museumSortHeader label="Categoría (fuente)" [direction]="order()?.column === 'category' ? order()!.direction : null" (sortRequested)="sort('category')"></th>
-      <th museumSortHeader label="Estado (fuente)" [direction]="order()?.column === 'status' ? order()!.direction : null" (sortRequested)="sort('status')"></th>
+      <th museumResizableColumn="name" resizeLabel="Término / enlace oficial" [initialColumnWidth]="260" museumSortHeader label="Término / enlace oficial" [direction]="order()?.column === 'name' ? order()!.direction : null" (sortRequested)="sort('name')"></th>
+      <th museumResizableColumn="definition" resizeLabel="Definición (original en inglés)" [initialColumnWidth]="400" museumSortHeader label="Definición (original en inglés)" [direction]="order()?.column === 'definition' ? order()!.direction : null" (sortRequested)="sort('definition')"></th>
+      <th museumResizableColumn="category" resizeLabel="Categoría (fuente)" [initialColumnWidth]="180" museumSortHeader label="Categoría (fuente)" [direction]="order()?.column === 'category' ? order()!.direction : null" (sortRequested)="sort('category')"></th>
+      <th museumResizableColumn="status" resizeLabel="Estado (fuente)" [initialColumnWidth]="160" museumSortHeader label="Estado (fuente)" [direction]="order()?.column === 'status' ? order()!.direction : null" (sortRequested)="sort('status')"></th>
     </tr></ng-template
   >
   <ng-template #body let-term

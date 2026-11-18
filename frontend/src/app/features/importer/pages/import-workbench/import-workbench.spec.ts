@@ -122,6 +122,30 @@ describe('Preservación pública del análisis local', () => {
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
+  it('resizes all three diagnostic tables without validation, worker traffic or source changes', async () => {
+    const data: Dataset = { headers: ['occurrenceID'], rows: [{ row: 2, values: [''] }] };
+    const before = JSON.stringify(data);
+    const { f, root, click, chooseContext } = await setup(['occurrenceID'], data);
+    await chooseContext(); await click('Mapear columnas'); await click('Validar localmente');
+    DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.respond({ kind: 'result', changes: [], issues: [{ field: 'occurrenceID', row: 2, severity: 'ERROR', description: 'Vacío', context: 'collection', configurationRevision: 1 }] });
+    await f.whenStable();
+    const requests = () => DelayedWorker.all.map(worker => worker.requests.length);
+    const originalRequests = requests();
+    const resize = async (table: HTMLTableElement) => {
+      table.querySelector<HTMLButtonElement>('.museum-resize-handle')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await f.whenStable();
+      expect(table.querySelector<HTMLTableColElement>('col')!.style.width).toBe('960px');
+    };
+    await resize(root.querySelector('.missing-summary table')!);
+    await click('Ver valores vacíos de occurrenceID');
+    await resize(root.querySelector('#missing-cell-detail table')!);
+    await click('Cerrar detalle de valores vacíos'); await click('Ver todas las incidencias');
+    await resize(root.querySelector('#all-issues-detail table')!);
+    expect(requests()).toEqual(originalRequests);
+    expect(JSON.stringify(data)).toBe(before);
+    expect(f.componentInstance.issueOrder()).toEqual({ column: 'row', direction: 'asc' });
+  });
+
   it('ordena filas de diagnóstico globalmente antes de paginar sin alterar el archivo', async () => {
     const data: Dataset = { headers: ['occurrenceID'], rows: Array.from({ length: 25 }, (_, i) => ({ row: 26 - i, values: [''] })) };
     const before = JSON.stringify(data);

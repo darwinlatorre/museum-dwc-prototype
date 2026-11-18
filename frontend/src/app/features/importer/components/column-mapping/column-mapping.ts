@@ -4,13 +4,14 @@ import type { Term } from '../../../catalog/models/catalog-term';
 import { suggestions } from '../../engine/validator';
 import type { Dataset } from '../../models/dataset';
 import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
+import { ResizableTable, ResizableColumn } from '../../../../shared/ui/table-resize/table-resize';
 import { TableHeader } from '../../../../shared/ui/table-header/table-header';
 import { nextTableOrder, sortTableRows, type TableOrder } from '../../../../shared/lib/table-sort';
 type MappingColumn = 'header' | 'target' | 'suggestion';
 
 @Component({
   selector: 'app-column-mapping',
-  imports: [TableModule, DwcPicker, TableHeader],
+  imports: [TableModule, DwcPicker, TableHeader, ResizableTable, ResizableColumn],
   templateUrl: './column-mapping.html',
 })
 export class ColumnMapping {

@@ -18,6 +18,7 @@ import { ColumnMapping } from '../../components/column-mapping/column-mapping';
 import { RecordContext } from '../../components/record-context/record-context';
 import { csvReport, jsonReport } from '../../engine/export';
 import { label } from '../../../../core/i18n/localization';
+import { ResizableTable, ResizableColumn } from '../../../../shared/ui/table-resize/table-resize';
 import { TableHeader } from '../../../../shared/ui/table-header/table-header';
 import { nextTableOrder, sortTableRows, type TableOrder } from '../../../../shared/lib/table-sort';
 type SummaryColumn = 'field' | 'missing' | 'situation';
@@ -26,7 +27,7 @@ type IssueColumn = 'severity' | 'field' | 'row' | 'description' | 'context';
 
 @Component({
   selector: 'app-import',
-  imports: [FormField, TableModule, ButtonModule, TableHeader, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation],
+  imports: [FormField, TableModule, ButtonModule, TableHeader, ResizableTable, ResizableColumn, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation],
   templateUrl: './import-workbench.html',
   host: { '(window:resize)': 'scrollActiveStep()' },
 })

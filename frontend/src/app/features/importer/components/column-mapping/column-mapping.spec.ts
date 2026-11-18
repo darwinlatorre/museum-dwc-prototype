@@ -26,6 +26,27 @@ describe('Agrupación de columnas de origen', () => {
     await fixture.whenStable();
   }
 
+  it('preserves resized column keys through paging/sorting and retains picker identity and grouping', async () => {
+    const source = Array.from({ length: 15 }, (_, index) => `Field ${index}`);
+    await render(source, [{ row: 2, values: source.map((_, index) => index === 0 ? ' 001 ' : '') }]);
+    const picker = root.querySelector('app-dwc-picker');
+    const handle = root.querySelectorAll<HTMLButtonElement>('.museum-resize-handle')[1];
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await fixture.whenStable();
+    const width = () => root.querySelectorAll<HTMLTableColElement>('col')[1].style.width;
+    expect(width()).toBe('316px');
+    expect(root.querySelector('app-dwc-picker')).toBe(picker);
+    expect(divider()?.querySelector('th')?.colSpan).toBe(3);
+    root.querySelector<HTMLButtonElement>('.p-paginator-next')!.click();
+    await fixture.whenStable();
+    expect(width()).toBe('316px');
+    root.querySelector<HTMLButtonElement>('[aria-label="Ordenar por Encabezado de origen"]')!.click();
+    await fixture.whenStable();
+    expect(width()).toBe('316px');
+    expect(divider()).toBeNull();
+    expect(fixture.componentInstance.mapping()).toEqual({});
+  });
+
   it('ordena estable por contenido usando el índice original, sin normalizar NULL/N/A ni mutar datos', async () => {
     const source = ['Vacía', 'NULL literal', 'Espacios', 'N/A literal', 'Dato tardío', 'Cero'];
     const rows = [
