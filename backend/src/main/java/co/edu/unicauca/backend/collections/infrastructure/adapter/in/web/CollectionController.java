@@ -1,6 +1,7 @@
 package co.edu.unicauca.backend.collections.infrastructure.adapter.in.web;
 
 import java.util.UUID;
+import co.edu.unicauca.backend.collections.domain.model.RecordOrder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,8 +38,9 @@ public class CollectionController {
     @GetMapping("/{id}/records")
     public CollectionResponses.PageResponse<CollectionResponses.RecordResponse> records(@PathVariable UUID id,
             @RequestParam(defaultValue = "ACTIVE") Trash trash, @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
-        var result = operations.records(id, trash, page, size);
+            @RequestParam(defaultValue = "50") int size, @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortDirection) {
+        var result = operations.records(id, trash, page, size, RecordOrder.parse(sortField, sortDirection));
         return new CollectionResponses.PageResponse<>(result.items().stream().map(mapper::record).toList(), page, size, result.totalElements());
     }
     @GetMapping("/{id}/records/{recordId}")

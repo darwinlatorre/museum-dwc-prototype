@@ -3,6 +3,7 @@ package co.edu.unicauca.backend.collections.application.port.out;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import co.edu.unicauca.backend.collections.domain.model.RecordOrder;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Info;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Record;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Receipt;
@@ -15,7 +16,7 @@ public interface CollectionStore {
     Info lock(UUID id);
     void create(Info collection);
     void advance(UUID id, long revision);
-    Page<Record> records(UUID id, Trash trash, int page, int size);
+    Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order);
     Record record(UUID collectionId, UUID recordId);
     boolean collision(Record candidate, UUID excludedId);
     void save(Record record);

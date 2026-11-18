@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.UUID;
+import co.edu.unicauca.backend.collections.domain.model.RecordOrder;
 import lombok.RequiredArgsConstructor;
 import co.edu.unicauca.backend.collections.application.port.in.CollectionCommands;
 import co.edu.unicauca.backend.collections.application.port.in.CollectionOperations;
@@ -28,8 +29,8 @@ public final class CollectionService implements CollectionOperations {
 
     @Override public Page<Info> list(int page, int size) { paging(page, size); return store.list(page, size); }
     @Override public Info detail(UUID id) { return store.detail(id); }
-    @Override public Page<Record> records(UUID id, Trash trash, int page, int size) {
-        paging(page, size); store.detail(id); return store.records(id, trash, page, size);
+    @Override public Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order) {
+        paging(page, size); store.detail(id); return store.records(id, trash, page, size, order);
     }
     @Override public Record record(UUID id, UUID recordId) { return store.record(id, recordId); }
     private static void paging(int page, int size) {

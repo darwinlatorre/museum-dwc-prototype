@@ -38,6 +38,22 @@ describe('cliente público de colecciones sin caché biológica', () => {
       expect(await pending).toEqual({ result: 'literal' });
     }
   });
+  it('ordena por campo literal codificado o Fila descendente sin cambiar cuerpo ni defaults', async () => {
+    const api = TestBed.inject(CollectionsApi), http = TestBed.inject(HttpTestingController);
+    const field = " x'); DROP TABLE collection_record; -- &é😀 ";
+    for (const [sort, suffix] of [
+      [{ field, direction: 'asc' as const }, `&sortField=${encodeURIComponent(field)}&sortDirection=ASC`],
+      [{ field: null, direction: 'desc' as const }, '&sortDirection=DESC'],
+      [{ field: null, direction: 'asc' as const }, ''],
+    ] as const) {
+      const pending = api.records('c', 0, 25, 'ALL', undefined, sort);
+      const request = http.expectOne({ method: 'GET', url: `/api/collections/c/records?page=0&size=25&trash=ALL${suffix}` });
+      expect(request.request.body).toBeNull();
+      const page = { items: [], page: 0, size: 25, totalElements: 0 }; request.flush(page);
+      expect(await pending).toEqual(page);
+    }
+    http.expectNone(() => true);
+  });
   it.each([
     [0, true, 'No pudimos confirmar si se completó la acción'],
     [503, true, 'No pudimos confirmar si se completó la acción'],

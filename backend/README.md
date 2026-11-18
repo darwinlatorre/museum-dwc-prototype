@@ -42,6 +42,8 @@ CORS **no es autenticación**: clientes no navegador pueden omitir o falsificar 
 
 La API de colecciones añade importación confirmada en `POST /api/collections/imports`, lecturas paginadas y alta/edición/papelera/restauración de registros bajo `/api/collections`. Revalida con configuración y catálogo vigentes: errores y duplicados de la misma colección bloquean, advertencias requieren consentimiento, importación atómica e idempotente. No permite borrar colecciones ni registros definitivamente. El [contrato de colecciones](COLLECTIONS_ARCHITECTURE.md) centraliza las rutas, cuerpos, errores, límites y transacciones; no usa el endpoint de configuración para datos biológicos.
 
+Las páginas de registros permiten orden global de solo lectura antes de paginar: Fila numérica ascendente por defecto; `sortField` literal opcional y `sortDirection=ASC|DESC` estricta. Texto sin coerción, vacíos/ausentes al final en ambas direcciones y desempate estable por fila/UUID. Ver [lecturas y parámetros](COLLECTIONS_ARCHITECTURE.md#lecturas); no modifica revisiones, originales ni cuentas.
+
 No hay rutas activas de perfiles, publicación, duplicación de configuración ni carga de archivos. `/api/profiles` y sus antiguas rutas devuelven 404, igual que `/api/upload`.
 
 ### Configuración completa

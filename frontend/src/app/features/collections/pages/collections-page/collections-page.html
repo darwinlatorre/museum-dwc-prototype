@@ -27,7 +27,7 @@
       @if (!metadata().available()) { <p class="error">No se pudieron cargar las reglas. Actualice antes de guardar.</p> }
       @if (records(); as records) {
         @if (records.items.length) {
-          <div class="collection-sheet-tools"><p id="collection-sheet-help">Doble clic en una celda para editar. Con teclado, use Enter; en pantalla táctil, toque la celda. Abra el formulario para ver el registro completo y sus originales.</p>
+          <div class="collection-sheet-tools"><details><summary>Ayuda de edición</summary><p id="collection-sheet-help">Doble clic en una celda para editar. Con teclado, use Enter; en pantalla táctil, toque la celda. Abra el formulario para ver el registro completo y sus originales.</p></details>
             <label><input type="checkbox" aria-label="Ocultar columnas sin datos" [checked]="hideEmpty()" (change)="toggleEmpty()" /> Ocultar columnas sin datos</label>
           </div>
           @if (columns().length > 25) {
@@ -38,9 +38,9 @@
             </nav>
           }
           <div class="collection-sheet" role="region" aria-label="Hoja de registros" aria-describedby="collection-sheet-help" tabindex="0" [attr.aria-busy]="loading()">
-            <table>
+            <table class="museum-data-table">
               <caption>{{ records.totalElements }} registros · Página {{ records.page + 1 }} · {{ filter() === 'TRASHED' ? 'Papelera' : filter() === 'ALL' ? 'Todos' : 'Activos' }}</caption>
-              <thead><tr><th scope="col">Fila</th>@for (column of visibleColumns(); track column) { <th scope="col" class="literal">{{ column }}</th> }<th scope="col">Acciones</th></tr></thead>
+              <thead><tr><th scope="col" museumSortHeader label="Fila" [direction]="sortDirection(null)" [disabled]="busy() || uncertain() || !!confirmation()" (sortRequested)="sortBy(null)"></th>@for (column of visibleColumns(); track column) { <th scope="col" class="literal" museumSortHeader [label]="column" [direction]="sortDirection(column)" [disabled]="busy() || uncertain() || !!confirmation()" (sortRequested)="sortBy(column)"></th> }<th scope="col" class="museum-table-actions">Acciones</th></tr></thead>
               <tbody>@for (record of records.items; track record.id) {
                 <tr [class.record-trashed]="record.trashed">
                   <th scope="row">{{ record.sourceRow }} @if (record.trashed) { <small>En papelera</small> }</th>
@@ -57,7 +57,7 @@
                       }
                     </td>
                   }
-                  <td><div class="actions">
+                  <td class="museum-table-actions"><div class="actions">
                     <button type="button" (click)="edit(record, $event)" [disabled]="busy() || recordLoading() || uncertain()">Ver / editar</button>
                     @if (record.trashed) { <button type="button" (click)="confirmAction('restore', record, $event)" [disabled]="busy() || uncertain()">Restaurar</button> }
                     @else { <button type="button" (click)="confirmAction('trash', record, $event)" [disabled]="busy() || uncertain()">Retirar</button> }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import jakarta.persistence.EntityManager;
 import java.util.UUID;
+import co.edu.unicauca.backend.collections.domain.model.RecordOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -57,10 +58,10 @@ public final class JpaCollectionStore implements CollectionStore {
         entity.setRevision(revision);
         collections.saveAndFlush(entity);
     }
-    @Override public Page<Record> records(UUID id, Trash trash, int page, int size) {
-        var paging = PageRequest.of(page, size, Sort.by("id"));
-        var result = trash == Trash.ALL ? records.findByCollectionId(id, paging)
-            : records.findByCollectionIdAndTrashed(id, trash == Trash.TRASHED, paging);
+    @Override public Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order) {
+        var result = records.sorted(id, trash == Trash.ALL, trash == Trash.TRASHED,
+            order.field() == null ? "" : order.field(), order.field() == null,
+            order.direction() == RecordOrder.Direction.ASC, PageRequest.of(page, size));
         return new Page<>(result.stream().map(row -> mapper.record(row, json)).toList(), page, size, result.getTotalElements());
     }
     @Override public Record record(UUID id, UUID recordId) {

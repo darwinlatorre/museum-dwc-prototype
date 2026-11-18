@@ -5,6 +5,8 @@ import { FormArray, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, ROUTER_OUTLET_DATA, RouterLink } from '@angular/router';
 import { QueryClient } from '@tanstack/angular-query-experimental';
 import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
+import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import type { RecordSort } from '../../data-access/collections-api';
 import { label as contextLabel } from '../../../../core/i18n/localization';
 import { CollectionsApi } from '../../data-access/collections-api';
 import { CollectionNavigation } from '../../guards/unsaved-collection';
@@ -18,7 +20,7 @@ type Editor = { kind: 'add' | 'edit'; record?: CollectionRecord; headers: string
 type Confirmation = { kind: 'trash' | 'restore'; record: CollectionRecord };
 
 @Component({
-  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker],
+  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker, TableHeader],
   templateUrl: './collections-page.html',
   host: { '(window:beforeunload)': 'beforeUnload($event)' },
 })
@@ -35,6 +37,8 @@ export class CollectionsPage implements OnDestroy {
   readonly list = signal<Page<CollectionInfo> | undefined>(undefined);
   readonly records = signal<Page<CollectionRecord> | undefined>(undefined);
   readonly page = signal(0);
+  readonly sort = signal<RecordSort>({ field: null, direction: 'asc' });
+  readonly displayedSort = signal<RecordSort>({ field: null, direction: 'asc' });
   readonly size = signal(25);
   readonly filter = signal<TrashFilter>('ACTIVE');
   readonly loading = signal(false);
@@ -104,6 +108,7 @@ export class CollectionsPage implements OnDestroy {
       this.session.abort(); this.session = new AbortController();
       this.cancelReads(); this.id.set(params.get('id')); this.page.set(0); this.filter.set('ACTIVE');
       this.collection.set(undefined); this.records.set(undefined); this.list.set(undefined); this.clearEditor();
+      this.sort.set({ field: null, direction: 'asc' }); this.displayedSort.set(this.sort()); this.columnPage.set(0);
       this.uncertain.set(this.navigation.uncertainCollections.has(this.id() ?? '')); this.reconciled.set(false); this.confirmation.set(undefined);
       this.message.set(this.uncertain() ? 'No sabemos si los cambios se guardaron. Actualice y compruebe los registros antes de continuar.' : '');
       void this.load();
@@ -136,12 +141,15 @@ export class CollectionsPage implements OnDestroy {
   }
   async loadPage() {
     this.pageController?.abort(); const controller = this.pageController = new AbortController();
-    const operation = ++this.pageOperation, id = this.id();
+    const operation = ++this.pageOperation, id = this.id(), sort = this.sort();
     this.loading.set(true); this.readError.set('');
     try {
       if (id) {
-        const result = await this.api.records(id, this.page(), this.size(), this.filter(), controller.signal);
-        if (operation === this.pageOperation) { this.records.set(result); this.columnPage.set(0); }
+        const result = await this.api.records(id, this.page(), this.size(), this.filter(), controller.signal, sort);
+        if (operation === this.pageOperation) {
+          this.records.set(result); this.displayedSort.set(sort);
+          this.columnPage.update(page => Math.min(page, Math.max(0, Math.ceil(this.columns().length / 25) - 1)));
+        }
       } else {
         const result = await this.client.fetchQuery({ queryKey: ['collections', this.page(), this.size()], retry: false, staleTime: 0,
           queryFn: () => this.api.list(this.page(), this.size(), controller.signal) });
@@ -149,6 +157,16 @@ export class CollectionsPage implements OnDestroy {
       }
     } catch (error) { if (operation === this.pageOperation && !controller.signal.aborted) this.readError.set(this.errorText(error)); }
     finally { if (operation === this.pageOperation) this.loading.set(false); }
+  }
+  sortBy(field: string | null) {
+    if (this.busy() || this.uncertain() || this.confirmation() || !this.discard()) return;
+    this.cancelReads();
+    const previous = this.sort();
+    this.sort.set({ field, direction: previous.field === field && previous.direction === 'asc' ? 'desc' : 'asc' });
+    this.page.set(0); void this.loadPage();
+  }
+  sortDirection(field: string | null) {
+    return this.displayedSort().field === field ? this.displayedSort().direction : null;
   }
   toggleEmpty() { this.hideEmpty.update(value => !value); this.columnPage.set(0); }
   returnToCell() {

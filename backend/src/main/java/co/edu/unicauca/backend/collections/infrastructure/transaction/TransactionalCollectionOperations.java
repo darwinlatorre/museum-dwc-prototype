@@ -1,6 +1,7 @@
 package co.edu.unicauca.backend.collections.infrastructure.transaction;
 
 import java.util.UUID;
+import co.edu.unicauca.backend.collections.domain.model.RecordOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,7 @@ public class TransactionalCollectionOperations implements CollectionOperations {
     @Override @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Info detail(UUID id) { return delegate.detail(id); }
     @Override @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public Page<Record> records(UUID id, Trash trash, int page, int size) { return delegate.records(id, trash, page, size); }
+    public Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order) { return delegate.records(id, trash, page, size, order); }
     @Override @Transactional(readOnly = true)
     public Record record(UUID id, UUID recordId) { return delegate.record(id, recordId); }
     @Override @Transactional

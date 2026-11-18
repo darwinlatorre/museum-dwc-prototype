@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { vi } from 'vitest';
 import { CollectionsPage } from './collections-page';
+import { CollectionsApi } from '../../data-access/collections-api';
 import { collectionNavigation, unsavedCollection } from '../../guards/unsaved-collection';
 import type { CollectionInfo, CollectionRecord } from '../../models/collection';
 
@@ -55,6 +56,90 @@ describe('Colecciones por controles públicos', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => { http.verify({ ignoreCancelled: true }); TestBed.resetTestingModule(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+  it('cabeceras ordenan globalmente, reinician filas y conservan ventana y metadatos sin escribir', async () => {
+    const wide = { ...row, headers: Array.from({ length: 31 }, (_, i) => `campo${i}`), mapping: {},
+      values: Array.from({ length: 31 }, (_, i) => `0${i}`), originalValues: Array(31).fill(' original ') };
+    harness = await RouterTestingHarness.create(`/collections/${id}`); http.expectOne(`/api/collections/${id}`).flush(info); await settle();
+    flushPage([wide]); await settle();
+    expect(root().querySelector('thead th')?.getAttribute('aria-sort')).toBe('ascending');
+    expect(root().querySelector('table')?.classList.contains('museum-data-table')).toBe(true);
+    expect(root().querySelector('thead th:last-child')?.classList.contains('museum-table-actions')).toBe(true);
+    await click('Siguiente'); flushPage([wide], 1); await settle(); await click('Columnas siguientes');
+    await click('campo25');
+    const sorted = (direction: string, page = 0) => http.expectOne(`/api/collections/${id}/records?page=${page}&size=25&trash=ACTIVE&sortField=campo25&sortDirection=${direction}`);
+    sorted('ASC').flush({ items: [{ ...wide, sourceRow: 2 }], page: 0, size: 25, totalElements: 26 }); await settle();
+    expect(root().querySelector('thead th.literal')?.textContent).toContain('campo25');
+    expect(root().querySelector('thead th.literal')?.getAttribute('aria-sort')).toBe('ascending');
+    expect(root().querySelector('tbody th')?.textContent?.trim()).toBe('2');
+    await click('campo25'); sorted('DESC').flush({ items: [wide], page: 0, size: 25, totalElements: 26 }); await settle();
+    expect(root().querySelector('thead th.literal')?.getAttribute('aria-sort')).toBe('descending');
+    await click('Siguiente'); sorted('DESC', 1).flush({ items: [wide], page: 1, size: 25, totalElements: 26 }); await settle();
+    await click('Fila'); flushPage([wide]); await settle();
+    expect(root().textContent).toContain('Revisión 7'); expect(root().textContent).toContain('26 activos');
+    expect(wide.originalValues).toEqual(Array(31).fill(' original ')); http.expectNone(() => true);
+  });
+  it('orden pide permiso antes de descartar borrador y conserva identidad al guardar tras ordenar', async () => {
+    await open(); await edit(); await input('textarea[data-value="0"]', 'borrador');
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    await click('locality'); http.expectNone(() => true);
+    expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')?.value).toBe('borrador');
+    confirm.mockReturnValue(true); await click('locality');
+    expect(root().querySelector('form')).toBeNull();
+    http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=ASC`)
+      .flush({ items: [row], page: 0, size: 25, totalElements: 26 }); await settle();
+    await edit(); await input('textarea[data-value="0"]', 'nuevo'); await click('Guardar cambios');
+    const save = http.expectOne({ method: 'PUT', url: `/api/collections/${id}/records/${row.id}` });
+    expect(save.request.body.values).toEqual(['nuevo', ...row.values.slice(1)]);
+    save.flush({ ...info, revision: 8 }); await settle();
+    http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=ASC`)
+      .flush({ items: [row], page: 0, size: 25, totalElements: 26 }); await settle();
+    expect(root().querySelector('thead th.literal:nth-child(3)')?.getAttribute('aria-sort')).toBe('ascending');
+  });
+  it('cambio de orden cancela detalle pendiente y no abre un editor con identidad anterior', async () => {
+    await open(); await click('Ver / editar'); const old = http.expectOne(`/api/collections/${id}/records/${row.id}`);
+    await click('locality'); expect(old.cancelled).toBe(true);
+    http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=ASC`)
+      .flush({ items: [{ ...row, id: 'new', values: ['new', '0', ' '] }], page: 0, size: 25, totalElements: 26 }); await settle();
+    expect(root().querySelector('form')).toBeNull(); expect(root().querySelector('[data-cell]')?.getAttribute('data-record')).toBe('new');
+    http.expectNone(request => request.method !== 'GET');
+  });
+
+  it('respuestas de orden tardías no cambian aria, filas ni el editor vigente aunque el transporte no cancele', async () => {
+    await open();
+    const api = TestBed.inject(CollectionsApi), records = api.records.bind(api);
+    vi.spyOn(api, 'records').mockImplementation((id, page, size, trash, _signal, sort) => records(id, page, size, trash, undefined, sort));
+    await click('locality');
+    const old = http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=ASC`);
+    expect(root().querySelector('thead th')?.getAttribute('aria-sort')).toBe('ascending');
+    await click('locality');
+    const current = http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=DESC`);
+    const second = { ...row, id: 'second', sourceRow: 10, values: ['002', ' z ', '0'] };
+    current.flush({ items: [second], page: 0, size: 25, totalElements: 26 }); await settle();
+    await click('Ver / editar'); http.expectOne(`/api/collections/${id}/records/second`).flush(second); await settle();
+    await input('textarea[data-value="0"]', 'borrador nuevo');
+    old.flush({ items: [row], page: 0, size: 25, totalElements: 26 }); await settle();
+    expect(root().querySelector('[data-cell]')?.getAttribute('data-record')).toBe('second');
+    expect(root().querySelector('thead th.literal:nth-child(3)')?.getAttribute('aria-sort')).toBe('descending');
+    expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')?.value).toBe('borrador nuevo');
+    await click('Guardar cambios'); const save = http.expectOne({ method: 'PUT', url: `/api/collections/${id}/records/second` });
+    expect(save.request.body.values).toEqual(['borrador nuevo', ' z ', '0']);
+    save.flush({ ...info, revision: 8 }); await settle();
+    http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=DESC`)
+      .flush({ items: [second], page: 0, size: 25, totalElements: 26 }); await settle();
+    expect(root().textContent).toContain('Revisión 8'); http.expectNone(() => true);
+  });
+  it('refresh de borrador pendiente no restaura identidad anterior después de ordenar', async () => {
+    await open(); await edit(); await click('Actualizar'); const old = http.expectOne(`/api/collections/${id}`);
+    await click('locality');
+    http.expectOne(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE&sortField=locality&sortDirection=ASC`)
+      .flush({ items: [row], page: 0, size: 25, totalElements: 26 }); await settle();
+    await edit(); await input('textarea[data-value="0"]', 'actual');
+    old.flush({ ...info, revision: 99 }); await settle();
+    expect(root().textContent).toContain('Revisión 7');
+    expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')?.value).toBe('actual');
+    http.expectNone(() => true);
+  });
 
   it('oculta vacías de toda la página antes de paginar columnas y alterna sin solicitudes', async () => {
     const wide = { ...row, headers: Array.from({ length: 31 }, (_, i) => `campo${i}`), mapping: {},

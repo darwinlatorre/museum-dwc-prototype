@@ -374,6 +374,94 @@ class CollectionHttpTests {
         assertThat(state(id)).isEqualTo(before);
     }
 
+    @Test void rowSortingIsNumericGlobalAndStableWithoutWrites() throws Exception {
+        var request = command(List.of("nota"), List.of(List.of("ten"), List.of("two"), List.of("one")));
+        request.put("rows", List.of(
+            Map.of("sourceRow", 10, "values", List.of("ten"), "originalValues", List.of(" TEN ")),
+            Map.of("sourceRow", 2, "values", List.of("two"), "originalValues", List.of(" TWO ")),
+            Map.of("sourceRow", 1, "values", List.of("one"), "originalValues", List.of(" ONE "))));
+        String id = submit(request, 201).get("collectionId").asString();
+        submit(append(id, 1, List.of("nota"), List.of(List.of("tie"))), 201);
+        String before = state(id);
+        var all = read(API + "/" + id + "/records").get("items");
+        assertThat(all.valueStream().map(r -> r.get("sourceRow").asInt()).toList()).containsExactly(1, 2, 2, 10);
+        assertThat(all.get(1).get("id").asString()).isLessThan(all.get(2).get("id").asString());
+        for (String direction : List.of("ASC", "DESC")) {
+            var expected = direction.equals("ASC") ? List.of(1, 2, 2, 10) : List.of(10, 2, 2, 1);
+            for (int page = 0; page < 4; page++) {
+                var item = read(API + "/" + id + "/records?size=1&page=" + page + "&sortDirection=" + direction).get("items").get(0);
+                assertThat(item.get("sourceRow").asInt()).isEqualTo(expected.get(page));
+                assertThat(read(API + "/" + id + "/records/" + item.get("id").asString())).isEqualTo(item);
+            }
+        }
+        assertThat(state(id)).isEqualTo(before);
+    }
+
+    @Test void effectiveLiteralSortingPrecedesPaginationWithEmptyLastAndStableTies() throws Exception {
+        String field = " x'); DROP TABLE collection_record; -- ";
+        var texts = List.of("10", "2", "01", "0", " ", "A", "a", "é", "\uE000", "😀", "", "A", "2024-2", "2024-10");
+        var request = command(List.of("source", "unique"), java.util.stream.IntStream.range(0, texts.size())
+            .mapToObj(i -> List.of(texts.get(i), "id" + i)).toList());
+        request.put("mapping", Map.of("source", field));
+        String id = submit(request, 201).get("collectionId").asString();
+        submit(append(id, 1, List.of("unique"), List.of(List.of("missing"))), 201);
+        submit(append(id, 2, List.of("unique", field), List.of(List.of("direct", "A"))), 201);
+        String before = state(id);
+        var baseline = read(API + "/" + id + "/records").get("items").valueStream().toList();
+        for (String direction : List.of("ASC", "DESC")) {
+            var expected = new ArrayList<>(baseline);
+            expected.sort((a, b) -> {
+                String av = effectiveValue(a, field), bv = effectiveValue(b, field);
+                if (av.isEmpty() != bv.isEmpty()) return av.isEmpty() ? 1 : -1;
+                int text = java.util.Arrays.compare(av.codePoints().toArray(), bv.codePoints().toArray());
+                if (text != 0) return direction.equals("ASC") ? text : -text;
+                int row = Integer.compare(a.get("sourceRow").asInt(), b.get("sourceRow").asInt());
+                return row != 0 ? row : a.get("id").asString().compareTo(b.get("id").asString());
+            });
+            for (int page = 0; page < expected.size(); page++) {
+                var result = mvc.perform(get(API + "/" + id + "/records").param("size", "1").param("page", "" + page)
+                    .param("sortField", field).param("sortDirection", direction)).andExpect(status().isOk()).andReturn();
+                var body = json.readTree(result.getResponse().getContentAsString());
+                assertThat(body.get("totalElements").asInt()).isEqualTo(expected.size());
+                assertThat(body.get("items").get(0)).isEqualTo(expected.get(page));
+            }
+        }
+        // A different literal (no trimming/case folding) has no matching column: source-row order remains.
+        var absent = mvc.perform(get(API + "/" + id + "/records").param("sortField", field.trim().toUpperCase()))
+            .andExpect(status().isOk()).andReturn();
+        assertThat(json.readTree(absent.getResponse().getContentAsString()).get("items").valueStream().toList()).isEqualTo(baseline);
+        assertThat(state(id)).isEqualTo(before);
+    }
+
+    private String effectiveValue(JsonNode record, String field) {
+        for (int i = 0; i < record.get("headers").size(); i++) {
+            String header = record.get("headers").get(i).asString();
+            var mapped = record.get("mapping").get(header);
+            String effective = mapped == null || mapped.asString().isEmpty() ? header : mapped.asString();
+            if (effective.equals(field)) return record.get("values").get(i).asString();
+        }
+        return "";
+    }
+
+    @Test void invalidSortInputRejectsWithoutEffectsAndTrashStillFilters() throws Exception {
+        String id = submit(command(List.of("nota"), List.of(List.of("z"), List.of("a"))), 201).get("collectionId").asString();
+        String recordId = read(API + "/" + id + "/records").get("items").get(0).get("id").asString();
+        mvc.perform(post(API + "/" + id + "/records/" + recordId + "/trash").contentType("application/json")
+            .content("{\"expectedRevision\":1}")).andExpect(status().isOk());
+        String before = state(id);
+        for (String invalid : List.of("asc", " DESC", "DESC ", "", "DROP")) {
+            mvc.perform(get(API + "/" + id + "/records").param("sortDirection", invalid)).andExpect(status().isBadRequest());
+        }
+        for (String invalid : List.of("", "x".repeat(2001), "\u0000", "\uD800")) {
+            mvc.perform(get(API + "/" + id + "/records").param("sortField", invalid)).andExpect(status().isBadRequest());
+        }
+        var trashed = read(API + "/" + id + "/records?trash=TRASHED&sortField=nota&sortDirection=DESC");
+        assertThat(trashed.get("totalElements").asInt()).isEqualTo(1);
+        assertThat(trashed.get("items").get(0).get("id").asString()).isEqualTo(recordId);
+        assertThat(read(API + "/" + id + "/records?sortField=nota").get("totalElements").asInt()).isEqualTo(1);
+        assertThat(state(id)).isEqualTo(before);
+    }
+
     List<Integer> race(Map<String, Object> a, Map<String, Object> b) throws Exception {
         var gate = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(2)) {

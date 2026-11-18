@@ -5,6 +5,8 @@ import { BASE_URL } from '../../../core/api/api';
 import { CollectionApiError } from '../models/collection';
 import type { AddRecord, CollectionInfo, CollectionProblem, CollectionRecord, EditRecord, ImportReceipt, ImportRequest, Page, RestoreRecord, TrashFilter } from '../models/collection';
 
+export interface RecordSort { field: string | null; direction: 'asc' | 'desc' }
+
 /** Biological reads/writes deliberately bypass Query and its metadata cache. */
 @Injectable({ providedIn: 'root' })
 export class CollectionsApi {
@@ -12,8 +14,11 @@ export class CollectionsApi {
   private readonly base = inject(BASE_URL).replace(/\/+$/, '');
   list = (page = 0, size = 50, signal?: AbortSignal) => this.request<Page<CollectionInfo>>(`collections?page=${page}&size=${size}`, 'GET', undefined, signal);
   detail = (id: string, signal?: AbortSignal) => this.request<CollectionInfo>(`collections/${encodeURIComponent(id)}`, 'GET', undefined, signal);
-  records = (id: string, page = 0, size = 50, trash: TrashFilter = 'ACTIVE', signal?: AbortSignal) =>
-    this.request<Page<CollectionRecord>>(`collections/${encodeURIComponent(id)}/records?page=${page}&size=${size}&trash=${trash}`, 'GET', undefined, signal);
+  records = (id: string, page = 0, size = 50, trash: TrashFilter = 'ACTIVE', signal?: AbortSignal, sort?: RecordSort) => {
+    const order = !sort || (sort.field === null && sort.direction === 'asc') ? ''
+      : `${sort.field === null ? '' : `&sortField=${encodeURIComponent(sort.field)}`}&sortDirection=${sort.direction === 'asc' ? 'ASC' : 'DESC'}`;
+    return this.request<Page<CollectionRecord>>(`collections/${encodeURIComponent(id)}/records?page=${page}&size=${size}&trash=${trash}${order}`, 'GET', undefined, signal);
+  };
   record = (id: string, recordId: string, signal?: AbortSignal) => this.request<CollectionRecord>(this.recordPath(id, recordId), 'GET', undefined, signal);
   import = (body: ImportRequest, signal?: AbortSignal) => this.request<ImportReceipt>('collections/imports', 'POST', body, signal);
   add = (id: string, body: AddRecord, signal?: AbortSignal) => this.request<CollectionInfo>(`collections/${encodeURIComponent(id)}/records`, 'POST', body, signal);
