@@ -21,6 +21,8 @@ fuentes de registros biológicos, análisis local e importación confirmada, y c
 | `core/api` | `Api.request`: transporte genérico HttpClient con puente Promise/AbortSignal y errores vigentes; base pública desde environment.baseUrl mediante BASE_URL; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
+| `shared/ui/table-header` | Cabecera presentacional controlada, sin acceso a datos ni paginación. |
+| `shared/lib/table-sort` | Comparación pura literal/número para adaptadores y worker; sin vistas ni modelos biológicos. |
 | `shared/design-system` | Tokens semánticos, primitivas globales, adaptación de PrimeNG y preset desde la misma paleta CSS. |
 | `testing` | Pruebas de composición, estilos y cruces entre funcionalidades; las pruebas propias permanecen junto al propietario. |
 

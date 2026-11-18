@@ -19,6 +19,12 @@ describe('Sistema de diseño del museo', () => {
   });
   afterEach(() => TestBed.resetTestingModule());
 
+  it('comparte cabeceras nativas/PrimeNG y distingue acciones sin otra paleta', () => {
+    expect(css).toContain('.museum-data-table');
+    expect(css).toMatch(/museum-table-actions[^{}]*\{[^}]*background:\s*var\(--museum-primary-50\)/s);
+    expect(css).toMatch(/museum-sort-heading[^{}]*button[^{}]*\{[^}]*min-height:\s*44px/s);
+  });
+
   it('conecta toda la escala primaria del preset con la única paleta CSS', () => {
     const primary = {
       50: 'var(--museum-primary-50)', 100: 'var(--museum-primary-100)',
