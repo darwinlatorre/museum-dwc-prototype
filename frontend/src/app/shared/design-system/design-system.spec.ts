@@ -21,6 +21,9 @@ describe('Sistema de diseño del museo', () => {
 
   it('comparte cabeceras nativas/PrimeNG y distingue acciones sin otra paleta', () => {
     expect(css).toContain('.museum-data-table');
+    const stickyActions = css.match(/\.collections-workspace th:last-child,\s*\.collections-workspace td:last-child\s*\{([^}]*)\}/)?.[1];
+    expect(stickyActions).toBeTruthy();
+    expect(stickyActions).not.toMatch(/border-(left|inline-start)\s*:/);
     expect(css).toMatch(/museum-table-actions[^{}]*\{[^}]*background:\s*var\(--museum-primary-50\)/s);
     expect(css).toMatch(/museum-sort-heading[^{}]*button[^{}]*\{[^}]*min-height:\s*44px/s);
   });

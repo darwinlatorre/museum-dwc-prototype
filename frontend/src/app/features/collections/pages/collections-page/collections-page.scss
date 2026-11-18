@@ -17,7 +17,7 @@
   th, td { text-align: left; vertical-align: top; padding: var(--museum-space-1) var(--museum-space-2); border-right: 1px solid var(--museum-line); border-bottom: 1px solid var(--museum-line); min-width: 9rem; max-width: 16rem; overflow-wrap: anywhere; }
   thead th { position: sticky; top: 0; z-index: 2; background: var(--museum-table-heading); }
   th:first-child { min-width: 6rem; max-width: 6rem; width: 6rem; }
-  th:last-child, td:last-child { position: sticky; right: 0; min-width: 11rem; width: 11rem; z-index: 1; border-left: 1px solid var(--museum-line); }
+  th:last-child, td:last-child { position: sticky; right: 0; min-width: 11rem; width: 11rem; z-index: 1; }
   thead th:last-child { z-index: 3; }
   td:last-child .actions { flex-wrap: nowrap; gap: var(--museum-space-1); }
   td:last-child button { padding: var(--museum-space-1) var(--museum-space-2); white-space: nowrap; flex: 0 0 auto; }
