@@ -11,14 +11,16 @@
   @if (recordLoading()) { <p role="status">Cargando campos del registro…</p> }
   @if (id()) {
     @if (collection(); as collection) {
-      <h3 class="literal">{{ collection.name }}</h3>
-      <p>{{ contextLabel(collection.context) }} · {{ collection.activeCount }} activos · {{ collection.trashCount }} en papelera · Revisión {{ collection.revision }}</p>
-      <div class="toolbar">
+      <header class="collection-context">
+        <h3 class="literal">{{ collection.name }}</h3>
+        <p>{{ contextLabel(collection.context) }} · {{ collection.activeCount }} activos · {{ collection.trashCount }} en papelera · Revisión {{ collection.revision }}</p>
+      </header>
+      <div class="toolbar collection-global-actions" role="group" aria-label="Acciones de la colección">
         <div class="actions">
-          <button type="button" (click)="add($event)" [disabled]="busy() || loading() || uncertain() || !metadata().available()">Agregar registro</button>
+          <button type="button" class="collection-primary" (click)="add($event)" [disabled]="busy() || loading() || uncertain() || !metadata().available()">Agregar registro</button>
           <a routerLink="/analisis">Importar desde análisis</a>
         </div>
-        <label>Mostrar
+        <label>Estado de registros
           <select aria-label="Estado de registros" [value]="filter()" (change)="changeFilter($event)" [disabled]="busy() || loading()">
             <option value="ACTIVE">Activos</option><option value="TRASHED">Papelera</option><option value="ALL">Todos</option>
           </select>
@@ -27,7 +29,7 @@
       @if (!metadata().available()) { <p class="error">No se pudieron cargar las reglas. Actualice antes de guardar.</p> }
       @if (records(); as records) {
         @if (records.items.length) {
-          <div class="collection-sheet-tools"><details><summary>Ayuda de edición</summary><p id="collection-sheet-help">Doble clic en una celda para editar. Con teclado, use Enter; en pantalla táctil, toque la celda. Abra el formulario para ver el registro completo y sus originales.</p></details>
+          <div class="collection-sheet-tools" role="group" aria-label="Vista de la hoja"><details><summary>Ayuda de edición</summary><p id="collection-sheet-help">Doble clic en una celda para editar en el mismo espacio. Enter guarda; Mayús + Enter añade una línea; Escape cancela. Con teclado, abra con Enter o Espacio. En pantalla táctil, use Ver / editar para abrir el registro completo y sus originales.</p></details>
             <label><input type="checkbox" aria-label="Ocultar columnas sin datos" [checked]="hideEmpty()" (change)="toggleEmpty()" /> Ocultar columnas sin datos</label>
           </div>
           @if (columns().length > 25) {
@@ -46,15 +48,15 @@
                   <th scope="row">{{ record.sourceRow }} @if (record.trashed) { <small>En papelera</small> }</th>
                   @for (column of visibleColumns(); track column) {
                     <td data-cell [attr.data-record]="record.id" [attr.data-column]="column" class="literal" (dblclick)="edit(record, $event, column)">
-                      @if (inlineIndex() !== undefined && editor()?.record?.id === record.id && cellIndex(record, column) === inlineIndex()) {
-                        <fieldset class="inline-cell" [disabled]="busy() || uncertain()" aria-label="Editar celda">
-                          <textarea [attr.aria-label]="'Editar ' + column" [formControl]="values.at(inlineIndex()!)" (keydown)="inlineKey($event)" rows="2"></textarea>
-                          <div class="actions"><button type="button" (click)="save()" [disabled]="!canWrite()">Guardar celda</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar</button></div>
-                          <small>Enter guarda · Mayús + Enter añade una línea · Escape cancela</small>
-                        </fieldset>
-                      } @else {
-                        <button type="button" class="cell-value" [attr.aria-label]="'Editar ' + column + ', fila ' + record.sourceRow + ': ' + cell(record, column)" [title]="cell(record, column)" (keydown.enter)="$event.preventDefault(); edit(record, $event, column)" (keydown.space)="$event.preventDefault(); edit(record, $event, column)" (pointerup)="$event.pointerType === 'touch' && edit(record, $event, column)" [disabled]="busy() || recordLoading() || uncertain() || record.trashed || cellIndex(record, column) < 0">{{ cell(record, column) }}</button>
-                      }
+                      @let editing = inlineIndex() !== undefined && editor()?.record?.id === record.id && cellIndex(record, column) === inlineIndex();
+                      <div class="collection-cell-box">
+                        <button type="button" class="cell-value" [class.cell-measure]="editing" [attr.aria-hidden]="editing ? 'true' : null" [attr.tabindex]="editing ? -1 : null" [attr.aria-label]="'Editar ' + column + ', fila ' + record.sourceRow + ': ' + cell(record, column)" [title]="cell(record, column)" (keydown.enter)="$event.preventDefault(); edit(record, $event, column)" (keydown.space)="$event.preventDefault(); edit(record, $event, column)" [disabled]="busy() || recordLoading() || uncertain() || record.trashed || cellIndex(record, column) < 0">{{ cell(record, column) }}</button>
+                        @if (editing) {
+                          <fieldset class="inline-cell" [disabled]="busy() || uncertain()" aria-label="Editar celda">
+                            <textarea [attr.aria-label]="'Editar ' + column" aria-describedby="collection-sheet-help" [formControl]="values.at(inlineIndex()!)" (keydown)="inlineKey($event)" rows="1"></textarea>
+                          </fieldset>
+                        }
+                      </div>
                     </td>
                   }
                   <td class="museum-table-actions"><div class="actions">
@@ -71,8 +73,8 @@
     }
   } @else {
     @if (list(); as list) {
-      <p>{{ list.totalElements }} colecciones</p>
-      <ul class="collection-list">@for (collection of list.items; track collection.id) {
+      <div class="collection-selection-heading"><h3>Seleccione una colección</h3><p>{{ list.totalElements }} colecciones · Abra un nombre para consultar sus registros.</p></div>
+      <ul class="collection-list" aria-label="Colecciones disponibles">@for (collection of list.items; track collection.id) {
         <li><a class="collection-link literal" [routerLink]="['/collections', collection.id]">{{ collection.name }}</a>
           <span>{{ contextLabel(collection.context) }} · {{ collection.activeCount }} activos · {{ collection.trashCount }} en papelera</span>
         </li>
@@ -139,7 +141,7 @@
     </form>
     </dialog>
     } @else {
-      <div class="actions inline-draft" aria-label="Edición de celda en curso"><span>Está editando {{ fields(editor)[inlineIndex()!] }}, fila {{ editor.record?.sourceRow }}.</span><button type="button" (click)="returnToCell()">Volver a la celda</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar edición</button></div>
+      <div class="actions inline-draft" aria-label="Edición de celda en curso"><span>Está editando {{ fields(editor)[inlineIndex()!] }}, fila {{ editor.record?.sourceRow }}.</span><button type="button" (click)="returnToCell()">Volver a la celda</button><button type="button" class="collection-primary" (click)="save()" [disabled]="!canWrite()">Guardar cambios</button><button type="button" (click)="cancelEditor()" [disabled]="busy() || uncertain()">Cancelar edición</button></div>
       <label class="collection-consent"><input type="checkbox" aria-label="Confirmar advertencias" [checked]="warnings()" (change)="warnings.set(!warnings())" [disabled]="busy() || uncertain()" /> He revisado y confirmo las advertencias</label>
     }
   }

@@ -48,6 +48,12 @@ export class NormalizationPreview {
     const { offset, limit } = state.window();
     return `${total ? offset + 1 : 0}–${Math.min(offset + limit, total)} de ${total}`;
   });
+  readonly columnRange = computed(() => {
+    const state = this.state();
+    const columns = state.columns();
+    const first = columns[0], last = columns.at(-1);
+    return `Columnas fuente ${first ? first.columnIndex + 1 : 0}–${last ? last.columnIndex + 1 : 0} de ${state.metadata()?.columns.length ?? 0}`;
+  });
   private readonly allButton = viewChild<ElementRef<HTMLButtonElement>>('allButton');
   private readonly originalRegion = viewChild<ElementRef<HTMLElement>>('originalRegion');
   private opener?: HTMLButtonElement;

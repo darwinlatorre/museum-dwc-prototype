@@ -16,6 +16,8 @@ El diagnóstico inicial y su resumen/detalle de obligatorios usan originales con
 
 ## Revisión compacta y ventana confirmada
 
+La cabecera distingue la copia local de su aplicación. Los controles de presentación (vista y columnas ocultas) se agrupan aparte de **Formatos y reglas** y los avisos de duplicados. La paginación separa avance/retroceso del tamaño de página; las ventanas conservan hasta 50 columnas. El pie separa **Ver diagnóstico** de la secuencia **Aplicar normalización y validar → Finalizar**, con una única acción primaria según la etapa. No añade validaciones, envíos ni aplicaciones por cambiar la presentación.
+
 - **Con cambios** incluye filas con algún valor distinto del original en cualquier columna, aunque esté oculta o fuera de la ventana. Un duplicado sin cambios no se incluye. **Todos** recupera el conjunto completo, sin eliminar ni fusionar registros.
 - Cada sesión de archivo/hoja/mapeo inicia con `rowFilter: 'changed'` explícito. Cambiar vista solo envía `preview-page` con offset0; no reenvía originales/opciones, recalcula, invalida el análisis ni valida. Los cambios de formato mantienen la vista elegida y reinician offset0; reintentar conserva esa elección.
 - Las cabeceras compartidas permiten ordenar **todo el conjunto antes de paginar**, con Fila numérica ascendente por defecto. Los campos se identifican por índice fuente (también con encabezados repetidos), usando los valores efectivos actuales: comparación literal por punto de código Unicode, sin coerción, trim ni cambio de case; vacíos al final en ambas direcciones y empates estables por índice fuente. Ordenar vuelve a página0 y cierra el detalle, sin Aplicar, validación ni generación nueva.

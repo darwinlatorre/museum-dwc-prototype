@@ -271,12 +271,16 @@
     }
     @case (4) {
       <app-normalization-preview [state]="previewState" [options]="options()" [active]="active()" (optionsChanged)="formats.set($event)" />
-      <div class="wizard-footer normalization-footer">
+      <div class="wizard-footer normalization-footer" role="group" aria-label="Aplicar y continuar">
         <button [disabled]="!canVisit(3)" (click)="visit(3)">Ver diagnóstico</button>
-        <p-button label="Aplicar normalización y validar" [disabled]="busy() || !previewState.ready()" (onClick)="validate(true)" />
-        <p-button label="Finalizar" [disabled]="!canVisit(5) || busy()" (onClick)="visit(5)" />
+        <div class="normalization-next">
+          <p id="normalization-next-help" role="status">{{ canVisit(5) ? 'Normalización aplicada. Puede continuar a Finalizar para revisar el envío.' : 'Aplique y valide para continuar, incluso si no hay cambios. Finalizar no envía sin su confirmación.' }}</p>
+          <div class="actions">
+            <p-button label="Aplicar normalización y validar" [severity]="canVisit(5) ? 'secondary' : 'primary'" [disabled]="busy() || !previewState.ready()" (onClick)="validate(true)" />
+            <p-button label="Finalizar" [severity]="canVisit(5) ? 'primary' : 'secondary'" [disabled]="!canVisit(5) || busy()" (onClick)="visit(5)" />
+          </div>
+        </div>
       </div>
-      @if (!canVisit(5)) { <p role="status">Para continuar, pulse «Aplicar normalización y validar», incluso si no hay cambios.</p> }
     }
   }
   @if (context(); as selectedContext) {

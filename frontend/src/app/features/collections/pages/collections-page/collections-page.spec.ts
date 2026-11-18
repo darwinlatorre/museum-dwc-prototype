@@ -162,6 +162,23 @@ describe('Colecciones por controles públicos', () => {
     expect(root().querySelector('dialog')).toBeNull(); expect(document.activeElement?.textContent).toContain('Ver / editar');
     http.expectNone(() => true);
   });
+  it('single click and touch leave cells read-only; double click opens a minimal overlay', async () => {
+    await open();
+    const trigger = root().querySelector<HTMLButtonElement>('[data-cell] button')!;
+    trigger.click(); await settle(); http.expectNone(() => true);
+    const touch = new Event('pointerup', { bubbles: true });
+    Object.defineProperty(touch, 'pointerType', { value: 'touch' });
+    trigger.dispatchEvent(touch); await settle();
+    http.expectNone(() => true);
+    expect(root().querySelector('textarea')).toBeNull();
+    trigger.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+    http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
+    const cell = root().querySelector('[data-cell]')!;
+    expect(cell.querySelector('textarea')?.getAttribute('rows')).toBe('1');
+    expect(cell.querySelector('.cell-value')?.getAttribute('aria-hidden')).toBe('true');
+    expect(cell.querySelectorAll('button:not(.cell-value), small')).toHaveLength(0);
+    http.expectNone(() => true);
+  });
   it('doble clic edita celda sin guardar al perder foco; Enter envía una vez todos los valores', async () => {
     await open(); root().querySelector('[data-cell]')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
@@ -169,6 +186,10 @@ describe('Colecciones por controles públicos', () => {
     await input('[aria-label="Editar occurrenceID"]', ' 0009\n ');
     const cell = root().querySelector<HTMLInputElement>('[aria-label="Editar occurrenceID"]')!;
     cell.dispatchEvent(new FocusEvent('blur')); await settle(); http.expectNone(() => true);
+    expect(cell.value).toBe(' 0009\n ');
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true }));
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    await settle(); http.expectNone(() => true);
     cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
     const request = http.expectOne({ method: 'PUT', url: `/api/collections/${id}/records/${row.id}` });
@@ -182,7 +203,7 @@ describe('Colecciones por controles públicos', () => {
   it('teclado abre celda; rechazo conserva borrador, originales y cuentas; Escape cancela sin escribir', async () => {
     await open(); root().querySelector('[data-cell] button')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
-    await input('[aria-label="Editar occurrenceID"]', 'dup'); await click('Guardar celda');
+    await input('[aria-label="Editar occurrenceID"]', 'dup'); await click('Guardar cambios');
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code: 'VALIDATION_FAILED', detail: 'No válido' }, { status: 422, statusText: 'Error' }); await settle();
     expect(root().querySelector<HTMLInputElement>('[aria-label="Editar occurrenceID"]')?.value).toBe('dup');
     expect(root().textContent).toContain('26 activos'); expect(root().textContent).toContain('Revisión 7');
@@ -192,20 +213,19 @@ describe('Colecciones por controles públicos', () => {
     expect(root().querySelector('[aria-label="Editar occurrenceID"]')).toBeNull();
     expect(document.activeElement).toBe(root().querySelector('[data-cell] button')); http.expectNone(() => true);
   });
-  it('celda táctil conserva advertencias y valores ocultos sin reenvío automático', async () => {
+  it('keyboard cell editing preserves warnings and hidden values without automatic resend', async () => {
     await open();
-    const touch = new Event('pointerup', { bubbles: true }); Object.defineProperty(touch, 'pointerType', { value: 'touch' });
-    root().querySelector('[data-cell] button')!.dispatchEvent(touch); await settle();
+    root().querySelector('[data-cell] button')!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true })); await settle();
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush(row); await settle();
-    await input('[aria-label="Editar occurrenceID"]', ' 00A '); await click('Guardar celda');
+    await input('[aria-label="Editar occurrenceID"]', ' 00A '); await click('Guardar cambios');
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code: 'WARNINGS_UNCONFIRMED', issues: [{ field: 'nota', row: 19, severity: 'WARNING', description: 'Revise' }] }, { status: 422, statusText: 'Advertencias' }); await settle();
-    expect(button('Guardar celda').disabled).toBe(true); expect(root().textContent).toContain('Revise');
-    root().querySelector<HTMLInputElement>('[aria-label="Confirmar advertencias"]')!.click(); await settle(); await click('Guardar celda');
+    expect(button('Guardar cambios').disabled).toBe(true); expect(root().textContent).toContain('Revise');
+    root().querySelector<HTMLInputElement>('[aria-label="Confirmar advertencias"]')!.click(); await settle(); await click('Guardar cambios');
     const request = http.expectOne(`/api/collections/${id}/records/${row.id}`);
     expect(request.request.body).toEqual({ expectedRevision: 7, configurationRevision: 3, catalogVersion: 5, warningsConfirmed: true, values: [' 00A ', ...row.values.slice(1)] });
     request.error(new ProgressEvent('error')); await settle();
-    expect(button('Guardar celda').disabled).toBe(true); expect(root().textContent).toContain('Resultado desconocido');
-    await click('Guardar celda'); http.expectNone(() => true);
+    expect(button('Guardar cambios').disabled).toBe(true); expect(root().textContent).toContain('Resultado desconocido');
+    await click('Guardar cambios'); http.expectNone(() => true);
   });
   it.each(['colección', 'registro'])('refresh antiguo pendiente de %s no mezcla identidad y valores de otra celda', async pending => {
     const first = { ...row, values: ['FIRST', '', '0'] };
@@ -232,7 +252,7 @@ describe('Colecciones por controles públicos', () => {
     expect.soft(cell?.closest('td')?.getAttribute('data-record')).toBe(second.id);
     expect.soft(cell?.value).toBe('SECOND');
     expect.soft(root().querySelector('.inline-draft')?.textContent).toContain('fila 20');
-    await click('Guardar celda');
+    await click('Guardar cambios');
     const save = http.expectOne(request => request.method === 'PUT');
     expect.soft(save.request.url).toBe(`/api/collections/${id}/records/${second.id}`);
     expect(save.request.body).toEqual({ expectedRevision: 7, configurationRevision: 3, catalogVersion: 5, warningsConfirmed: false, values: second.values });

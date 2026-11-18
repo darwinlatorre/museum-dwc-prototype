@@ -6,12 +6,13 @@ import { buildNormalizationPreview, readPreviewPage } from '../../engine/normali
 import type { PreviewRequest, PreviewResponse, PreviewWindow } from '../../models/normalization-preview';
 
 const options = { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true };
-async function setup() {
+async function setup(extraColumns = 0) {
   const messages: PreviewRequest[] = [];
   const worker = { postMessage: vi.fn((message: PreviewRequest) => messages.push(structuredClone(message))), terminate: vi.fn(), onmessage: undefined as ((event: MessageEvent) => void) | undefined };
   let id = 0;
   const state = new NormalizationPreviewState(() => worker as unknown as Worker, () => ++id);
-  const original = { headers: ['alias', 'empty'], rows: Array.from({ length: 15 }, (_, i) => ({ row: i + 2, values: [` ${i % 2 ? 'b' : 'a'} `, ''] })) };
+  const original = { headers: ['alias', 'empty', ...Array.from({ length: extraColumns }, (_, i) => `field${i}`)],
+    rows: Array.from({ length: 15 }, (_, i) => ({ row: i + 2, values: [` ${i % 2 ? 'b' : 'a'} `, '', ...Array<string>(extraColumns).fill('')] })) };
   const snapshot = buildNormalizationPreview(original, {}, options);
   const reply = (request: PreviewRequest, override?: PreviewWindow) => {
     if (!('window' in request)) throw new Error('Falta ventana');
@@ -35,6 +36,37 @@ async function setup() {
   return { state, worker, messages, reply, fixture, root, header };
 }
 describe('cabeceras de Normalizar y ventana confirmada', () => {
+  it('separates preview formats and table presentation without recalculating on disclosure', async () => {
+    const p = await setup();
+    const count = p.messages.length;
+    const settings = p.root.querySelector<HTMLDetailsElement>('.normalization-settings')!;
+    expect(settings.open).toBe(false);
+    settings.querySelector('summary')!.click();
+    await p.fixture.whenStable();
+    expect(p.messages).toHaveLength(count);
+    expect(p.root.querySelector('[role="group"][aria-label="Presentación de la hoja"]')).not.toBeNull();
+    expect(p.root.querySelector('nav[aria-label="Páginas de registros"] [role="group"]')).not.toBeNull();
+    expect(settings.querySelectorAll('.normalization-rules li')).toHaveLength(6);
+    expect(settings.querySelectorAll('input')).toHaveLength(0);
+    p.state.destroy();
+  });
+  it('column navigation labels remain tied to the confirmed window during loading', async () => {
+    const p = await setup(59);
+    p.state.setHideEmpty(false); p.reply(p.messages.at(-1)!); await p.fixture.whenStable();
+    const nav = () => p.root.querySelector('nav[aria-label="Ventana de columnas"]')!;
+    expect(nav().textContent).toContain('Columnas fuente 1–50 de 61');
+    const count = p.messages.length;
+    [...nav().querySelectorAll('button')].find(button => button.textContent === 'Columnas siguientes')!.click();
+    await p.fixture.whenStable();
+    expect(nav().textContent).toContain('Columnas fuente 1–50 de 61');
+    expect(p.messages).toHaveLength(count + 1);
+    const request = p.messages.at(-1)!;
+    expect(Object.keys(request).sort()).toEqual(['generation', 'id', 'kind', 'session', 'window']);
+    p.reply(request); await p.fixture.whenStable();
+    expect(nav().textContent).toContain('Columnas fuente 51–61 de 61');
+    expect(p.root.querySelectorAll('thead th')).toHaveLength(12);
+    p.state.destroy();
+  });
   it('ordena por cabecera sin reenviar originales, opciones, aplicar ni nueva generación; cierra detalle', async () => {
     const p = await setup();
     expect(p.root.querySelector('table')?.classList.contains('museum-data-table')).toBe(true);

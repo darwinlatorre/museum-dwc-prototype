@@ -1,6 +1,9 @@
 <section class="normalization-sheet" aria-labelledby="normalization-title">
-  <h3 id="normalization-title">Normalización</h3>
-  <div class="normalization-tools">
+  <header class="normalization-heading">
+    <h3 id="normalization-title">Normalización</h3>
+    <p>Revise la copia antes de aplicar. Los originales se conservan.</p>
+  </header>
+  <div class="normalization-tools" role="group" aria-label="Presentación de la hoja">
     <div class="normalization-views" role="group" aria-label="Vista de registros">
       <button type="button" [attr.aria-pressed]="state().rowFilter() === 'changed'" [disabled]="state().status() !== 'ready'" (click)="state().setRowFilter('changed')">Con cambios</button>
       <button #allButton type="button" [attr.aria-pressed]="state().rowFilter() === 'all'" [disabled]="state().status() !== 'ready'" (click)="state().setRowFilter('all')">Todos</button>
@@ -9,6 +12,7 @@
   </div>
   <details class="workbench-help normalization-settings">
     <summary>Formatos y reglas</summary>
+    <p>Seis reglas siempre activas en esta vista previa. Elegir un formato no aplica ni valida los registros.</p>
 
   <ul class="normalization-rules" aria-label="Reglas siempre activas">
     @for (rule of rules; track rule.key) {
@@ -72,11 +76,11 @@
     }
     @if (state().visibleColumns().length === 0) { <p>Todas las columnas están ocultas. Los {{ metadata.totalRows }} registros siguen presentes. Desactive «Ocultar columnas sin datos» para restaurarlas.</p> }
     @if (state().visibleColumns().length > 50) {
-      <div class="normalization-column-nav" aria-label="Ventana de columnas">
+      <nav class="normalization-column-nav" aria-label="Ventana de columnas">
         <button [disabled]="!state().ready() || !state().canMoveColumns(-1)" (click)="state().moveColumns(-1)">Columnas anteriores</button>
-        <span>50 columnas por ventana</span>
+        <span>{{ columnRange() }} · Hasta 50 por ventana</span>
         <button [disabled]="!state().ready() || !state().canMoveColumns(1)" (click)="state().moveColumns(1)">Columnas siguientes</button>
-      </div>
+      </nav>
     }
     <p id="normalization-grid-help" class="sr-only">Flechas: recorrer celdas · Tab: salir · Activar: ver original · Escape: cerrar · ∅ vacío.</p>
     <div class="normalization-scroll" tabindex="0" role="region" [attr.aria-label]="viewName()" [attr.aria-busy]="!state().ready()">
@@ -113,11 +117,15 @@
       </table>
     </div>
     <nav class="normalization-pager" aria-label="Páginas de registros">
+      <div class="normalization-page-actions" role="group" aria-label="Ir a páginas anteriores">
       <button [disabled]="!state().ready() || state().window().offset === 0" (click)="state().page({offset: 0})">Primera página</button>
       <button [disabled]="!state().ready() || state().window().offset === 0" (click)="state().page({offset: state().window().offset - state().window().limit})">Página anterior</button>
+      </div>
       <span>{{ range() }}</span>
+      <div class="normalization-page-actions" role="group" aria-label="Ir a páginas siguientes">
       <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= state().viewTotal()" (click)="state().page({offset: state().window().offset + state().window().limit})">Página siguiente</button>
       <button [disabled]="!state().ready() || state().window().offset + state().window().limit >= state().viewTotal()" (click)="state().page({offset: Math.floor(Math.max(0, state().viewTotal() - 1) / state().window().limit) * state().window().limit})">Última página</button>
+      </div>
       <label>Registros por página<select aria-label="Registros por página" [value]="state().window().limit" [disabled]="!state().ready()" (change)="pageSize($event)">
         <option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
       </select></label>

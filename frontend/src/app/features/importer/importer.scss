@@ -189,7 +189,18 @@
 .issue-error .issue-message { color: var(--museum-error-text); }
 .issue-warning .issue-message { font-weight: 500; }
 .normalization-sheet { min-width: 0; position: relative; }
-.normalization-sheet > h3 { margin: 0 0 var(--museum-space-2); }
+.normalization-heading { margin-bottom: var(--museum-space-4); }
+.normalization-heading h3, .normalization-heading p { margin-block: var(--museum-space-2); }
+.normalization-heading p { color: var(--museum-text-muted); }
+.normalization-tools { padding-block: var(--museum-space-3); border-block: 1px solid var(--museum-line); justify-content: space-between; }
+.normalization-page-actions { display: flex; flex-wrap: wrap; gap: var(--museum-space-2); }
+.normalization-pager { padding-block: var(--museum-space-3); justify-content: space-between; }
+.normalization-footer { border-top: 1px solid var(--museum-line); justify-content: space-between; align-items: flex-start; }
+.normalization-next { flex: 0 1 46rem; min-width: 0; }
+.normalization-next p { margin: 0 0 var(--museum-space-3); color: var(--museum-text-muted); }
+.normalization-next .actions { justify-content: flex-end; flex-wrap: wrap; }
+.normalization-footer button { white-space: normal; overflow-wrap: anywhere; }
+.normalization-footer p-button { max-width: 100%; }
 .normalization-sheet .normalization-rules { display: grid; gap: var(--museum-space-2); padding-left: var(--museum-space-5); }
 .normalization-sheet summary { min-height: 44px; }
 .normalization-views { display: flex; gap: var(--museum-space-1); flex-wrap: wrap; }
