@@ -19,7 +19,20 @@ class HeaderHost {
   }
 }
 
+@Component({
+  imports: [TableHeader],
+  template: `<table><thead><tr><th museumSortHeader label="eventDate"><strong>eventDate</strong><small class="literal"> Fecha </small></th></tr></thead></table>`,
+})
+class DetailedHeaderHost {}
+
 describe('Cabecera reutilizable de tabla', () => {
+  it('conserva la jerarquía del campo DwC y el origen literal proyectados', async () => {
+    const fixture = TestBed.createComponent(DetailedHeaderHost); await fixture.whenStable();
+    const heading = fixture.nativeElement.querySelector('th') as HTMLTableCellElement;
+    expect(heading.querySelector('strong')?.textContent).toBe('eventDate');
+    expect(heading.querySelector('small.literal')?.textContent).toBe(' Fecha ');
+    expect(heading.querySelector('button')?.getAttribute('aria-label')).toBe('Ordenar por eventDate');
+  });
   afterEach(() => TestBed.resetTestingModule());
   it('expone columna y estado de orden sin instrucciones visibles repetidas', async () => {
     const fixture = TestBed.createComponent(HeaderHost); await fixture.whenStable();

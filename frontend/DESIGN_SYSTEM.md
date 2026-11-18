@@ -38,7 +38,7 @@ La hoja de normalización tiene fila física y encabezados anclados dentro de un
 
 ## Tablas: presentación compartida, datos con su propietario
 
-`shared/ui/table-header` ofrece `th[museumSortHeader]`: botón nativo, etiqueta, dirección controlada, deshabilitación y evento `sortRequested`; `aria-sort` pertenece a la cabecera. No pagina, obtiene ni conserva filas. `_tables.scss` comparte superficie, tipografía y controles con PrimeNG; `.museum-table-actions` distingue acciones con superficie y borde de la paleta vigente. Los consumidores conservan sus celdas y operaciones.
+`shared/ui/table-header` ofrece `th[museumSortHeader]`: botón nativo, etiqueta, dirección controlada, deshabilitación y evento `sortRequested`; `aria-sort` pertenece a la cabecera. Puede proyectar contenido semántico (campo DwC y origen secundario); sin contenido usa la etiqueta como fallback. HTML externo co-localizado; no pagina, obtiene ni conserva filas. `_tables.scss` comparte superficie, tipografía y controles con PrimeNG; `.museum-table-actions` distingue acciones con superficie y borde de la paleta vigente. Los consumidores conservan sus celdas y operaciones.
 
 `shared/lib/table-sort.ts` es cálculo puro sin Angular, transporte ni modelos biológicos: números reales en orden numérico; strings por puntos Unicode sin trim, casefold ni coerción numérica; ausentes y texto vacío al final en ambos sentidos. Es compatible con PostgreSQL `COLLATE C`. Los consumidores agregan su desempate estable y ordenan antes de paginar. Los datos no se mutan por ordenar. Esta utilidad puede importarse desde workers porque no depende de vistas.
 
