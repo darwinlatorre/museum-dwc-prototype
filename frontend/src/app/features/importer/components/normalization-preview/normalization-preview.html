@@ -87,7 +87,7 @@
       <table class="normalization-grid museum-data-table" aria-describedby="normalization-grid-help" museumResizableTable [resizeContext]="state()">
         <thead><tr><th museumResizableColumn="physical-row" resizeLabel="Fila de origen" [initialColumnWidth]="128" museumSortHeader scope="col" label="Fila de origen" [direction]="state().sortDirection(null)" [disabled]="state().status() !== 'ready'" (sortRequested)="state().sort(null)"></th>
           @for (column of state().columns(); track column.columnIndex) {
-            <th [museumResizableColumn]="'field:' + column.columnIndex" [resizeLabel]="column.effectiveField" [initialColumnWidth]="192" museumSortHeader scope="col" [label]="column.effectiveField + (column.sourceHeader !== column.effectiveField ? ' · ' + column.sourceHeader : '') + ' · Columna ' + (column.columnIndex + 1)" [direction]="state().sortDirection(column.columnIndex)"
+            <th [museumResizableColumn]="'field:' + column.columnIndex" [resizeLabel]="column.effectiveField" [initialColumnWidth]="192" [growColumn]="true" museumSortHeader scope="col" [label]="column.effectiveField + (column.sourceHeader !== column.effectiveField ? ' · ' + column.sourceHeader : '') + ' · Columna ' + (column.columnIndex + 1)" [direction]="state().sortDirection(column.columnIndex)"
               [disabled]="state().status() !== 'ready'" (sortRequested)="state().sort(column.columnIndex)"
               [title]="'Columna ' + (column.columnIndex + 1) + ': ' + column.sourceHeader"><strong>{{ column.effectiveField }}</strong>
               @if (column.sourceHeader !== column.effectiveField) { <small class="literal">{{ column.sourceHeader }}</small> }

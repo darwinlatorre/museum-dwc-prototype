@@ -43,6 +43,28 @@ describe('Shared table column resizing', () => {
     target.dispatchEvent(event);
   }
 
+  it('fills the available table width initially while explicit resizing keeps exact pixels', async () => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.firstElementChild?.tagName === 'TABLE' ? 1200 : 0;
+    });
+    const p = await setup();
+    const table = p.root.querySelector<HTMLTableElement>('table')!;
+    expect(table.style.width).toBe('1200px');
+    const initial = Number(p.handles()[1].getAttribute('aria-valuenow'));
+    p.handles()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await p.fixture.whenStable();
+    expect(p.widths()[1]).toBe(`${initial + 16}px`);
+    expect(table.style.width).toBe('1216px');
+  });
+  it('closes stale numeric drafts when a new view context arrives', async () => {
+    const p = await setup();
+    p.handles()[1].click(); await p.fixture.whenStable();
+    const panel = p.root.querySelector<HTMLElement>('.museum-column-width:not([hidden])')!;
+    expect(panel).not.toBeNull();
+    p.fixture.componentInstance.context.set(2); await p.fixture.whenStable();
+    expect(panel.hidden).toBe(true);
+    expect(p.widths()[1]).toBe('240px');
+  });
   it('offers non-sortable row/actions widths, bounded keyboard pixels and preserves sort button', async () => {
     const { fixture, root, handles, widths } = await setup();
     handles()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));

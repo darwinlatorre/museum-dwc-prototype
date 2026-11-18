@@ -91,11 +91,13 @@ table.museum-resizable-root.museum-resizable-table .museum-table-actions .action
   cursor: col-resize;
   touch-action: none;
   user-select: none;
-  border: 1px solid var(--museum-line);
-  border-radius: var(--museum-radius-sm);
+  border: 0;
+  border-inline-start: 1px solid var(--museum-line);
+  border-radius: 0;
   color: var(--museum-primary-700);
-  background: var(--museum-surface);
+  background: transparent;
 }
+.museum-resize-handle:hover, .museum-resize-handle:focus-visible { background: var(--museum-primary-50); }
 .museum-column-width {
   position: fixed;
   inset: 0;

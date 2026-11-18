@@ -56,6 +56,10 @@ export class ColumnWidthControl {
     this.stopGesture?.();
     clearTimeout(this.clickTimer);
     this.suppressClick = false;
+    if (this.opened()) {
+      this.opened.set(false);
+      if (this.nativePopover) this.panel().nativeElement.hidePopover();
+    }
   }
 
   toggle() {
@@ -74,7 +78,7 @@ export class ColumnWidthControl {
     this.handle().nativeElement.focus({ preventScroll: true });
   }
   popoverToggle(event: Event) {
-    if ((event as ToggleEvent).newState === 'closed' && this.opened()) this.close();
+    if ((event as ToggleEvent).newState === 'closed') this.opened.set(false);
   }
   apply() {
     const value = Number(this.draft());
