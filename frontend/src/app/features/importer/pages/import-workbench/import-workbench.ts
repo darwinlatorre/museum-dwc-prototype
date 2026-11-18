@@ -18,10 +18,15 @@ import { ColumnMapping } from '../../components/column-mapping/column-mapping';
 import { RecordContext } from '../../components/record-context/record-context';
 import { csvReport, jsonReport } from '../../engine/export';
 import { label } from '../../../../core/i18n/localization';
+import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { nextTableOrder, sortTableRows, type TableOrder } from '../../../../shared/lib/table-sort';
+type SummaryColumn = 'field' | 'missing' | 'situation';
+type DetailColumn = 'row' | 'before' | 'after';
+type IssueColumn = 'severity' | 'field' | 'row' | 'description' | 'context';
 
 @Component({
   selector: 'app-import',
-  imports: [FormField, TableModule, ButtonModule, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation],
+  imports: [FormField, TableModule, ButtonModule, TableHeader, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation],
   templateUrl: './import-workbench.html',
   host: { '(window:resize)': 'scrollActiveStep()' },
 })
@@ -92,16 +97,28 @@ export class ImportWorkbench implements OnDestroy {
   private diagnosticOptions = signal<Normalization>({ trim: false, emptyMarkers: false });
   filter = signal({ text: '', severity: '', context: '' });
   filterForm = form(this.filter);
-  filtered = computed(() =>
-    (this.issues() ?? []).filter(
+  readonly summaryOrder = signal<TableOrder<SummaryColumn> | null>(null);
+  readonly detailOrder = signal<TableOrder<DetailColumn>>({ column: 'row', direction: 'asc' });
+  readonly issueOrder = signal<TableOrder<IssueColumn>>({ column: 'row', direction: 'asc' });
+  readonly summaryFirst = signal(0);
+  readonly detailFirst = signal(0);
+  readonly issueFirst = signal(0);
+  sortSummary(column: SummaryColumn) { this.summaryOrder.update(order => nextTableOrder(order, column)); this.summaryFirst.set(0); }
+  sortDetail(column: DetailColumn) { this.detailOrder.update(order => nextTableOrder(order, column)); this.detailFirst.set(0); }
+  sortIssues(column: IssueColumn) { this.issueOrder.update(order => nextTableOrder(order, column)); this.issueFirst.set(0); }
+  filtered = computed(() => {
+    const rows = (this.issues() ?? []).filter(
       (i) =>
         (!this.filter().severity || i.severity === this.filter().severity) &&
         (!this.filter().context || i.context === this.filter().context) &&
         `${i.field} ${i.row ?? ''} ${i.description} ${label(i.context)} ${i.configurationRevision}`
           .toLowerCase()
           .includes(this.filter().text.toLowerCase()),
-    ),
-  );
+    );
+    const order = this.issueOrder();
+    return sortTableRows(rows, issue => order.column === 'row' ? issue.row ?? 0
+      : order.column === 'context' ? label(issue.context) : issue[order.column], order.direction);
+  });
   issueContexts = computed(() => [...new Set((this.issues() ?? []).map(i => i.context))]);
   errors = computed(() => (this.issues() ?? []).filter((i) => i.severity === 'ERROR').length);
   warnings = computed(() => (this.issues() ?? []).filter((i) => i.severity === 'WARNING').length);
@@ -110,15 +127,20 @@ export class ImportWorkbench implements OnDestroy {
   missingSummary = computed(() => {
     const data = this.data();
     const context = this.context();
-    return data && context ? missingFields(data, this.mapping(), this.configuration(), context, this.diagnosticOptions()) : [];
+    const rows = data && context ? missingFields(data, this.mapping(), this.configuration(), context, this.diagnosticOptions()) : [];
+    const order = this.summaryOrder();
+    return order ? sortTableRows(rows, item => order.column === 'situation'
+      ? (item.columnAbsent ? 'Columna ausente' : 'Valores vacíos') : item[order.column], order.direction) : rows;
   });
   missingField = signal<string | undefined>(undefined);
   missingDetail = computed(() => {
     const data = this.data();
     const field = this.missingField();
-    return data && field && this.issues() !== undefined &&
+    const rows = data && field && this.issues() !== undefined &&
       this.missingSummary().some(item => item.field === field && !item.columnAbsent)
       ? missingCells(data, this.mapping(), field, this.diagnosticOptions()) : [];
+    const order = this.detailOrder();
+    return sortTableRows(rows, cell => cell[order.column], order.direction);
   });
   showAllIssues = signal(false);
   detailHasChanges = computed(() => this.missingDetail().some(cell => cell.before !== cell.after));
@@ -131,11 +153,13 @@ export class ImportWorkbench implements OnDestroy {
       return;
     }
     this.detailOpener = event.currentTarget as HTMLButtonElement;
+    this.detailFirst.set(0);
     this.showAllIssues.set(false);
     this.missingField.set(field);
     this.focusDetail.set(true);
   }
   openAllIssues(event: Event) {
+    this.issueFirst.set(0);
     this.detailOpener = event.currentTarget as HTMLButtonElement;
     this.missingField.set(undefined);
     this.showAllIssues.set(true);

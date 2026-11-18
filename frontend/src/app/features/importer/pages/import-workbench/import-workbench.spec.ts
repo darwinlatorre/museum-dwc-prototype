@@ -122,6 +122,21 @@ describe('Preservación pública del análisis local', () => {
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 
+  it('ordena filas de diagnóstico globalmente antes de paginar sin alterar el archivo', async () => {
+    const data: Dataset = { headers: ['occurrenceID'], rows: Array.from({ length: 25 }, (_, i) => ({ row: 26 - i, values: [''] })) };
+    const before = JSON.stringify(data);
+    const { f, root, click, chooseContext } = await setup(['occurrenceID'], data);
+    await chooseContext(); await click('Mapear columnas'); await click('Validar localmente');
+    DelayedWorker.all.filter(w => !w.previewRole).at(-1)!.respond({ kind: 'result', changes: [], issues: data.rows.map(r => ({ field: 'occurrenceID', row: r.row, severity: 'ERROR', description: 'Vacío', context: 'collection', configurationRevision: 1 })) });
+    await f.whenStable(); await click('Ver valores vacíos de occurrenceID');
+    expect(root.querySelector('#missing-cell-detail tbody tr td')?.textContent?.trim()).toBe('2');
+    await click('Cerrar detalle de valores vacíos'); await click('Ver todas las incidencias');
+    expect(root.querySelector('#all-issues-detail tbody tr td:nth-child(3)')?.textContent?.trim()).toBe('2');
+    root.querySelector<HTMLButtonElement>('#all-issues-detail th button[aria-label="Ordenar por Fila de origen"]')!.click(); await f.whenStable();
+    expect(root.querySelector('#all-issues-detail tbody tr td:nth-child(3)')?.textContent?.trim()).toBe('26');
+    expect(JSON.stringify(data)).toBe(before);
+  });
+
   it('ordena seis pasos, exige un contexto único, valida antes de normalizar y resume Finalizar sin transmitir', async () => {
     const { root, button, click, chooseContext, respond } = await setup();
     expect([...root.querySelectorAll('.steps button')].map(b => b.textContent?.replace(/^\s*\d+\s*/, '').trim())).toEqual([

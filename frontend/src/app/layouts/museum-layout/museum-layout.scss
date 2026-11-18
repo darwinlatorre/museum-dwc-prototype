@@ -2,6 +2,7 @@
   display: flex;
   min-height: 100dvh;
 }
+.sidebar[hidden] { display: none; }
 .sidebar {
   width: 248px;
   flex-shrink: 0;
@@ -63,21 +64,6 @@ nav a.active {
 nav a.active {
   box-shadow: inset 3px 0 var(--museum-nav-accent);
 }
-.sidebar-note {
-  margin-top: auto;
-  border-top: 1px solid var(--museum-nav-divider);
-  padding: 1.3rem 0.6rem 0;
-  font-size: 0.85rem;
-}
-.sidebar-note p {
-  color: var(--museum-nav-muted);
-  font-size: 0.85rem;
-  margin: var(--museum-space-2) 0 1.3rem;
-}
-.sidebar-note span {
-  font-size: 0.75rem;
-  color: var(--museum-nav-muted);
-}
 .workspace {
   flex: 1;
   min-width: 0;
@@ -95,6 +81,17 @@ nav a.active {
   padding: 1.2rem var(--museum-space-10);
   gap: var(--museum-space-4);
 }
+.topbar-title { flex: 1; min-width: 0; }
+.navigation-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: var(--museum-space-2);
+  color: var(--museum-text);
+}
+.navigation-toggle svg { width: 24px; height: 24px; }
 .topbar span {
   font-size: 0.8rem;
   color: var(--muted);
@@ -110,14 +107,15 @@ nav a.active {
   border-radius: var(--museum-radius-sm);
 }
 main {
-  padding: var(--museum-space-10);
+  max-width: none;
+  padding: var(--museum-space-4);
   background: var(--museum-surface);
-  margin: var(--museum-space-6);
+  margin: var(--museum-space-3);
   border: 1px solid var(--museum-workspace-border);
   border-radius: var(--museum-radius-panel);
   flex: 1;
   min-height: 0;
-  width: calc(100% - 3rem);
+  width: calc(100% - 1.5rem);
   min-width: 0;
   overflow-x: clip;
 }
@@ -130,27 +128,15 @@ footer {
   color: var(--museum-footer-text);
   font-size: 0.75rem;
 }
-@media (min-width: 1600px) {
-  main {
-    max-width: 1500px;
-    margin: var(--museum-space-8) auto;
-  }
-  main.normalization-wide {
-    max-width: none;
-    margin: var(--museum-space-6);
-    padding: var(--museum-space-6);
-  }
-}
 @media (max-width: 1050px) {
   .sidebar { width: 210px; padding: var(--museum-space-6) 0.7rem; }
-  main { padding: var(--museum-space-6); margin: var(--museum-space-4); width: calc(100% - 2rem); }
   .topbar { padding: 1.2rem var(--museum-space-8); }
   footer span { display: none; }
 }
 @media (max-width: 700px) {
   :host { flex-direction: column; min-height: 100dvh; }
   .sidebar { flex-shrink: 0; position: static; width: 100%; height: auto; padding: var(--museum-space-4); }
-  .sidebar-note, .workspace-label { display: none; }
+  .workspace-label { display: none; }
   .brand { margin-bottom: var(--museum-space-4); }
   .specimen-mark { font-size: 2rem; }
   nav { display: flex; overflow: auto; gap: 0.2rem; }

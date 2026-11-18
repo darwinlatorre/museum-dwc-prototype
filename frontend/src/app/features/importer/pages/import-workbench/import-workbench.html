@@ -125,9 +125,13 @@
               los originales se conservan. El valor de trabajo se muestra solo si cambió; — indica sin cambios.</p>
             <p>Las descargas incluyen todas las incidencias del diagnóstico, sin depender de los filtros activos.</p>
           </details>
-          <p-table [value]="missingSummary()" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
+          <p-table class="museum-data-table" [value]="missingSummary()" [first]="summaryFirst()" (onPage)="summaryFirst.set($event.first)" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
             [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} campos">
-            <ng-template #header><tr><th>Campo obligatorio</th><th>Registros sin datos</th><th>Situación</th></tr></ng-template>
+            <ng-template #header><tr>
+              <th museumSortHeader label="Campo obligatorio" [direction]="summaryOrder()?.column === 'field' ? summaryOrder()!.direction : null" (sortRequested)="sortSummary('field')"></th>
+              <th museumSortHeader label="Registros sin datos" [direction]="summaryOrder()?.column === 'missing' ? summaryOrder()!.direction : null" (sortRequested)="sortSummary('missing')"></th>
+              <th museumSortHeader label="Situación" [direction]="summaryOrder()?.column === 'situation' ? summaryOrder()!.direction : null" (sortRequested)="sortSummary('situation')"></th>
+            </tr></ng-template>
             <ng-template #body let-item><tr>
               <th scope="row">{{ item.field }}</th>
               <td>
@@ -161,11 +165,12 @@
                 @if (source.header !== field) { · Encabezado: <span class="literal">{{ source.header }}</span> }
               </p>
             }
-            <p-table [value]="missingDetail()" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
+            <p-table class="museum-data-table" [value]="missingDetail()" [first]="detailFirst()" (onPage)="detailFirst.set($event.first)" [paginator]="true" [alwaysShowPaginator]="false" [rows]="10" [rowsPerPageOptions]="[10, 25, 50, 100]"
               [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} registros">
               <ng-template #header><tr>
-                <th>Fila de origen</th><th>Valor original</th>
-                @if (detailHasChanges()) { <th>Valor de trabajo (solo cambios)</th> }
+                <th museumSortHeader label="Fila de origen" [direction]="detailOrder().column === 'row' ? detailOrder().direction : null" (sortRequested)="sortDetail('row')"></th>
+                <th museumSortHeader label="Valor original" [direction]="detailOrder().column === 'before' ? detailOrder().direction : null" (sortRequested)="sortDetail('before')"></th>
+                @if (detailHasChanges()) { <th museumSortHeader label="Valor de trabajo (solo cambios)" [direction]="detailOrder().column === 'after' ? detailOrder().direction : null" (sortRequested)="sortDetail('after')"></th> }
               </tr></ng-template>
               <ng-template #body let-cell><tr>
                 <td>{{ cell.row }}</td><td class="literal">{{ cell.before || '(vacío)' }}</td>
@@ -205,8 +210,8 @@
             </select></label
           >
         </div>
-        <p-table
-          [value]="filtered()"
+        <p-table class="museum-data-table"
+          [value]="filtered()" [first]="issueFirst()" (onPage)="issueFirst.set($event.first)"
           [paginator]="true"
           [alwaysShowPaginator]="false"
           [rows]="20"
@@ -217,11 +222,11 @@
         >
           <ng-template #header
             ><tr>
-              <th>Severidad</th>
-              <th>Campo</th>
-              <th>Fila de origen</th>
-              <th>Descripción</th>
-              <th>Contexto / revisión de configuración</th>
+              <th museumSortHeader label="Severidad" [direction]="issueOrder().column === 'severity' ? issueOrder().direction : null" (sortRequested)="sortIssues('severity')"></th>
+              <th museumSortHeader label="Campo" [direction]="issueOrder().column === 'field' ? issueOrder().direction : null" (sortRequested)="sortIssues('field')"></th>
+              <th museumSortHeader label="Fila de origen" [direction]="issueOrder().column === 'row' ? issueOrder().direction : null" (sortRequested)="sortIssues('row')"></th>
+              <th museumSortHeader label="Descripción" [direction]="issueOrder().column === 'description' ? issueOrder().direction : null" (sortRequested)="sortIssues('description')"></th>
+              <th museumSortHeader label="Contexto / revisión de configuración" [direction]="issueOrder().column === 'context' ? issueOrder().direction : null" (sortRequested)="sortIssues('context')"></th>
             </tr></ng-template
           >
           <ng-template #body let-issue

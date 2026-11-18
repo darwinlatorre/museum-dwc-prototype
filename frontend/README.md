@@ -2,6 +2,12 @@
 
 Angular **21.2.25**, PrimeNG **21.1.10** y TanStack Query **5.104.5** permiten revisar archivos locales y gestionar colecciones persistidas. Analizar y normalizar siguen siendo locales. Solo la confirmación explícita de Finalizar o Guardar envía registros al servidor local, incluidos originales y procedencia; nunca se envían archivos ni nombres de archivo. No hay autenticación: usar exclusivamente un entorno localhost confiable.
 
+## Lectura de tablas
+
+- Las cabeceras comparten controles de ordenación. El orden se aplica al conjunto completo antes de paginar; Fila empieza de menor a mayor. Colecciones ordena en el servidor y Normalizar en su worker, sin fusionar las vistas ni sus datos.
+- Ordenar no modifica valores, originales ni revisiones. IDs y texto se comparan literalmente; vacíos al final. Las acciones de Colecciones se distinguen y permanecen visibles al desplazar la hoja.
+- El botón de panel de la cabecera oculta o muestra el menú sin desmontar el análisis. Su preferencia dura la sesión; el contenido aprovecha todo el ancho restante. Las ayudas extensas no ocupan la vista normal; consentimientos, errores e información accesible se conservan.
+
 ## Ejecución
 
 Flujo principal: desde la raíz, ejecutar `docker compose --env-file .env -f compose.yml up --build -d --wait --wait-timeout 180`; ver [modos y requisitos](../README.md#ejecución-local). Compose construye y despliega los servicios esperando salud. Node.js 24 y `npm ci --no-audit --no-fund` se ejecutan dentro de la imagen, no en el host. El frontend no consume dotenv ni recibe credenciales de PostgreSQL.

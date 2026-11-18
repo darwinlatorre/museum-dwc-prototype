@@ -21,6 +21,11 @@ export class MuseumLayout {
     return this.router.url.split(/[?#]/)[0] === '/analisis';
   });
   readonly normalizationVisible = signal(false);
+  readonly navigationOpen = signal(true);
+  toggleNavigation(button: HTMLButtonElement) {
+    this.navigationOpen.update(open => !open);
+    button.focus({ preventScroll: true });
+  }
   private readonly catalogApi = inject(CatalogMetadata);
   private readonly sourcesApi = inject(RecordSourcesMetadata);
   private readonly client = inject(QueryClient);
