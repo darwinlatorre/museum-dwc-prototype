@@ -1,5 +1,18 @@
 # Evidencia de verificación del MVP
 
+## Comprobación adicional solicitada de Risk3 — aprobada
+
+- Nueva ejecución autorizada literalmente: «Intenta de nuevo no te demores». `gentle-ai-verify` tarea `mwlln5hw-8-v9fi`, candidato522cf8e: **4/4 probes PASS, exit0**, compilación Angular aprobada. Mismas aserciones que el intento anterior, sin ampliar timeouts.
+- Preparación noGit completa en `/var/tmp/risk3-K3nI6t` (disco, no tmpfs),44enlaces internos confinados. Runner soportado `pool:'threads', maxWorkers:1, fileParallelism:false`. Compilación11,727s, runner6,78s, tests405ms. El cambio combinado funcionó; no se atribuye causalidad exclusiva a memoria o pool sin contraste adicional.
+- S1/S4/S7: intento único, deduplicación, cancelación independiente, refresh/snapshot, códigos/detalles y escritura incierta sin reenvío comprobados. Producto/Git/servicios sin cambios; no suite integral, build ni navegador repetidos. Se conserva el timeout anterior0tests; scratch previo no reutilizado ni eliminado, ninguno accedido por el padre. Falta de prueba de este lanzamiento resuelta; no aprobación nativa nueva ni cambios al producto.
+
+## Comprobación adicional de Risk3 — historial del runner bloqueado
+
+- Tras el cierre522cf8e, el recordatorio solicitó otro lanzamiento `gentle-ai-verify` con `Risk: item 3`. Tarea `mwll9hsv-7-jlue`, acotada a consultas compartidas y errores de S1/S4/S7; no reabre las demás funciones ni sustituye evidencia anterior.
+- Preparación noGit **exit0**, frontend del candidato522cf8e y dependencias físicas,44enlaces internos confinados. Compilación Angular de cuatro probes propias aprobada. Ejecución **exit1,0tests**: `[vitest-pool]: Failed to start forks worker` / `[vitest-pool-runner]: Timeout waiting for worker to respond`. No defecto de producto reproducido. Sin reintentos, cambios de timeout, instalaciones, red ni servicios nuevos.
+- Fuente antes/después idéntica, Git limpio; único scratch declarado `/tmp/risk3.nYQ3nsAt`, no accedido/eliminado por el padre. Probes no validadas y no incorporadas al proyecto. La preparación bloqueada original y este fallo del runner son incidentes diferentes.
+- **Needs your decision:** falta la ejecución de esta comprobación adicional de intento único/deduplicación, cancelación/refresco y errores de consumidores compartidos. Los resultados técnicos y de navegador del cierre anterior siguen siendo evidencia histórica válida, no una ejecución nueva de estas cuatro probes.
+
 ## Refinamiento de colecciones — aceptación funcional actual
 
 - Especificación vigente S1–S11 en `odd/tasks/collections-usability.md`. Cortes A `785febf`, B `43ed277`, C `216a24e`, D `b252a2e`; corrección funcional `d0778dd6a2bd93dd86b297e88b1ee0e26e613b70` y ajuste visual `003546a9444d94fa1a4e5f060a4d85465e628755`. Sin cambios backend, migraciones, dependencias, publicación, PR ni merge.
