@@ -306,17 +306,19 @@ export class CollectionsPage implements OnDestroy {
   }
   async refreshDraft() {
     if (this.busy()) return;
-    const session = this.session, editor = this.editor();
+    const session = this.session, editor = this.editor(), action = this.confirmation(), operation = this.recordOperation;
+    let expectedEditor = editor, expectedAction = action;
+    const current = () => session === this.session && !session.signal.aborted && expectedEditor === this.editor()
+      && expectedAction === this.confirmation() && operation === this.recordOperation;
     this.loading.set(true); this.readError.set('');
     try {
       const info = await this.api.detail(this.id()!, session.signal);
-      if (session !== this.session) return;
+      if (!current()) return;
       if (!await this.metadata().refresh()) throw new Error('No se pudieron actualizar las reglas. Sus cambios se conservan.');
-      if (session !== this.session) return;
-      const action = this.confirmation();
+      if (!current()) return;
       const recordId = editor?.record?.id ?? action?.record.id;
       const record = recordId ? await this.api.record(info.id, recordId, session.signal) : undefined;
-      if (session !== this.session) return;
+      if (!current()) return;
       this.collection.set(info);
       if (editor) this.editor.set({ ...editor, record: record ?? editor.record, revision: info.revision,
         configurationRevision: this.metadata().configuration()!.revision, catalogVersion: this.metadata().snapshot()!.snapshotVersion });
@@ -324,11 +326,13 @@ export class CollectionsPage implements OnDestroy {
         this.confirmation.set(undefined); this.origin?.focus();
       }
       this.blocked.set(!!editor && !!record?.trashed); this.issues.set([]); this.warnings.set(false);
+      expectedEditor = this.editor(); expectedAction = this.confirmation();
       await this.loadPage();
+      if (!current()) return;
       if (this.readError()) throw new Error(this.readError());
       this.reconciled.set(this.uncertain());
       this.message.set(this.uncertain() ? 'Compruebe los registros guardados en todas las páginas necesarias. No vuelva a enviar estos cambios.' : 'Sus cambios se conservan. Puede volver a guardarlos para comprobarlos con las reglas actuales.');
-    } catch (error) { if (!session.signal.aborted) { this.readError.set(this.errorText(error)); this.blocked.set(true); } }
+    } catch (error) { if (current()) { this.readError.set(this.errorText(error)); this.blocked.set(true); } }
     finally { if (session === this.session) this.loading.set(false); }
   }
   acknowledgeReconciliation() {

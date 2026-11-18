@@ -324,6 +324,11 @@ export class ImportWorkbench implements OnDestroy {
     // Defer until reactive invalidation of previous inputs is complete.
     queueMicrotask(() => this.dispatch({ id: ++this.messageId, kind: 'parse', file }));
   }
+  selectSheet() {
+    this.previewState.reset(undefined, {});
+    this.invalidate();
+    this.data.set(undefined);
+  }
   loadSheet() {
     const file = this.file();
     if (file) {

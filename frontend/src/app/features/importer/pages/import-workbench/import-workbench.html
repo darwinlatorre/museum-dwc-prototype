@@ -45,7 +45,7 @@
     /></label>
     @if (sheets().length) {
       <label
-        >Seleccione la hoja de cálculo que desea analizar<select [formField]="sheetForm.name">
+        >Seleccione la hoja de cálculo que desea analizar<select [formField]="sheetForm.name" (change)="selectSheet()">
           @for (name of sheets(); track name) {
             <option [value]="name">{{ name }}</option>
           }

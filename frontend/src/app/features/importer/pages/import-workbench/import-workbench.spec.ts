@@ -1315,6 +1315,34 @@ describe('Preservación pública del análisis local', () => {
     expect(view.api.import).not.toHaveBeenCalled();
   });
 
+  it('seleccionar otra hoja sin leer revoca Aplicar y rechaza preparar los datos anteriores', async () => {
+    const view = await confirmation();
+    await view.click('Seleccionar archivo');
+    const upload = view.root.querySelector<HTMLInputElement>('input[type=file]')!;
+    Object.defineProperty(upload, 'files', { value: [new File(['workbook'], 'dos.xlsx')] });
+    upload.dispatchEvent(new Event('change')); await view.f.whenStable();
+    DelayedWorker.all.at(-1)!.respond({ kind: 'sheets', sheets: ['First', 'Second'] }); await view.f.whenStable();
+    await view.click('Leer la hoja seleccionada');
+    const first = { headers: ['occurrenceID'], rows: [{ row: 2, values: [' FIRST '] }] };
+    const original = structuredClone(first);
+    DelayedWorker.all.at(-1)!.respond({ kind: 'parsed', data: first }); await view.f.whenStable();
+    await view.click('Mapear columnas'); await view.click('Validar localmente'); await view.respond();
+    expect(DelayedWorker.all.filter(worker => !worker.previewRole).at(-1)!.request).toMatchObject({ options: { trim: false, emptyMarkers: false } });
+    await view.click('Normalizar'); await view.click('Aplicar normalización y validar'); await view.respond();
+    expect(view.button('Finalizar').disabled).toBe(false);
+    await view.click('Seleccionar archivo');
+    const select = view.root.querySelector<HTMLSelectElement>('.upload select')!;
+    select.value = 'Second'; select.dispatchEvent(new Event('change')); select.dispatchEvent(new Event('input'));
+    await view.f.whenStable();
+    expect(view.f.componentInstance.sheet().name).toBe('Second');
+    expect.soft(view.button('Finalizar').disabled).toBe(true);
+    expect.soft(view.f.componentInstance.importReady()).toBe(false);
+    await expect(view.f.componentInstance.prepareImport()).rejects.toThrow('Vuelva a analizar los datos antes de importar.');
+    expect(first).toEqual(original);
+    expect(view.api.import).not.toHaveBeenCalled();
+    expect(DelayedWorker.all.flatMap(worker => worker.requests).filter(request => request.kind === 'prepare')).toHaveLength(0);
+  });
+
   it('explains which workbook sheet to analyze and reads the selected sheet locally', async () => {
     const f = TestBed.createComponent(ImportWorkbench);
     f.componentRef.setInput('configuration', configurationFixture([]));

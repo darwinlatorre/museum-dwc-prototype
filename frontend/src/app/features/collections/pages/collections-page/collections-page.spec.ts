@@ -122,6 +122,39 @@ describe('Colecciones por controles públicos', () => {
     expect(button('Guardar celda').disabled).toBe(true); expect(root().textContent).toContain('Resultado desconocido');
     await click('Guardar celda'); http.expectNone(() => true);
   });
+  it.each(['colección', 'registro'])('refresh antiguo pendiente de %s no mezcla identidad y valores de otra celda', async pending => {
+    const first = { ...row, values: ['FIRST', '', '0'] };
+    const second = { ...row, id: 'r2', sourceRow: 20, values: ['SECOND', '', '0'], originalValues: [' SECOND ', '', '0'] };
+    const originals = structuredClone([first, second]);
+    harness = await RouterTestingHarness.create(`/collections/${id}`);
+    http.expectOne(`/api/collections/${id}`).flush(info); await settle(); flushPage([first, second]); await settle();
+    root().querySelector(`[data-record="${first.id}"]`)!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+    http.expectOne(`/api/collections/${id}/records/${first.id}`).flush(first); await settle();
+    await click('Actualizar');
+    const detail = http.expectOne(`/api/collections/${id}`);
+    if (pending === 'registro') { detail.flush({ ...info, revision: 8 }); await settle(); }
+    const oldRecord = pending === 'registro' ? http.expectOne(`/api/collections/${id}/records/${first.id}`) : undefined;
+    root().querySelector(`[data-record="${second.id}"] button`)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
+    http.expectOne(`/api/collections/${id}/records/${second.id}`).flush(second); await settle();
+    expect(root().querySelector<HTMLTextAreaElement>('.inline-cell textarea')?.value).toBe('SECOND');
+    if (pending === 'colección') { detail.flush({ ...info, revision: 8 }); await settle(); }
+    const late = oldRecord ?? http.match(`/api/collections/${id}/records/${first.id}`)[0];
+    if (late && !late.cancelled) { late.flush(first); await settle(); }
+    const page = http.match(`/api/collections/${id}/records?page=0&size=25&trash=ACTIVE`)[0];
+    if (page && !page.cancelled) { page.flush({ items: [first, second], page: 0, size: 25, totalElements: 26 }); await settle(); }
+    http.expectNone(request => request.method !== 'GET');
+    const cell = root().querySelector<HTMLTextAreaElement>('.inline-cell textarea');
+    expect.soft(cell?.closest('td')?.getAttribute('data-record')).toBe(second.id);
+    expect.soft(cell?.value).toBe('SECOND');
+    expect.soft(root().querySelector('.inline-draft')?.textContent).toContain('fila 20');
+    await click('Guardar celda');
+    const save = http.expectOne(request => request.method === 'PUT');
+    expect.soft(save.request.url).toBe(`/api/collections/${id}/records/${second.id}`);
+    expect(save.request.body).toEqual({ expectedRevision: 7, configurationRevision: 3, catalogVersion: 5, warningsConfirmed: false, values: second.values });
+    expect([first, second]).toEqual(originals);
+    save.flush({ ...info, revision: 9 }); await settle(); flushPage([first, second]); await settle();
+  });
+
   it('detalle pendiente de celda se cancela al navegar; no abre editor tardío ni escribe', async () => {
     await open(); root().querySelector('[data-cell]')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
     const pending = http.expectOne(`/api/collections/${id}/records/${row.id}`);
