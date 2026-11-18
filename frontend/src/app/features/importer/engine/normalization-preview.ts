@@ -1,3 +1,4 @@
+import { compareTableValues, type TableSortDirection } from '../../../shared/lib/table-sort';
 import type { Dataset } from '../models/dataset';
 import type { Normalization } from '../models/normalization';
 import { isPreviewWindow, type PreviewMetadata, type PreviewWindow, type PreviewRow } from '../models/normalization-preview';
@@ -69,14 +70,41 @@ export function buildNormalizationPreview(original: Dataset, mapping: Record<str
   return step.value;
 }
 
+/** One selected column per snapshot; bounded cache never crosses the worker boundary. */
+const sortCache = new WeakMap<PreviewSnapshot, {
+  columnIndex: number | null;
+  keys: (string | number)[];
+  orders: Partial<Record<`${TableSortDirection}:${'all' | 'changed'}`, readonly number[]>>;
+}>();
+function orderedIndices(snapshot: PreviewSnapshot, window: PreviewWindow): readonly number[] {
+  const columnIndex = window.sort?.columnIndex ?? null;
+  let cache = sortCache.get(snapshot);
+  if (!cache || cache.columnIndex !== columnIndex) {
+    cache = { columnIndex, keys: snapshot.current.rows.map(row => columnIndex === null ? row.row : row.values[columnIndex]), orders: {} };
+    sortCache.set(snapshot, cache);
+  }
+  const direction = window.sort?.direction ?? 'asc';
+  const key = `${direction}:${window.rowFilter ?? 'all'}` as const;
+  if (!cache.orders[key]) {
+    const allKey = `${direction}:all` as const;
+    cache.orders[allKey] ??= cache.keys.map((_, index) => index).sort((a, b) =>
+      compareTableValues(cache.keys[a], cache.keys[b], direction) || a - b);
+    const changed = new Set(snapshot.changedRowIndices);
+    cache.orders[key] = window.rowFilter === 'changed' ? cache.orders[allKey].filter(index => changed.has(index)) : cache.orders[allKey];
+  }
+  return cache.orders[key]!;
+}
+
 export function readPreviewPage(snapshot: PreviewSnapshot, window: PreviewWindow): { window: PreviewWindow; rows: PreviewRow[] } {
   if (!isPreviewWindow(window)) throw new Error('Ventana de vista previa inválida.');
   const changed = window.rowFilter === 'changed';
   const total = changed ? snapshot.metadata.changedRows : snapshot.metadata.totalRows;
-  if (window.offset > total || window.columnIndices.some(c => c >= snapshot.metadata.totalColumns)) throw new Error('Ventana de vista previa inválida.');
+  if (window.offset > total || window.columnIndices.some(c => c >= snapshot.metadata.totalColumns) ||
+    (window.sort?.columnIndex != null && window.sort.columnIndex >= snapshot.metadata.totalColumns)) throw new Error('Ventana de vista previa inválida.');
+  const indices = orderedIndices(snapshot, window);
   const rows: PreviewRow[] = [];
   for (let position = window.offset; position < Math.min(window.offset + window.limit, total); position++) {
-    const r = changed ? snapshot.changedRowIndices[position] : position;
+    const r = indices[position];
     const sourceRow = snapshot.original.rows[r].row;
     const equalRowGroup = snapshot.duplicates.equalMembership.get(sourceRow);
     const occurrenceIdGroup = snapshot.duplicates.idMembership.get(sourceRow);
@@ -85,5 +113,5 @@ export function readPreviewPage(snapshot: PreviewSnapshot, window: PreviewWindow
       kinds: normalizationKinds.filter((_, k) => ((snapshot.masks[r]?.[columnIndex] ?? 0) & (1 << k)) !== 0),
     })), ...(equalRowGroup ? { equalRowGroup } : {}), ...(occurrenceIdGroup ? { occurrenceIdGroup } : {}) });
   }
-  return { window: { ...window, columnIndices: [...window.columnIndices] }, rows };
+  return { window: { ...window, columnIndices: [...window.columnIndices], ...(window.sort ? { sort: { ...window.sort } } : {}) }, rows };
 }
