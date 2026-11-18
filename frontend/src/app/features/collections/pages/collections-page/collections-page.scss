@@ -20,7 +20,7 @@
   th:last-child, td:last-child { position: sticky; right: 0; min-width: 11rem; width: 11rem; z-index: 1; border-left: 1px solid var(--museum-line); }
   thead th:last-child { z-index: 3; }
   td:last-child .actions { flex-wrap: nowrap; gap: var(--museum-space-1); }
-  td:last-child button { padding: var(--museum-space-1) var(--museum-space-2); }
+  td:last-child button { padding: var(--museum-space-1) var(--museum-space-2); white-space: nowrap; flex: 0 0 auto; }
   .cell-value { display: block; width: 100%; max-width: 16rem; min-height: 28px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--museum-text); text-align: left; font: inherit; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
   .cell-value:disabled { opacity: 1; }
   .cell-value:not(:disabled):hover { background: var(--museum-table-heading); }
