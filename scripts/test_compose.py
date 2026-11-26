@@ -107,6 +107,16 @@ class ComposeTests(unittest.TestCase):
         self.assertTrue(all(m["read_only"] for m in frontend["volumes"]))
         self.assertTrue(any(m["target"] == "/app/proxy.conf.cjs" and m["source"].endswith("/frontend/proxy.conf.cjs") for m in frontend["volumes"]))
 
+    def test_tailwind_postcss_config_reaches_images_and_dev_mounts(self):
+        # Sin .postcssrc.json Angular no ejecuta Tailwind y las utilidades de las plantillas desaparecen.
+        context = (ROOT / "frontend/.dockerignore").read_text().splitlines()
+        self.assertIn("!.postcssrc.json", context)
+        result = self.model("DB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=fixture\n", base="compose.dev.yml")
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        mounts = json.loads(result.stdout)["services"]["frontend"]["volumes"]
+        self.assertTrue(any(m["target"] == "/app/.postcssrc.json" and m["source"].endswith("/frontend/.postcssrc.json")
+                            and m["read_only"] for m in mounts))
+
     def test_local_stack_has_no_reverse_proxy_configuration(self):
         for base in ("compose.yml", "compose.dev.yml"):
             with self.subTest(base=base):

@@ -4,6 +4,7 @@
 !angular.json
 !nginx.conf
 !proxy.conf.cjs
+!.postcssrc.json
 !tsconfig*.json
 !src/
 !src/**
