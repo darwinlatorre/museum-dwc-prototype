@@ -19,7 +19,7 @@ public interface CollectionStore {
     Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order);
     Record record(UUID collectionId, UUID recordId);
     boolean collision(Record candidate, UUID excludedId);
-    void save(Record record);
+    void update(Record record);
     void insertRows(List<Record> records);
     Optional<Receipt> receipt(UUID key);
     void saveReceipt(Receipt receipt);

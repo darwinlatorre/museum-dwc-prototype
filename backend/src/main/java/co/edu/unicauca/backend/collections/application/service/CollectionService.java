@@ -95,7 +95,7 @@ public final class CollectionService implements CollectionOperations {
         validate(command.headers(), command.mapping(), List.of(command.row()), collection, snapshot, command.warningsConfirmed());
         var row = candidate(id, command.headers(), command.mapping(), command.row(), null, snapshot);
         if (store.collision(row, null)) throw new CollectionFailure(Code.DUPLICATE);
-        store.save(row);
+        store.insertRows(List.of(row));
         return advance(collection);
     }
     @Override public Info edit(UUID id, UUID recordId, CollectionCommands.Edit command) {
@@ -109,7 +109,7 @@ public final class CollectionService implements CollectionOperations {
         var updated = new Record(old.id(), id, old.headers(), old.mapping(), old.sourceRow(), old.originalValues(),
             row.values(), old.importKey(), snapshot.configurationRevision(), snapshot.catalogVersion(), false);
         if (store.collision(updated, old.id())) throw new CollectionFailure(Code.DUPLICATE);
-        store.save(updated);
+        store.update(updated);
         return advance(collection);
     }
     @Override public Info trash(UUID id, UUID recordId, long expectedRevision) {
@@ -118,7 +118,7 @@ public final class CollectionService implements CollectionOperations {
         var collection = current(id, expectedRevision);
         var row = store.record(id, recordId);
         if (row.trashed()) throw new CollectionFailure(Code.RECORD_TRASHED);
-        store.save(new Record(row.id(), id, row.headers(), row.mapping(), row.sourceRow(), row.originalValues(), row.values(),
+        store.update(new Record(row.id(), id, row.headers(), row.mapping(), row.sourceRow(), row.originalValues(), row.values(),
             row.importKey(), row.configurationRevision(), row.catalogVersion(), true));
         return advance(collection);
     }
@@ -133,7 +133,7 @@ public final class CollectionService implements CollectionOperations {
         var restored = new Record(row.id(), id, row.headers(), row.mapping(), row.sourceRow(), row.originalValues(), row.values(),
             row.importKey(), snapshot.configurationRevision(), snapshot.catalogVersion(), false);
         if (store.collision(restored, row.id())) throw new CollectionFailure(Code.DUPLICATE);
-        store.save(restored);
+        store.update(restored);
         return advance(collection);
     }
     private Info advance(Info collection) {

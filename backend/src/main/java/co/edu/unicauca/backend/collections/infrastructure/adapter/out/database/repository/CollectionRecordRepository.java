@@ -1,5 +1,7 @@
 package co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -32,8 +34,18 @@ public interface CollectionRecordRepository extends JpaRepository<CollectionReco
     Page<CollectionRecordEntity> sorted(UUID id, boolean allRows, boolean trashed, String field,
         boolean byRow, boolean ascending, Pageable page);
     Optional<CollectionRecordEntity> findByCollectionIdAndId(UUID collectionId, UUID id);
-    long countByCollectionIdAndTrashed(UUID id, boolean trashed);
+    /** Active/trashed totals for a whole page of collections in one grouped query (no N+1). */
+    @Query("select r.collectionId as collectionId, sum(case when r.trashed = false then 1 else 0 end) as active, "
+        + "sum(case when r.trashed = true then 1 else 0 end) as trashed "
+        + "from CollectionRecordEntity r where r.collectionId in :ids group by r.collectionId")
+    List<Counts> countsByCollection(Collection<UUID> ids);
     @Query("select count(r) from CollectionRecordEntity r where r.collectionId = :collectionId and r.trashed = false "
         + "and (:excluded is null or r.id <> :excluded) and (r.rowHash = :rowHash or (:occurrenceHash is not null and r.occurrenceHash = :occurrenceHash))")
     long collisions(UUID collectionId, UUID excluded, String rowHash, String occurrenceHash);
+
+    interface Counts {
+        UUID getCollectionId();
+        long getActive();
+        long getTrashed();
+    }
 }

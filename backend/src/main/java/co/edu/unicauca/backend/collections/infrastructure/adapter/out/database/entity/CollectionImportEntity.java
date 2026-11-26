@@ -13,8 +13,8 @@ import lombok.Setter;
 @Table(name = "collection_import")
 @Getter
 @Setter
-@NoArgsConstructor
-public class CollectionImportEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class CollectionImportEntity extends AssignedIdEntity {
     @Id @Setter(AccessLevel.NONE) private UUID idempotencyKey;
     private String identity;
     private UUID collectionId;
@@ -22,4 +22,6 @@ public class CollectionImportEntity {
     private int inserted;
 
     public CollectionImportEntity(UUID key) { this.idempotencyKey = key; }
+
+    @Override public UUID getId() { return idempotencyKey; }
 }

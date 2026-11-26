@@ -13,8 +13,8 @@ import lombok.Setter;
 @Table(name = "biological_collection")
 @Getter
 @Setter
-@NoArgsConstructor
-public class BiologicalCollectionEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class BiologicalCollectionEntity extends AssignedIdEntity {
     @Id @Setter(AccessLevel.NONE) private UUID id;
     private String name;
     private String context;

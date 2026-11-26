@@ -1,6 +1,5 @@
 package co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.mapper;
 
-import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -19,12 +18,9 @@ public interface CollectionPersistenceMapper {
     Info info(BiologicalCollectionEntity source, long activeCount, long trashCount);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "headers", expression = "java(json.encode(source.headers()))")
-    @Mapping(target = "mapping", expression = "java(json.encode(source.mapping()))")
-    @Mapping(target = "originalValues", expression = "java(json.encode(source.originalValues()))")
-    @Mapping(target = "values", expression = "java(json.encode(source.values()))")
-    void insert(Record source, String rowHash, String occurrenceHash, @MappingTarget CollectionRecordEntity target, @Context CollectionJson json);
+    void insert(Record source, String rowHash, String occurrenceHash, @MappingTarget CollectionRecordEntity target);
 
+    // Originals, provenance and identity are immutable after insert.
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "collectionId", ignore = true)
     @Mapping(target = "headers", ignore = true)
@@ -32,14 +28,9 @@ public interface CollectionPersistenceMapper {
     @Mapping(target = "originalValues", ignore = true)
     @Mapping(target = "sourceRow", ignore = true)
     @Mapping(target = "importKey", ignore = true)
-    @Mapping(target = "values", expression = "java(json.encode(source.values()))")
-    void update(Record source, String rowHash, String occurrenceHash, @MappingTarget CollectionRecordEntity target, @Context CollectionJson json);
+    void update(Record source, String rowHash, String occurrenceHash, @MappingTarget CollectionRecordEntity target);
 
-    @Mapping(target = "headers", expression = "java(json.strings(source.getHeaders()))")
-    @Mapping(target = "mapping", expression = "java(json.mapping(source.getMapping()))")
-    @Mapping(target = "originalValues", expression = "java(json.strings(source.getOriginalValues()))")
-    @Mapping(target = "values", expression = "java(json.strings(source.getValues()))")
-    Record record(CollectionRecordEntity source, @Context CollectionJson json);
+    Record record(CollectionRecordEntity source);
 
     Receipt receipt(CollectionImportEntity source);
     @Mapping(target = "idempotencyKey", ignore = true)

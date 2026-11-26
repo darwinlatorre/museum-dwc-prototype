@@ -12,7 +12,6 @@ import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.mapper.
 import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.CollectionBodyLimitFilter;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.JpaCollectionStore;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.JpaValidationAuthority;
-import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.mapper.CollectionJson;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.mapper.CollectionPersistenceMapper;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.repository.BiologicalCollectionRepository;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.repository.CollectionRecordRepository;
@@ -25,7 +24,7 @@ public class CollectionBeanConfig {
     @Bean CollectionHttpMapper collectionHttpMapper() { return Mappers.getMapper(CollectionHttpMapper.class); }
     @Bean CollectionOperations collectionOperations(BiologicalCollectionRepository collections, CollectionRecordRepository records,
             CollectionImportRepository imports, EntityManager entityManager, ObjectMapper json) {
-        var store = new JpaCollectionStore(collections, records, imports, Mappers.getMapper(CollectionPersistenceMapper.class), new CollectionJson(json), entityManager);
+        var store = new JpaCollectionStore(collections, records, imports, Mappers.getMapper(CollectionPersistenceMapper.class));
         var authority = new JpaValidationAuthority(entityManager, json);
         return new TransactionalCollectionOperations(new CollectionService(store, authority, new CollectionValidator()));
     }
