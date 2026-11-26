@@ -190,7 +190,7 @@ cd ../backend
 
 La auditoría de dependencias es una comprobación separada: `npm audit`. Los dos intentos descritos agotaron sus límites; no se ejecutan nuevos intentos automáticamente.
 
-Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. La configuración global se especifica en `odd/tasks/global-validation.md`; la importación confirmada y las colecciones, en [collections-management.md](odd/tasks/collections-management.md). Los registros históricos `odd/tasks/museum-dwc.md`, `odd/tasks/museum-evolution.md`, `odd/tasks/museum-refinement.md`, `odd/tasks/frontend-architecture.md` y `odd/tasks/backend-hexagonal.md` conservan las tareas, decisiones y evidencias del módulo inicial y de sus mejoras; una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
+Las pruebas del backend crean contenedores PostgreSQL aislados, sin usar la base de desarrollo. Los README de cada componente detallan sus requisitos. La configuración global se especifica en `odd/tasks/global-validation.md`; la importación confirmada y las colecciones, en [collections-management.md](odd/tasks/collections-management.md). Las bitácoras cerradas del módulo inicial y sus mejoras se retiraron del árbol y siguen disponibles en git (`git show a6091eb:odd/tasks/<nombre>.md`); una compilación exitosa no sustituye las pruebas en navegador. El informe de comprobaciones y limitaciones está en [VERIFICATION.md](VERIFICATION.md).
 
 ## Arquitectura y autenticación futura
 

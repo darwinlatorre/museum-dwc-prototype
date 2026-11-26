@@ -47,7 +47,7 @@ Enteros: `individualCount`, `year`, `month`, `day`, `startDayOfYear`, `endDayOfY
 - `decimalMode: 'safe'` (predeterminado): no reinterpreta comas. `comma` permite una coma decimal sin separadores de miles. Conserva signo, ceros, todos los dígitos y precisión; no utiliza Number/parseFloat para reescribir valores. No convierte notación científica, NaN, Infinity ni sintaxis inválida. Un decimal con punto ya válido puede permanecer igual.
 - La validación básica de `eventDate` acepta año, año-mes, fecha, fecha-hora (minutos o segundos, fracción de segundos, con/sin zona) e intervalos de dos extremos ISO comunes. Verifica calendario y componentes de tiempo. Compara year/month/day solo contra componentes presentes e inequívocos; no contra intervalos. No se anuncia soporte de toda ISO8601-1:2019. Se conserva el mensaje histórico de error para entradas inválidas por compatibilidad.
 
-Autoridad: [TDWG Darwin Core](https://dwc.tdwg.org/list/), alcance investigado en L4 de `odd/tasks/normalization-live-preview.md`. No se amplía el catálogo backend ni se deducen tipos de Property.
+Autoridad: [TDWG Darwin Core](https://dwc.tdwg.org/list/), alcance investigado en L4 de la bitácora cerrada `odd/tasks/normalization-live-preview.md` (en git, `a6091eb`). No se amplía el catálogo backend ni se deducen tipos de Property.
 
 ## Preview persistente para el consumidor T3
 
