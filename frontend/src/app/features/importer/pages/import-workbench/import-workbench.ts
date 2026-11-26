@@ -1,7 +1,8 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
 import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import type { Change, Normalization } from '../../models/normalization';
 import type { Context } from '../../models/context';
 import { type Dataset, LIMITS } from '../../models/dataset';
@@ -27,11 +28,12 @@ type IssueColumn = 'severity' | 'field' | 'row' | 'description' | 'context';
 
 @Component({
   selector: 'app-import',
-  imports: [FormField, TableModule, ButtonModule, TableHeader, ResizableTable, ResizableColumn, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation],
+  imports: [FormField, TableModule, TableHeader, ResizableTable, ResizableColumn, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation, I18nPluralPipe],
   templateUrl: './import-workbench.html',
   host: { '(window:resize)': 'scrollActiveStep()' },
 })
 export class ImportWorkbench implements OnDestroy {
+  readonly plurals = PLURALS;
   label = label;
   active = input(true);
   normalizationVisible = output<boolean>();

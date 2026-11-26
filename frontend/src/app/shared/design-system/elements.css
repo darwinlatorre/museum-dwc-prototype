@@ -1,0 +1,68 @@
+/* Elementos nativos sin clase: capa base, por debajo de PrimeNG, para no pisar sus controles internos. */
+button {
+  cursor: pointer;
+  border: 1px solid var(--museum-button-border);
+  border-radius: var(--museum-control-radius);
+  color: var(--pine);
+  background: var(--museum-surface);
+  padding: 0.55rem 0.8rem;
+  line-height: 1.3;
+}
+
+button:hover:not(:disabled) {
+  background: var(--museum-primary-50);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Única acción principal por bloque: mismo pino que PrimeNG y que las selecciones. */
+input:not([type=checkbox]):not([type=file]), select, textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--select-control-border);
+  background: var(--museum-surface);
+  border-radius: var(--select-control-radius);
+  padding: 0.6rem 0.7rem;
+  color: var(--ink);
+  min-height: 39px;
+}
+
+input[type=checkbox] {
+  accent-color: var(--pine);
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+textarea {
+  min-height: 80px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+label input, label select, label textarea {
+  margin-top: 0.4rem;
+  font-weight: 400;
+}
+
+input[type=file]::file-selector-button {
+  margin-inline-end: var(--museum-space-3);
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--museum-button-border);
+  border-radius: var(--museum-control-radius);
+  background: var(--museum-surface);
+  color: var(--pine);
+  font: inherit;
+  cursor: pointer;
+}
+
+input[type=file]:not(:disabled)::file-selector-button:hover {
+  background: var(--museum-primary-50);
+}

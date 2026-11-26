@@ -1,5 +1,10 @@
 import { ComponentRef, Directive, ElementRef, OnDestroy, ViewContainerRef, effect, inject, input, untracked } from '@angular/core';
-import { ColumnWidthControl, MAX_COLUMN_WIDTH, clampColumnWidth } from './column-width-control';
+import { ColumnWidthControl, MAX_COLUMN_WIDTH, MIN_COLUMN_WIDTH, clampColumnWidth } from './column-width-control';
+
+/** Techo del ajuste automático: una columna de texto largo no debe ocupar toda la hoja. */
+export const AUTO_FIT_MAX_WIDTH = 480;
+const MEASURED_ROWS = 60;
+const MEASURE_RETRIES = 10;
 
 interface RegisteredColumn {
   header: HTMLTableCellElement;
@@ -9,11 +14,20 @@ interface RegisteredColumn {
   control: ComponentRef<ColumnWidthControl>;
 }
 
-/** One controller for native and projected PrimeNG tables; never observes body cells. */
+/**
+ * One controller for native and projected PrimeNG tables. Each column keeps its own width:
+ * explicit widths by key and optional content-sized defaults (measured once from visible text,
+ * never by observing body mutations). Widths live only in this controller: no storage, API or Query.
+ */
 @Directive({ selector: '[museumResizableTable]', host: { class: 'museum-resizable-root' } })
 export class ResizableTable implements OnDestroy {
   // Optional opaque view identity. Change only for a new dataset/collection, not a page/window.
   readonly resizeContext = input<unknown>(undefined);
+  /** Size data columns (`growColumn`) from their widest visible text instead of equal defaults. */
+  readonly resizeAutoFit = input(false);
+  private readonly measured = new Map<string, number>();
+  private measureFrame?: number;
+  private measureAttempts = 0;
   private readonly columns = new Set<RegisteredColumn>();
   private readonly widths = new Map<string, number>();
   private group?: HTMLTableColElement;
@@ -26,6 +40,8 @@ export class ResizableTable implements OnDestroy {
       this.resizeContext();
       untracked(() => {
         this.widths.clear();
+        this.measured.clear();
+        this.measureAttempts = 0;
         for (const column of this.columns) column.control.instance.cancelInteraction();
         this.layout();
       });
@@ -44,9 +60,71 @@ export class ResizableTable implements OnDestroy {
     else this.widths.set(column.key, clampColumnWidth(width));
     this.layout();
   }
+  /** Fit one column to its own content; without a measuring surface it restores the default. */
+  fit(column: RegisteredColumn) {
+    const width = this.measure(column);
+    this.resize(column, width);
+  }
+  private context2d() {
+    if (typeof OffscreenCanvas === 'undefined') return undefined;
+    return new OffscreenCanvas(1, 1).getContext('2d') as OffscreenCanvasRenderingContext2D | null ?? undefined;
+  }
+  private measure(column: RegisteredColumn): number | undefined {
+    const table = column.header.closest('table');
+    const context = this.context2d();
+    if (!table || !context) return undefined;
+    const view = table.ownerDocument.defaultView;
+    const widthOf = (element: Element, text: string) => {
+      const style = view?.getComputedStyle(element);
+      context.font = style ? `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}` : '14px sans-serif';
+      return Math.max(0, ...text.split('\n').map(line => context.measureText(line.trim()).width));
+    };
+    const padding = (cell: Element) => {
+      const style = view?.getComputedStyle(cell);
+      return style ? (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0) : 16;
+    };
+    const label = [...column.header.childNodes]
+      .filter(node => !(node instanceof Element && node.tagName === 'MUSEUM-COLUMN-WIDTH'))
+      .map(node => node.textContent ?? '').join(' ').replace(/\s+/g, ' ');
+    // Icono de orden, separación y asa de redimensionado.
+    let widest = widthOf(column.header, label) + padding(column.header) + 44;
+    let measuredRows = 0;
+    for (const body of Array.from(table.tBodies)) {
+      for (const row of Array.from(body.rows).slice(0, MEASURED_ROWS)) {
+        const cell = row.cells[column.header.cellIndex];
+        if (!cell) continue;
+        const source = cell.querySelector('[data-fit-text]') ?? cell;
+        widest = Math.max(widest, widthOf(source, source.textContent ?? '') + padding(cell) + 12);
+        measuredRows++;
+      }
+    }
+    if (!measuredRows) return undefined;
+    return Math.min(AUTO_FIT_MAX_WIDTH, Math.max(MIN_COLUMN_WIDTH, Math.ceil(widest)));
+  }
+  /** Mide en el siguiente cuadro, cuando el cuerpo ya está pintado; reintenta si aún no hay filas. */
+  private scheduleMeasure(columns: RegisteredColumn[]) {
+    if (!this.resizeAutoFit() || this.measureFrame !== undefined || typeof requestAnimationFrame === 'undefined') return;
+    const unmeasured = () => [...this.columns].filter(column => column.grow && !this.measured.has(column.key));
+    if (!columns.some(column => column.grow && !this.measured.has(column.key)) || this.measureAttempts >= MEASURE_RETRIES) return;
+    this.measureFrame = requestAnimationFrame(() => {
+      this.measureFrame = undefined;
+      this.measureAttempts++;
+      // Columnas registradas después de programar el cuadro también se miden aquí.
+      const pending = unmeasured();
+      let changed = false;
+      for (const column of pending) {
+        const width = this.measure(column);
+        if (width !== undefined) { this.measured.set(column.key, width); changed = true; }
+      }
+      if (changed) this.measureAttempts = 0;
+      this.layout();
+    });
+  }
   private defaults(columns: RegisteredColumn[], available: number) {
-    const widths = new Map(columns.map(column => [column.key, column.initial]));
-    let extra = Math.max(0, available - columns.reduce((sum, column) => sum + column.initial, 0));
+    const widths = new Map(columns.map(column => [column.key, this.measured.get(column.key) ?? column.initial]));
+    // Medidas de contenido: cada columna conserva su ancho propio, sin repartir el sobrante.
+    if (this.resizeAutoFit() && columns.some(column => this.measured.has(column.key))) return widths;
+    let extra = Math.max(0, available - columns.reduce((sum, column) => sum + widths.get(column.key)!, 0));
     let growing = columns.filter(column => column.grow);
     if (!growing.length) {
       const largest = Math.max(...columns.map(column => column.initial));
@@ -99,8 +177,9 @@ export class ResizableTable implements OnDestroy {
     });
     this.group!.replaceChildren(...cols);
     table.style.width = `${columns.reduce((total, column) => total + (this.widths.get(column.key) ?? defaults.get(column.key)!), 0)}px`;
+    this.scheduleMeasure(columns);
   }
-  ngOnDestroy() { this.observer?.disconnect(); this.containerObserver?.disconnect(); this.group?.remove(); this.columns.clear(); this.widths.clear(); }
+  ngOnDestroy() { if (this.measureFrame !== undefined) cancelAnimationFrame(this.measureFrame); this.observer?.disconnect(); this.containerObserver?.disconnect(); this.group?.remove(); this.columns.clear(); this.widths.clear(); }
 }
 
 /** Attach to every leaf header, including non-sortable physical-row/actions headers. */
@@ -129,6 +208,7 @@ export class ResizableColumn implements OnDestroy {
       this.column = column;
       control.instance.resized.subscribe(width => this.table.resize(column, width));
       control.instance.resetRequested.subscribe(() => this.table.resize(column));
+      control.instance.fitRequested.subscribe(() => this.table.fit(column));
       this.table.register(column);
       onCleanup(() => {
         this.table.unregister(column);

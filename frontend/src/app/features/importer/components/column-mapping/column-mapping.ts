@@ -41,7 +41,12 @@ export class ColumnMapping {
   readonly terms = input.required<Term[]>();
   readonly mapping = input.required<Record<string, string>>();
   readonly mapped = output<{ header: string; value: string }>();
+  // Scan the vocabulary once per header/catalog change, not on every template check.
+  private readonly suggestionsByHeader = computed(() => {
+    const terms = this.terms();
+    return new Map(this.headers().map(header => [header, suggestions(header, terms)]));
+  });
   suggest(header: string) {
-    return suggestions(header, this.terms());
+    return this.suggestionsByHeader().get(header) ?? suggestions(header, this.terms());
   }
 }

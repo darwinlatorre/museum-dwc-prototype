@@ -3,9 +3,9 @@
     <h2 aria-describedby="catalog-context-help">Catálogo Darwin Core</h2>
     <p id="catalog-context-help" hidden>Vocabulario oficial TDWG. La configuración global define los requisitos. Definiciones originales en inglés.</p>
   </div>
-  <div class="catalog-actions">
+  <div class="catalog-actions flex shrink-0 items-center gap-3 max-tablet:w-full max-tablet:flex-row max-tablet:flex-wrap max-tablet:items-center max-tablet:justify-between">
     <span class="count">{{ terms().length }} términos</span>
-    <button class="catalog-sync-button" type="button" [disabled]="sync.isPending()"
+    <button class="button-primary catalog-sync-button" type="button" [disabled]="sync.isPending()"
       [attr.aria-busy]="sync.isPending()" [attr.aria-describedby]="sync.isPending() || notice() ? 'catalog-sync-status' : null"
       (click)="synchronize()">
       <span class="sync-indicator" [class.is-spinning]="sync.isPending()" aria-hidden="true">
@@ -68,7 +68,7 @@
     ><tr>
       <td>
         <strong>{{ term.name }}</strong
-        ><a [href]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
+        ><a [href]="term.uri" [title]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
       </td>
       <td class="definition" lang="en">{{ term.definition }}</td>
       <td>{{ categoryLabel(term.category) }}</td>

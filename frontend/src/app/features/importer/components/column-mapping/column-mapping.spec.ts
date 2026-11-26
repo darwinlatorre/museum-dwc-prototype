@@ -57,7 +57,7 @@ describe('Agrupación de columnas de origen', () => {
     await render(source, rows);
     expect(headers()).toEqual(['NULL literal', 'N/A literal', 'Dato tardío', 'Cero', 'Vacía', 'Espacios']);
     expect(root.querySelectorAll('table')).toHaveLength(1);
-    expect(root.querySelector('.mapping-summary')?.textContent).toContain('4 campos con datos · 2 campos sin datos');
+    expect(root.querySelector('.mapping-summary')?.textContent).toContain('4 campos con datos y 2 sin datos');
     expect(divider()?.textContent).toContain('Campos sin datos');
     expect(divider()?.nextElementSibling?.querySelector('strong')?.textContent).toBe('Vacía');
     expect(JSON.stringify({ source, rows })).toBe(original);
@@ -84,7 +84,7 @@ describe('Agrupación de columnas de origen', () => {
     await render(['Primera', 'Segunda'], [{ row: 2, values: ['', '  '] }]);
     expect(headers()).toEqual(['Primera', 'Segunda']);
     expect(root.querySelector('tbody')?.firstElementChild).toBe(divider());
-    expect(root.querySelector('.mapping-summary')?.textContent).toContain('0 campos con datos · 2 campos sin datos');
+    expect(root.querySelector('.mapping-summary')?.textContent).toContain('0 campos con datos y 2 sin datos');
     fixture.componentRef.setInput('rows', [{ row: 2, values: ['', 'dato'] }]);
     await fixture.whenStable();
     expect(headers()).toEqual(['Segunda', 'Primera']);
@@ -95,7 +95,7 @@ describe('Agrupación de columnas de origen', () => {
     await render(['Primera', 'Segunda'], [{ row: 2, values: ['a', 'b'] }]);
     expect(headers()).toEqual(['Primera', 'Segunda']);
     expect(divider()).toBeNull();
-    expect(root.querySelector('.mapping-summary')?.textContent).toContain('2 campos con datos · 0 campos sin datos');
+    expect(root.querySelector('.mapping-summary')?.textContent).toContain('2 campos con datos y 0 sin datos');
   });
 
   it('sin filas conserva el orden y no presenta las columnas como vacías', async () => {

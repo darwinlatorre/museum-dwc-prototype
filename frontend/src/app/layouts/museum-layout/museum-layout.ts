@@ -11,7 +11,7 @@ import { ImportWorkbench } from '../../features/importer/pages/import-workbench/
   selector: 'app-museum-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, ImportWorkbench],
   templateUrl: './museum-layout.html',
-  styleUrl: './museum-layout.scss',
+  styleUrl: './museum-layout.css',
 })
 export class MuseumLayout {
   private readonly router = inject(Router);

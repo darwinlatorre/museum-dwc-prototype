@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MuseumPreset } from './museum.preset';
 
 // Misma entrada y alcance que la aplicación, incluidos los overlays desacoplados.
-@Component({ template: '', styleUrl: '../../../styles.scss', encapsulation: ViewEncapsulation.None })
+@Component({ template: '', styleUrl: '../../../styles.css', encapsulation: ViewEncapsulation.None })
 class DesignSystemStyles {}
 
 describe('Sistema de diseño del museo', () => {
@@ -68,11 +68,27 @@ describe('Sistema de diseño del museo', () => {
 
   it('mantiene selección sólida, filas uniformes y foco verde sin ámbar', () => {
     expect(css).toMatch(/aria-pressed=["']?true["']?\]:hover\s*\{[^}]*background:\s*var\(--pine\);[^}]*color:\s*white;[^}]*box-shadow:\s*none/s);
-    expect(css).toMatch(/\.mapping-table[^{}]*source-header\s*\{[^}]*border-bottom:\s*1px solid[^}]*background:\s*#fff !important/s);
-    expect(css).toMatch(/\.p-datatable \.source-header\s*\{[^}]*border-left:\s*1px solid var\(--pine\)/);
-    expect(css).toMatch(/focus-within[^{}]*source-header\s*\{[^}]*background:\s*#e2eee6 !important/);
+    expect(css).toMatch(/\.mapping-table[^{}]*source-header\s*\{[^}]*border-bottom:\s*1px solid[^}]*background:\s*var\(--museum-surface\) !important/s);
+    expect(css).toMatch(/\.p-datatable \.source-header\s*\{[^}]*border-inline-end:\s*1px solid var\(--museum-line\)/);
+    expect(css).toMatch(/focus-within[^{}]*source-header\s*\{[^}]*background:\s*var\(--museum-surface-selected\) !important/);
     expect(css).toMatch(/button:focus-visible[^{}]*\{[^}]*outline:\s*2px solid var\(--pine\)/);
     expect(css).not.toContain('#b07918');
+  });
+
+  it('usa tokens para cada color y neutros verdosos también en PrimeNG', () => {
+    const rules = css.replace(/:root\s*\{[^}]*\}/g, '').replace(/url\("data:[^)]*\)/g, '');
+    expect(rules.match(/#[0-9a-f]{3,8}\b/gi) ?? []).toEqual([]);
+    expect(MuseumPreset).toMatchObject({ semantic: { colorScheme: { light: {
+      surface: { 0: '#ffffff', 200: 'var(--museum-neutral-200)' },
+      primary: { color: '{primary.700}', hoverColor: '{primary.800}' },
+    } } } });
+    expect(css).toMatch(/\.button-primary\s*\{[^}]*background:\s*var\(--pine\)/);
+  });
+
+  it('marca mensajes y estados con borde completo, nunca con una franja lateral', () => {
+    expect(css).not.toMatch(/border-left:\s*[2-9]px/);
+    expect(css).not.toMatch(/inset [2-9]px 0/);
+    expect(css).toMatch(/\.sr-only\s*\{[^}]*clip-path:\s*inset\(50%\)/);
   });
 
   it('conserva tamaño estable de sincronización y reducción global de movimiento', () => {
@@ -84,9 +100,16 @@ describe('Sistema de diseño del museo', () => {
 
   it('incluye especializaciones móviles y una sola regla base de cada overlay', () => {
     expect(css).toMatch(/max-width:\s*800px/);
-    expect(css).toMatch(/\.configuration-add\s*\{[^}]*flex-direction:\s*column/);
+    // Distribución móvil en Tailwind: mismo corte inclusivo de 800px que el CSS nativo.
+    expect(css).toMatch(/@media\s*\(width\s*<\s*801px\)\s*\{[^]*?\.max-tablet\\:flex-col\s*\{\s*flex-direction:\s*column/);
     expect(css).toMatch(/\.context-grid\s*\{\s*grid-template-columns:\s*1fr/);
     expect(css.match(/\.p-select-overlay\s*\{/g)).toHaveLength(1);
     expect(css.match(/\.p-select-option\s*\{/g)).toHaveLength(2); // base y panel DwC
+  });
+
+  it('ordena capas y genera utilidades Tailwind desde los tokens del museo', () => {
+    expect(css).toMatch(/@layer theme,\s*base,\s*primeng,\s*components,\s*utilities;/);
+    expect(css).toMatch(/\.gap-4\s*\{\s*gap:\s*calc\(var\(--museum-space-1\)\s*\*\s*4\)/);
+    expect(css).not.toMatch(/--color-(red|blue|slate)-500/);
   });
 });

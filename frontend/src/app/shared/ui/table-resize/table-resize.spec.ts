@@ -43,6 +43,14 @@ describe('Shared table column resizing', () => {
     target.dispatchEvent(event);
   }
 
+  it('uses the separator as an empty accessible resize target without a visible arrow', async () => {
+    const { handles } = await setup();
+    for (const handle of handles()) {
+      expect(handle.textContent?.trim()).toBe('');
+      expect(handle.getAttribute('aria-label')).toMatch(/^Ancho de /);
+      expect(handle.getAttribute('role')).toBe('slider');
+    }
+  });
   it('fills the available table width initially while explicit resizing keeps exact pixels', async () => {
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) {
       return this.firstElementChild?.tagName === 'TABLE' ? 1200 : 0;
@@ -204,5 +212,75 @@ describe('Shared table column resizing', () => {
     apply.click();
     await fixture.whenStable();
     expect(widths()[1]).toBe('96px');
+  });
+
+});
+
+@Component({
+  imports: [ResizableTable, ResizableColumn],
+  template: `
+    @if (mounted()) {
+      <div><table museumResizableTable [resizeContext]="context()" [resizeAutoFit]="true"><thead><tr>
+        <th museumResizableColumn="row" resizeLabel="Fila" [initialColumnWidth]="128">Fila</th>
+        <th museumResizableColumn="short" resizeLabel="type" [initialColumnWidth]="192" [growColumn]="true">type</th>
+        <th museumResizableColumn="long" resizeLabel="occurrenceID" [initialColumnWidth]="192" [growColumn]="true">occurrenceID</th>
+      </tr></thead><tbody>
+        <tr><td>2</td><td><span data-fit-text>Obj</span><span class="copy">Obj</span></td><td><span data-fit-text>UNICAUCA-ENT-EN028-000123</span></td></tr>
+        <tr><td>3</td><td><span data-fit-text>PhysicalObject</span></td><td><span data-fit-text>A</span></td></tr>
+      </tbody></table></div>
+    }
+  `,
+})
+class FitHost {
+  readonly mounted = signal(true);
+  readonly context = signal<string>('c1');
+}
+
+describe('Independent content-sized columns', () => {
+  // 7px per character keeps measurement deterministic without a canvas implementation.
+  class FakeCanvas { getContext() { return { font: '', measureText: (text: string) => ({ width: text.length * 7 }) }; } }
+  beforeEach(() => { localStorage.clear(); vi.stubGlobal('OffscreenCanvas', FakeCanvas); });
+  afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); localStorage.clear(); });
+  const frame = () => new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
+  async function setup() {
+    const fixture = TestBed.createComponent(FitHost);
+    await fixture.whenStable(); await frame(); await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const widths = () => [...root.querySelectorAll<HTMLTableColElement>('col')].map(col => parseInt(col.style.width, 10));
+    const handles = () => [...root.querySelectorAll<HTMLButtonElement>('.museum-resize-handle')];
+    return { fixture, root, widths, handles };
+  }
+
+  it('sizes every data column from its own widest visible text, leaving fixed columns alone', async () => {
+    const { widths } = await setup();
+    const [row, short, long] = widths();
+    expect(row).toBe(128);
+    expect(short).toBeLessThan(long);
+    // Longest value "UNICAUCA-ENT-EN028-000123" (25 chars) drives its column; hidden copies are ignored.
+    expect(long).toBeGreaterThanOrEqual(25 * 7);
+    expect(short).toBeGreaterThanOrEqual('PhysicalObject'.length * 7);
+    expect(short).toBeLessThan(25 * 7);
+  });
+
+  it('double-click fits only that column to its content', async () => {
+    const { fixture, widths, handles } = await setup();
+    const before = widths();
+    handles()[2].focus();
+    for (let i = 0; i < 5; i++) handles()[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await fixture.whenStable();
+    expect(widths()[2]).toBe(before[2] + 80);
+    handles()[2].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    await fixture.whenStable();
+    expect(widths()).toEqual(before);
+  });
+
+  it('keeps widths only in memory: a new context measures again and nothing is stored', async () => {
+    const { fixture, widths, handles } = await setup();
+    handles()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await fixture.whenStable();
+    expect(widths()[1]).toBe(960);
+    fixture.componentInstance.context.set('c2'); await fixture.whenStable(); await frame(); await fixture.whenStable();
+    expect(widths()[1]).toBeLessThan(960);
+    expect(localStorage.length).toBe(0);
   });
 });

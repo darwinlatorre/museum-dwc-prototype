@@ -90,7 +90,7 @@ describe('HTTP de metadatos', () => {
     const remove = vi.spyOn(signal, 'removeEventListener');
     const request = http.expectOne('https://api.example.test/api/catalog');
     await client.cancelQueries({ queryKey: ['catalog'] }); await check;
-    expect(request.cancelled).toBe(true); expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+    expect(request.cancelled).toBe(true); expect(remove.mock.calls.some(([type]) => type === 'abort')).toBe(true);
     expect(client.getQueryData(['catalog'])).toBeUndefined(); client.clear();
   });
 

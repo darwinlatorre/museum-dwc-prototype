@@ -11,7 +11,7 @@ import { Catalog } from '../features/catalog/pages/catalog/catalog';
 import { Table } from 'primeng/table';
 import { By } from '@angular/platform-browser';
 
-@Component({ template: '', styleUrl: '../../styles.scss' })
+@Component({ template: '', styleUrl: '../../styles.css' })
 class LayoutStyles {}
 
 describe('Compact collection layouts', () => {
@@ -28,8 +28,8 @@ describe('Compact collection layouts', () => {
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
     expect(css).not.toMatch(/mapping-table[^{}]*nth-child\((even|odd)\)/s);
     expect(css).toMatch(/mapping-table[^{}]*source-header[^{}]*\{[^}]*border-bottom:\s*1px solid/s);
-    expect(css).toMatch(/\.p-datatable[^{}]*\.source-header[^{}]*\{[^}]*border-left:\s*1px solid/s);
-    expect(css).toMatch(/mapping-table[^{}]*focus-within[^{}]*\{[^}]*background:\s*#e2eee6/s);
+    expect(css).toMatch(/\.p-datatable[^{}]*\.source-header[^{}]*\{[^}]*border-inline-end:\s*1px solid/s);
+    expect(css).toMatch(/mapping-table[^{}]*focus-within[^{}]*\{[^}]*background:\s*var\(--museum-surface-selected\)/s);
   });
 
   it('fills selected mapping suggestions without an inset border, including hover', async () => {
@@ -151,7 +151,7 @@ describe('Compact collection layouts', () => {
     expect(css).toMatch(/\.normalization-scroll[^{}]*\{[^}]*max-width:\s*100%[^}]*overflow:\s*auto/s);
     expect(css).toMatch(/\.normalization-grid[^{}]*thead\s+th[^{}]*\{[^}]*position:\s*sticky[^}]*top:\s*0/s);
     expect(css).toMatch(/\.normalization-grid[^{}]*th:first-child[^{}]*\{[^}]*position:\s*sticky[^}]*left:\s*0/s);
-    expect(css).toMatch(/\.normalization-changed[^{}]*\{[^}]*border-left:[^}]*var\(--pine\)[^}]*background:[^}]*var\(--museum-/s);
+    expect(css).toMatch(/\.normalization-changed[^{}]*\{[^}]*background:[^}]*var\(--museum-primary-50\)[^}]*box-shadow:\s*inset 0 0 0 1px/s);
     expect(css).toMatch(/\.normalization-sheet[^{}]*label[^{}]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/input\[role=["']?switch["']?\][^{}]*\{[^}]*appearance:\s*none[^}]*width:\s*44px[^}]*height:\s*24px/s);
     expect(css).toMatch(/input\[role=["']?switch["']?\]::before[^{}]*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
@@ -164,7 +164,7 @@ describe('Compact collection layouts', () => {
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
       .replace(/\[_ng(?:content|host)-[^\]]+\]/g, '');
     expect(css).toMatch(/\.normalization-views\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s);
-    expect(css).toMatch(/\.normalization-views\s+button\[aria-pressed=['"]?true['"]?\][^{}]*\{[^}]*background:\s*var\(--pine\)[^}]*color:\s*var\(--museum-surface\)/s);
+    expect(css).toMatch(/\.normalization-views\s+button\[aria-pressed=['"]?true['"]?\][^{}]*\{[^}]*background:\s*var\(--museum-surface-selected\)[^}]*border-color:\s*var\(--pine\)[^}]*color:\s*var\(--pine\)/s);
     expect(css).toMatch(/\.normalization-sheet\s+summary[^{}]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.normalization-formats[^{}]*\.normalization-tools[^{}]*\{[^}]*min-width:\s*0/s);
   });

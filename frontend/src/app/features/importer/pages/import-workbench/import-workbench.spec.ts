@@ -186,7 +186,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('h3')?.textContent).toBe('Normalización');
     await click('Finalizar');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('Resumen del análisis');
-    expect(root.querySelector('.wizard-final')?.textContent).toContain('1 registros');
+    expect(root.querySelector('.wizard-final')?.textContent).toContain('1 registro y');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('2 columnas');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('guardar estos registros en la colección');
     expect(root.querySelector('.wizard-final')?.textContent).toContain('Confirmar e importar');
@@ -225,7 +225,7 @@ describe('Preservación pública del análisis local', () => {
     }
     const cells = [...root.querySelectorAll('.normalization-grid tbody tr:first-child td .literal')].map(cell => cell.textContent);
     expect(cells).toEqual(['2024-03-04', '1.234', '2.500', '0007', 'Aus bus', '∅']);
-    expect(root.textContent).toContain('occurrenceID repetido: 1 grupos · 2 registros');
+    expect(root.textContent).toContain('occurrenceID repetido: 1 grupos que afectan a 2 registros');
     await click('Aplicar normalización y validar');
     expect(analyses().at(-1)!.request).toMatchObject({ kind: 'validate', data, options: { trim: true, emptyMarkers: true, dates: true, coordinates: true, numbers: true, duplicates: true, dateOrder: 'MDY', decimalMode: 'comma' } });
     expect(JSON.stringify(data)).toBe(original);
@@ -271,7 +271,7 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelector('tr.issue-error')).toBeNull();
     await click('Ver todas las incidencias');
     expect(root.querySelector('tr.issue-error')?.textContent).toContain('Falta subfamily');
-    expect(root.querySelector('tr.issue-error')?.textContent).toContain('Colección biológica · 7');
+    expect(root.querySelector('tr.issue-error')?.textContent).toContain('Colección biológica, revisión 7');
     expect(data.rows[0].values[0]).toBe('  ');
   });
 
@@ -308,7 +308,7 @@ describe('Preservación pública del análisis local', () => {
     const detail = root.querySelector<HTMLElement>('#missing-cell-detail')!;
     expect(detail.getAttribute('role')).toBe('region');
     expect(detail.getAttribute('aria-labelledby')).toBe('missing-cell-title');
-    expect(detail.querySelector('h4')?.textContent).toContain('subfamily · 2 registros sin datos');
+    expect(detail.querySelector('h4')?.textContent).toContain('subfamily: 2 registros sin datos');
     expect(document.activeElement?.id).toBe('missing-cell-title');
     const rows = [...detail.querySelectorAll('tbody tr')].map(row => [...row.querySelectorAll('td')].map(cell => cell.textContent));
     expect(detail.querySelector('.missing-source')?.textContent).toContain('vacía original');
@@ -569,7 +569,7 @@ describe('Preservación pública del análisis local', () => {
     const { root, preview, button } = await normalization(data);
     expect(preview.requests[0]).toMatchObject({ kind: 'preview-init', window: { rowFilter: 'changed', offset: 0 } });
     expect([...root.querySelectorAll('.normalization-grid tbody th')].map(cell => cell.childNodes[0].textContent?.trim())).toEqual(['5', '47', '104']);
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–3 de 3 · 36 registros en total');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios: 1–3 de 3 (36 registros en total)');
     expect(button('Con cambios').getAttribute('aria-pressed')).toBe('true');
     expect(button('Todos').getAttribute('aria-pressed')).toBe('false');
     expect(button('Todos').closest('[role=group]')?.getAttribute('aria-label')).toBe('Vista de registros');
@@ -607,7 +607,7 @@ describe('Preservación pública del análisis local', () => {
     await click('Última página');
     expect(preview.request).toMatchObject({ window: { rowFilter: 'changed', offset: 20 } });
     expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('163');
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('21–21 de 21 · 50 registros en total');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('21–21 de 21 (50 registros en total)');
     expect(button('Página siguiente').disabled).toBe(true);
     await click('Todos');
     expect(preview.request).toMatchObject({ window: { rowFilter: 'all', offset: 0 } });
@@ -624,12 +624,12 @@ describe('Preservación pública del análisis local', () => {
     const { root, preview, click, button } = await normalization(data);
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(0);
     expect(root.querySelector('.normalization-empty')?.textContent).toContain('Sin cambios');
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('0–0 de 0 · 12 registros en total');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('0–0 de 0 (12 registros en total)');
     expect(button('Última página').disabled).toBe(true);
     const duplicates = root.querySelector<HTMLDetailsElement>('details.normalization-duplicates')!;
     expect(duplicates.open).toBe(false);
     expect(duplicates.querySelector('summary')?.textContent).toContain('1 grupos');
-    expect(duplicates.textContent).toContain('occurrenceID repetido: 1 grupos · 12 registros');
+    expect(duplicates.textContent).toContain('occurrenceID repetido: 1 grupos que afectan a 12 registros');
     expect(duplicates.textContent).toContain('46');
     button('Mostrar todos').focus(); await click('Mostrar todos');
     expect(document.activeElement).toBe(button('Todos'));
@@ -662,7 +662,7 @@ describe('Preservación pública del análisis local', () => {
     DelayedWorker.previewAutomatic = false;
     await click('Todos'); const older = preview.request as PreviewRequest;
     expect(button('Todos').getAttribute('aria-pressed')).toBe('true');
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–1 de 1');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios: 1–1 de 1');
     expect(root.querySelector('.normalization-scroll')?.getAttribute('aria-label')).toBe('Con cambios');
     expect(root.querySelector('.normalization-scroll')?.getAttribute('aria-busy')).toBe('true');
     expect(button('Aplicar normalización y validar').disabled).toBe(true);
@@ -674,10 +674,10 @@ describe('Preservación pública del análisis local', () => {
     preview.answerPreview(latest); await f.whenStable();
     expect(button('Aplicar normalización y validar').disabled).toBe(false);
     preview.answerPreview(older); await f.whenStable();
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–1 de 1');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios: 1–1 de 1');
     await click('Todos'); preview.answerPreview(); await f.whenStable();
     await click('Con cambios');
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('Todos · 1–2 de 2');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Todos: 1–2 de 2');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(2);
   });
 
@@ -693,7 +693,7 @@ describe('Preservación pública del análisis local', () => {
     preview.answerPreview(stale); await f.whenStable();
     expect(button('Aplicar normalización y validar').disabled).toBe(true);
     preview.answerPreview(update); await f.whenStable();
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('Todos · 1–2 de 2');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Todos: 1–2 de 2');
     expect(button('Aplicar normalización y validar').disabled).toBe(false);
     preview.answerPreview(stale); await f.whenStable();
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(2);
@@ -727,7 +727,7 @@ describe('Preservación pública del análisis local', () => {
     next.answerPreview(); await f.whenStable();
     preview.answerPreview(stale); await f.whenStable();
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
-    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios · 1–1 de 1');
+    expect(root.querySelector('.normalization-range')?.textContent).toContain('Con cambios: 1–1 de 1');
   });
 
   it.each([{ rows: [] }, { rows: [{ row: 2, values: ['x'] }] }])('C4 vacío honesto solo tras ready, no al cargar o fallar: %j', async ({ rows }) => {
@@ -760,10 +760,10 @@ describe('Preservación pública del análisis local', () => {
     const { f, root, click, preview, mode } = await normalization(data);
     await click('Todos');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(10);
-    expect(root.textContent).toContain('Filas completas iguales: 1 grupos · 31 registros');
+    expect(root.textContent).toContain('Filas completas iguales: 1 grupos que afectan a 31 registros');
     await click('Última página');
     expect(root.querySelectorAll('.normalization-grid tbody tr')).toHaveLength(1);
-    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('97 Fila igual · row:1');
+    expect(root.querySelector('.normalization-grid tbody th')?.textContent?.trim()).toBe('97 Fila igual, grupo row:1');
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { offset: 30, limit: 10 } });
     const size = root.querySelector<HTMLSelectElement>('select[aria-label="Registros por página"]')!;
     for (const limit of [25, 50, 100, 10]) {
@@ -814,12 +814,12 @@ describe('Preservación pública del análisis local', () => {
     const data = { headers: ['occurrenceID', 'vacía', 'eventDate'], rows: Array.from({ length: 12 }, (_, i) => ({ row: i * 4 + 2, values: ['ID', '', '2024'] })) };
     const { root, preview, toggle } = await normalization(data);
     expect(preview.request).toMatchObject({ kind: 'preview-page', window: { columnIndices: [0, 2] } });
-    expect(root.textContent).toContain('Filas completas iguales: 1 grupos · 12 registros');
-    expect(root.textContent).toContain('occurrenceID repetido: 1 grupos · 12 registros');
+    expect(root.textContent).toContain('Filas completas iguales: 1 grupos que afectan a 12 registros');
+    expect(root.textContent).toContain('occurrenceID repetido: 1 grupos que afectan a 12 registros');
     expect(root.textContent).toContain('no se suman como registros únicos');
     expect(root.querySelector('.normalization-duplicates')?.textContent).toContain('46');
     await toggle('Ocultar columnas sin datos (solo vista)');
-    expect(root.querySelector('.normalization-duplicates')?.textContent).toContain('1 grupos · 12 registros');
+    expect(root.querySelector('.normalization-duplicates')?.textContent).toContain('1 grupos que afectan a 12 registros');
     expect(root.querySelector('.normalization-duplicates')?.textContent).not.toContain('desactivada');
   });
 
@@ -1106,14 +1106,14 @@ describe('Preservación pública del análisis local', () => {
     expect(root.querySelectorAll('.normalization-rules input')).toHaveLength(0);
     root.querySelector<HTMLButtonElement>('.normalization-changed button')!.click(); await f.whenStable();
     expect(root.querySelector('.normalization-original')).toBeTruthy();
-    await click('▦ Catálogo Darwin Core');
+    await click('Catálogo Darwin Core');
     expect(root.querySelector('main')?.classList.contains('normalization-wide')).toBe(false);
     expect(root.querySelector('.normalization-original')).toBeNull();
     expect(root.querySelector('app-import')).toBe(workbench);
     expect(preview.terminated).toBe(false);
-    await click('☷ Fuentes de registros biológicos');
+    await click('Fuentes de registros biológicos');
     expect(root.querySelector('main')?.classList.contains('normalization-wide')).toBe(false);
-    await click('▤ Análisis de colecciones');
+    await click('Análisis de colecciones');
     expect(root.querySelector('main')?.classList.contains('normalization-wide')).toBe(true);
     expect(root.querySelector('app-import')).toBe(workbench);
     expect(preview.requests.filter(request => request.kind === 'preview-init')).toHaveLength(1);
@@ -1243,6 +1243,17 @@ describe('Preservación pública del análisis local', () => {
     await view.click('Confirmar e importar');
     expect(view.api.import).not.toHaveBeenCalled();
     expect(view.root.querySelector('.wizard-final')?.textContent).toContain('bloquean la importación completa');
+  });
+
+  it('elegir colección existente nunca crea una nueva aunque ya hubiera un nombre escrito', async () => {
+    const view = await confirmation();
+    await view.text('Nombre de la colección', 'Colección'); await view.consent('Autorizo');
+    expect(view.button('Confirmar e importar').disabled).toBe(false);
+    await view.click('Elegir colección existente');
+    expect(view.root.querySelector('[aria-label="Nombre de la colección"]')).toBeNull();
+    expect(view.button('Confirmar e importar').disabled).toBe(true);
+    await view.click('Crear colección nueva');
+    expect(view.button('Confirmar e importar').disabled).toBe(false);
   });
 
   it('confirma advertencias por separado y elige colección compatible paginada con revisión exacta', async () => {

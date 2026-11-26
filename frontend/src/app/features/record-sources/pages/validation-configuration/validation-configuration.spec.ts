@@ -35,9 +35,10 @@ afterEach(() => { TestBed.resetTestingModule(); vi.unstubAllGlobals(); });
 describe('Editor global público', () => {
   it('explica qué se guarda y cuándo se reemplazan los cambios sin guardar automáticamente', async () => {
     const { root, api, click } = await setup();
-    expect(root.textContent).toContain('Solo se guarda la elección de campos obligatorios y opcionales de las cinco fuentes, no archivos ni registros. Los cambios no se guardan automáticamente.');
+    expect(root.textContent).toContain('Solo se guarda la elección de campos, no archivos ni registros.');
+    expect(root.textContent).toContain('Los cambios no se guardan automáticamente.');
     expect(root.textContent).toContain('Cargar configuración guardada reemplaza sus cambios solo cuando se haya podido obtener la configuración guardada. Si falla, sus cambios se conservan.');
-    expect(root.textContent).toContain('Elija un campo Darwin Core (DwC) o escriba el nombre de otro campo.');
+    expect(root.textContent).toContain('Campo Darwin Core (DwC) o nombre propio, hasta 200 caracteres.');
     await click('Quitar customField');
     expect(root.textContent).toContain('No hay campos configurados para esta fuente.');
     expect(api.updateValidationConfiguration).not.toHaveBeenCalled();
@@ -54,7 +55,7 @@ describe('Editor global público', () => {
     expect(document.activeElement).toBe(toggle);
     expect(toggle.textContent).toContain('Opcional');
     expect(toggle.getAttribute('aria-pressed')).toBe('false');
-    expect(root.textContent).toContain('3 campos · 2 obligatorios · 1 opcionales');
+    expect(root.textContent).toContain('3 campos: 2 obligatorios y 1 opcional');
     const search = root.querySelector<HTMLInputElement>('input[type=search]')!;
     search.value = 'CUSTOM'; search.dispatchEvent(new Event('input')); await f.whenStable();
     expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
@@ -127,7 +128,7 @@ describe('Editor global público', () => {
       source.click(); await f.whenStable();
       expect(source.getAttribute('aria-pressed')).toBe('true');
       expect(sources.filter(item => item.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
-      expect(source.textContent).toContain('1 campos');
+      expect(source.textContent).toContain('1 campo:');
       expect(root.querySelector('#fields-title')?.textContent).toContain(source.querySelector('strong')!.textContent);
       expect(root.querySelectorAll('.configuration-fields li')).toHaveLength(1);
     }
@@ -170,7 +171,7 @@ describe('Editor global público', () => {
     expect(button('Guardar configuración').disabled).toBe(true);
     await type('  freeValue  ');
     await click('Agregar campo');
-    expect(root.textContent).toContain('Cambios sin guardar');
+    expect(root.textContent).toContain('cambios sin guardar');
     expect(root.querySelector('.configuration-fields')?.textContent).toContain('  freeValue  ');
     await type('  freeValue  ');
     expect(root.textContent).toContain('Este campo ya está configurado');
@@ -185,7 +186,7 @@ describe('Editor global público', () => {
     expect(body).toEqual({ revision: 7, contexts: original.contexts.map(item => item.context === 'collection' ? { ...item, requiredFields: ['  freeValue  '] } : item) });
     expect(client.getQueryData(['validation-configuration'])).toEqual({ ...body, revision: 8 });
     expect(JSON.stringify(original)).toBe(before);
-    expect(root.textContent).toContain('Sin cambios pendientes');
+    expect(root.textContent).toContain('sin cambios pendientes');
     expect(f.componentInstance.client).toBe(client);
   });
 
@@ -196,7 +197,7 @@ describe('Editor global público', () => {
     await click('Agregar campo');
     await click('Guardar configuración');
     await vi.waitFor(() => expect(root.querySelector('[role=alert]')?.textContent).toContain(message));
-    expect(root.textContent).toContain('Cambios sin guardar');
+    expect(root.textContent).toContain('cambios sin guardar');
     expect(root.textContent).not.toContain('Configuración guardada');
     expect(root.querySelector('.configuration-fields')?.textContent).toContain('  freeValue  ');
     expect(client.getQueryData(['validation-configuration'])).toEqual(original);
@@ -217,7 +218,7 @@ describe('Editor global público', () => {
     expect(api.validationConfiguration).toHaveBeenCalledTimes(2);
     expect(api.updateValidationConfiguration).toHaveBeenCalledTimes(1);
     expect(api.validationConfiguration.mock.calls[0][0]).toBeInstanceOf(AbortSignal);
-    expect(root.textContent).toContain('Sin cambios pendientes');
+    expect(root.textContent).toContain('sin cambios pendientes');
     await f.whenStable();
   });
 

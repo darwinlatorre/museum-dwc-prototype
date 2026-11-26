@@ -110,10 +110,10 @@ describe('cabeceras de Normalizar y ventana confirmada', () => {
     expect(p.header('alias').closest('th')?.getAttribute('aria-sort')).toBe('ascending');
     const firstRow = p.root.querySelector('tbody th')!;
     expect(firstRow.firstChild?.textContent?.trim()).toBe('2');
-    expect(Array.from(firstRow.querySelectorAll('small'), badge => badge.textContent)).toEqual(['Fila igual · row:1']);
+    expect(Array.from(firstRow.querySelectorAll('small'), badge => badge.textContent)).toEqual(['Fila igual, grupo row:1']);
     p.root.querySelector<HTMLButtonElement>('button[data-cell="2:0"]')!.click();
     await p.fixture.whenStable();
-    expect(p.root.querySelector('.normalization-original')?.textContent).toContain('fila 2 · columna 1');
+    expect(p.root.querySelector('.normalization-original')?.textContent).toContain('fila 2, columna 1');
     expect(p.root.querySelector('.normalization-original dd')?.textContent).toBe(' a ');
     p.state.destroy();
   });
@@ -133,7 +133,7 @@ describe('cabeceras de Normalizar y ventana confirmada', () => {
     expect(p.header('alias').closest('th')?.getAttribute('aria-sort')).toBe('descending');
     const firstRow = p.root.querySelector('tbody th')!;
     expect(firstRow.firstChild?.textContent?.trim()).toBe('3');
-    expect(Array.from(firstRow.querySelectorAll('small'), badge => badge.textContent)).toEqual(['Fila igual · row:2']);
+    expect(Array.from(firstRow.querySelectorAll('small'), badge => badge.textContent)).toEqual(['Fila igual, grupo row:2']);
     p.reply(a);
     expect(p.state.rows()[0].sourceRow).toBe(3);
     const generation = b.generation;

@@ -296,11 +296,32 @@ describe('Colecciones por controles públicos', () => {
     await TestBed.inject(Router).navigateByUrl('/other'); await settle();
     expect(pending.cancelled).toBe(true); expect(root().querySelector('textarea')).toBeNull(); http.expectNone(request => request.method !== 'GET');
   });
+  it('elige un emoji de animal dentro de la colección y lo refleja en la cabecera con la revisión nueva', async () => {
+    await open();
+    const trigger = root().querySelector<HTMLButtonElement>('.collection-emoji-trigger')!;
+    expect(trigger.getAttribute('aria-label')).toBe('Elegir emoji de la colección');
+    root().querySelector<HTMLButtonElement>('.collection-emoji-picker button[aria-label="Mariposa"]')!.click(); await settle();
+    const request = http.expectOne(`/api/collections/${id}/emoji`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ emoji: '🦋', expectedRevision: 7 });
+    request.flush({ ...info, revision: 8, emoji: '🦋' }); await settle(); flushPage(); await settle();
+    expect(root().querySelector('.collection-emoji-trigger')?.textContent?.trim()).toBe('🦋');
+    expect(root().textContent).toContain('Revisión 8');
+    expect(root().textContent).not.toContain('Cambios guardados.');
+  });
+  it('muestra el emoji elegido junto al nombre en el listado', async () => {
+    harness = await RouterTestingHarness.create('/collections');
+    http.expectOne('/api/collections?page=0&size=25').flush({ items: [{ ...info, emoji: '🐢' }], page: 0, size: 25, totalElements: 1 }); await settle();
+    expect(root().querySelector('.collection-index tbody .collection-emoji')?.textContent?.trim()).toBe('🐢');
+  });
   it('lista paginada, contexto, cuentas y enlace directo, sin leer registros', async () => {
     harness = await RouterTestingHarness.create('/collections');
     expect(root().textContent).toContain('Cargando colecciones');
     http.expectOne('/api/collections?page=0&size=25').flush({ items: [info], page: 0, size: 25, totalElements: 26 }); await settle();
-    expect(root().textContent).toContain('26 activos'); expect(root().textContent).toContain('1 en papelera');
+    const headings = [...root().querySelectorAll('.collection-index thead th')].map(cell => cell.textContent?.trim());
+    expect(headings).toEqual(['Nombre', 'Contexto', 'Activos', 'En papelera']);
+    const counts = [...root().querySelectorAll('.collection-index tbody tr:first-child td.numeric')].map(cell => cell.textContent?.trim());
+    expect(counts).toEqual(['26', '1']);
     expect(root().querySelector('a.collection-link')?.getAttribute('href')).toBe(`/collections/${id}`);
     await click('Siguiente'); http.expectOne('/api/collections?page=1&size=25').flush({ items: [], page: 1, size: 25, totalElements: 26 }); await settle();
     expect(root().textContent).toContain('Página 2');
@@ -336,7 +357,7 @@ describe('Colecciones por controles públicos', () => {
     await open(); await edit(); await input('textarea[data-value="0"]', '0009'); await click('Guardar cambios');
     http.expectOne(`/api/collections/${id}/records/${row.id}`).flush({ code, detail: 'Mensaje literal', issues: [{ field: 'occurrenceID', row: 19, severity: code === 'WARNINGS_UNCONFIRMED' ? 'WARNING' : 'ERROR', description: 'Incidencia', context: 'other', configurationRevision: 3 }] }, { status: code === 'DUPLICATE' ? 409 : 422, statusText: 'Rechazo' }); await settle();
     expect(root().querySelector<HTMLTextAreaElement>('textarea[data-value="0"]')?.value).toBe('0009');
-    expect(root().textContent).toContain('occurrenceID'); expect(root().textContent).toContain('Fila 19'); expect(root().textContent).toContain('Incidencia'); expect(root().textContent).toContain('Revisión 7');
+    expect(root().textContent).toContain('occurrenceID'); expect(root().textContent).toContain('fila 19'); expect(root().textContent).toContain('Incidencia'); expect(root().textContent).toContain('Revisión 7');
     if (code === 'WARNINGS_UNCONFIRMED') {
       expect(button('Guardar cambios').disabled).toBe(true);
       const consent = root().querySelector<HTMLInputElement>('[aria-label="Confirmar advertencias"]')!; consent.click(); await settle();

@@ -1,3 +1,5 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
 import { Component, computed, effect, inject, Injector, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CollectionsApi } from '../../../collections/data-access/collections-api';
@@ -10,10 +12,11 @@ import { assertImportLimits } from '../../engine/import-limits';
 
 @Component({
   selector: 'app-import-confirmation',
-  imports: [RouterLink],
+  imports: [RouterLink, I18nPluralPipe],
   templateUrl: './import-confirmation.html',
 })
 export class ImportConfirmation implements OnDestroy {
+  readonly plurals = PLURALS;
   active = input(false);
   ready = input.required<boolean>();
   analysisRevision = input.required<number>();
@@ -31,6 +34,8 @@ export class ImportConfirmation implements OnDestroy {
   cancelPreparation = output<void>();
   name = signal('');
   destination = signal('new');
+  /** Tipo de destino elegido; 'existing' exige seleccionar una colección (nunca crea una nueva). */
+  mode = signal<'new' | 'existing'>('new');
   transferConsent = signal(false);
   warningsConsent = signal(false);
   page = signal<Page<CollectionInfo> | undefined>(undefined);
@@ -48,7 +53,9 @@ export class ImportConfirmation implements OnDestroy {
   readonly existing = computed(() => this.page()?.items.find(item => item.id === this.destination()));
   readonly canConfirm = computed(() => this.ready() && !this.frozen() && !this.needsRefresh() && !this.errors() && !this.duplicateBlocked()
     && this.rowCount() > 0 && this.transferConsent() && (!this.warnings() || this.warningsConsent())
-    && (this.destination() === 'new' ? this.name().trim().length > 0 && this.name().length <= 200 : this.existing()?.context === this.context()));
+    && (this.mode() === 'new'
+      ? this.destination() === 'new' && this.name().trim().length > 0 && this.name().length <= 200
+      : this.destination() !== 'new' && this.existing()?.context === this.context()));
   private injector = inject(Injector);
   private request?: ImportRequest;
   private controller?: AbortController;
@@ -92,6 +99,15 @@ export class ImportConfirmation implements OnDestroy {
     } catch (error) {
       if (operation === this.listOperation) this.listError.set(error instanceof Error ? error.message : 'No se pudieron cargar las colecciones.');
     } finally { if (operation === this.listOperation) this.loading.set(false); }
+  }
+  chooseNew() {
+    if (this.frozen()) return;
+    this.mode.set('new'); this.destination.set('new');
+  }
+  chooseExisting() {
+    if (this.frozen()) return;
+    this.mode.set('existing'); this.destination.set('new');
+    if (!this.page() && !this.loading()) void this.loadCollections();
   }
   text(event: Event) { return (event.target as HTMLInputElement).value; }
   checked(event: Event) { return (event.target as HTMLInputElement).checked; }

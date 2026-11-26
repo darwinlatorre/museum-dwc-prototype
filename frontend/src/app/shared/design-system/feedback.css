@@ -1,0 +1,64 @@
+.count, .badge {
+  display: inline-block;
+  background: var(--museum-surface-sunken);
+  border: 1px solid var(--museum-line);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--museum-radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge:has(.badge-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--museum-space-1);
+}
+
+.badge-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 0.9rem;
+}
+
+.danger {
+  color: var(--museum-error-text);
+  background: var(--museum-error-surface);
+  border-color: var(--museum-error-line);
+}
+
+/* Mensajes: borde completo y superficie tintada, sin franja lateral. */
+.error, .notice {
+  margin: var(--museum-space-4) 0;
+  padding: var(--museum-space-4) var(--museum-space-5);
+  border: 1px solid;
+  border-radius: var(--museum-radius-lg);
+}
+
+.error {
+  border-color: var(--museum-error-line);
+  background: var(--museum-error-surface);
+  color: var(--museum-error-text);
+}
+
+.notice {
+  border-color: var(--museum-primary-200);
+  background: var(--museum-primary-50);
+  color: var(--pine);
+}
+
+:is(.error, .notice) > :is(h2, h3, h4, strong) {
+  color: inherit;
+}
+
+:is(.error, .notice) > :is(h2, h3, h4):first-child {
+  margin-top: 0;
+}
+
+:is(.error, .notice) p {
+  color: inherit;
+}
+
+:is(.error, .notice) > :last-child {
+  margin-bottom: 0;
+}

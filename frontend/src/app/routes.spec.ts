@@ -47,13 +47,29 @@ describe('Rutas públicas del museo', () => {
     expect(css).not.toMatch(/main\s*\{[^}]*max-width:\s*1500px/s);
     expect(css).toMatch(/\.sidebar\[hidden\]\s*\{[^}]*display:\s*none/s);
   });
-  it('redirige raíz y desconocidas a análisis con título y enlaces activos accesibles', async () => {
+  it('redirige la raíz a análisis con título y enlaces activos accesibles', async () => {
     const harness = await RouterTestingHarness.create('/');
     expect(TestBed.inject(Router).url).toBe('/analisis');
     expect(document.title).toContain('Análisis');
     expect(harness.routeNativeElement?.querySelector('a[aria-current=page]')?.getAttribute('href')).toBe('/analisis');
-    await harness.navigateByUrl('/desconocida');
-    expect(TestBed.inject(Router).url).toBe('/analisis');
+  });
+  it('muestra «Página no encontrada» dentro del layout sin cambiar la URL desconocida', async () => {
+    const harness = await RouterTestingHarness.create('/desconocida');
+    const root = harness.routeNativeElement!;
+    expect(TestBed.inject(Router).url).toBe('/desconocida');
+    expect(document.title).toContain('Página no encontrada');
+    expect(root.querySelector('nav[aria-label="Navegación principal"]')).not.toBeNull();
+    expect(root.querySelector('h2')?.textContent?.trim()).toBe('Página no encontrada');
+    expect(root.querySelector('.status-page-code')?.textContent?.trim()).toBe('404');
+    expect(root.querySelector<HTMLAnchorElement>('.status-page a.button-primary')?.getAttribute('href')).toBe('/analisis');
+  });
+  it('muestra la pantalla de error reutilizable con acción para reintentar', async () => {
+    const harness = await RouterTestingHarness.create('/error');
+    const root = harness.routeNativeElement!;
+    expect(document.title).toContain('Error');
+    expect(root.querySelector('h2')?.textContent?.trim()).toBe('No pudimos mostrar esta página');
+    expect([...root.querySelectorAll('.status-page button')].map(button => button.textContent?.trim())).toContain('Reintentar');
+    expect(root.querySelector<HTMLAnchorElement>('.status-page a')?.getAttribute('href')).toBe('/analisis');
   });
   it('abre catálogo directamente y conserva la instancia de análisis al cambiar de sección', async () => {
     const harness = await RouterTestingHarness.create('/catalogo');

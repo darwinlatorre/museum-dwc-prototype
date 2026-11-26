@@ -1,3 +1,4 @@
+import { FetchBackend, HttpBackend } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -12,6 +13,14 @@ import { configurationFixture } from './testing/validation-fixture';
 
 const status = (snapshotVersion: number) => ({ active: { snapshotVersion } });
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+describe('Transporte HTTP de la aplicación', () => {
+  afterEach(() => TestBed.resetTestingModule());
+  it('envía las solicitudes con fetch mediante HttpClient', () => {
+    TestBed.configureTestingModule({ providers: appConfig.providers });
+    expect(TestBed.inject(HttpBackend)).toBeInstanceOf(FetchBackend);
+  });
+});
 
 describe('Solicitudes con la configuración de producción', () => {
   let http: HttpTestingController;

@@ -1,3 +1,5 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
 import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, Injector, OnDestroy, signal } from '@angular/core';
 import type { Signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -12,6 +14,7 @@ import { label as contextLabel } from '../../../../core/i18n/localization';
 import { CollectionsApi } from '../../data-access/collections-api';
 import { CollectionNavigation } from '../../guards/unsaved-collection';
 import { CollectionApiError } from '../../models/collection';
+import { ANIMAL_EMOJIS } from '../../models/collection-emoji';
 import type { CollectionInfo, CollectionRecord, Page, TrashFilter } from '../../models/collection';
 import type { CollectionsMetadata } from '../../models/collections-metadata';
 import type { Issue } from '../../../importer/models/analysis-result';
@@ -21,11 +24,12 @@ type Editor = { kind: 'add' | 'edit'; record?: CollectionRecord; headers: string
 type Confirmation = { kind: 'trash' | 'restore'; record: CollectionRecord };
 
 @Component({
-  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker, TableHeader, ResizableTable, ResizableColumn],
+  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker, TableHeader, ResizableTable, ResizableColumn, I18nPluralPipe],
   templateUrl: './collections-page.html',
   host: { '(window:beforeunload)': 'beforeUnload($event)' },
 })
 export class CollectionsPage implements OnDestroy {
+  readonly plurals = PLURALS;
   private readonly api = inject(CollectionsApi);
   private readonly client = inject(QueryClient);
   private readonly route = inject(ActivatedRoute);
@@ -303,7 +307,16 @@ export class CollectionsPage implements OnDestroy {
       ? this.api.trash(this.id()!, action.record.id, this.collection()!.revision, this.session.signal)
       : this.api.restore(this.id()!, action.record.id, this.consent(), this.session.signal));
   }
-  private async mutate(send: () => Promise<CollectionInfo>) {
+  readonly animals = ANIMAL_EMOJIS;
+  /** Cambia el emoji con la misma ruta de mutación (revisión, resultado incierto y recarga). */
+  async chooseEmoji(emoji: string | null, event: Event) {
+    (event.currentTarget as HTMLElement).closest<HTMLElement>('[popover]')?.hidePopover?.();
+    const collection = this.collection();
+    if (!collection || (collection.emoji ?? null) === emoji || this.busy() || this.uncertain() || this.editor() || !this.discard()) return;
+    // El emoji cambia a la vista en la cabecera: no hace falta el aviso «Cambios guardados.».
+    await this.mutate(() => this.api.emoji(collection.id, emoji, collection.revision, this.session.signal), '');
+  }
+  private async mutate(send: () => Promise<CollectionInfo>, success = 'Cambios guardados.') {
     // Invalidate older reads before accepting the authoritative mutation response.
     const session = this.session;
     this.cancelReads(); this.busy.set(true); this.message.set('');
@@ -312,7 +325,7 @@ export class CollectionsPage implements OnDestroy {
       if (this.destroyed || session !== this.session || session.signal.aborted) return;
       this.collection.set(result); this.client.setQueryData(['collections', result.id], result);
       void this.client.invalidateQueries({ queryKey: ['collections'], refetchType: 'none' });
-      this.clearEditor(); this.confirmation.set(undefined); this.message.set('Cambios guardados.');
+      this.clearEditor(); this.confirmation.set(undefined); this.message.set(success);
       await this.loadPage();
       afterNextRender(() => this.returnFocus(), { injector: this.injector });
     } catch (error) {

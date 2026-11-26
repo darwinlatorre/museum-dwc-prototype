@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Subscription } from 'rxjs';
-import { BASE_URL } from '../../../core/api/api';
+import { catchError, throwError } from 'rxjs';
+import { abortable, BASE_URL } from '../../../core/api/api';
 import { CollectionApiError } from '../models/collection';
 import type { AddRecord, CollectionInfo, CollectionProblem, CollectionRecord, EditRecord, ImportReceipt, ImportRequest, Page, RestoreRecord, TrashFilter } from '../models/collection';
 
@@ -25,26 +25,20 @@ export class CollectionsApi {
   edit = (id: string, recordId: string, body: EditRecord, signal?: AbortSignal) => this.request<CollectionInfo>(this.recordPath(id, recordId), 'PUT', body, signal);
   trash = (id: string, recordId: string, expectedRevision: number, signal?: AbortSignal) => this.request<CollectionInfo>(`${this.recordPath(id, recordId)}/trash`, 'POST', { expectedRevision }, signal);
   restore = (id: string, recordId: string, body: RestoreRecord, signal?: AbortSignal) => this.request<CollectionInfo>(`${this.recordPath(id, recordId)}/restore`, 'POST', body, signal);
+  emoji = (id: string, emoji: string | null, expectedRevision: number, signal?: AbortSignal) =>
+    this.request<CollectionInfo>(`collections/${encodeURIComponent(id)}/emoji`, 'PUT', { emoji, expectedRevision }, signal);
   private recordPath(id: string, recordId: string) { return `collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`; }
   private request<T>(path: string, method: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-    return new Promise((resolve, reject) => {
-      if (signal?.aborted) { reject(new DOMException('Solicitud cancelada', 'AbortError')); return; }
-      const subscription = new Subscription();
-      const cleanup = () => signal?.removeEventListener('abort', abort);
-      const abort = () => { subscription.unsubscribe(); cleanup(); reject(new DOMException('Solicitud cancelada', 'AbortError')); };
-      signal?.addEventListener('abort', abort, { once: true });
-      subscription.add(this.http.request<T>(method, `${this.base}/${path}`, { body: body ?? null }).subscribe({
-        next: value => { cleanup(); resolve(value); },
-        error: (error: unknown) => {
-          cleanup();
-          const response = error instanceof HttpErrorResponse ? error : undefined;
-          const raw: unknown = response?.error;
-          const problem: Partial<CollectionProblem> = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as CollectionProblem : {};
-          const authorityRejected = response?.status === 503 && problem.code === 'AUTHORITY_UNAVAILABLE';
-          reject(new CollectionApiError({ ...problem, status: response?.status ?? 0 },
-            !response || response.status === 0 || (response.status >= 500 && !authorityRejected)));
-        },
-      }));
-    });
+    return abortable(this.http.request<T>(method, `${this.base}/${path}`, { body: body ?? null })
+      .pipe(catchError((error: unknown) => throwError(() => collectionError(error)))), signal);
   }
+}
+
+function collectionError(error: unknown): CollectionApiError {
+  const response = error instanceof HttpErrorResponse ? error : undefined;
+  const raw: unknown = response?.error;
+  const problem: Partial<CollectionProblem> = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as CollectionProblem : {};
+  const authorityRejected = response?.status === 503 && problem.code === 'AUTHORITY_UNAVAILABLE';
+  return new CollectionApiError({ ...problem, status: response?.status ?? 0 },
+    !response || response.status === 0 || (response.status >= 500 && !authorityRejected));
 }

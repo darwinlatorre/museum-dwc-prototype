@@ -4,6 +4,8 @@ import type { Issue } from '../../importer/models/analysis-result';
 export interface Page<T> { items: T[]; page: number; size: number; totalElements: number }
 export interface CollectionInfo {
   id: string; name: string; context: Context; revision: number; activeCount: number; trashCount: number;
+  /** Emoji de animal elegido dentro de la colección; null o ausente si no tiene. */
+  emoji?: string | null;
 }
 export interface SourceRecord { sourceRow: number; originalValues: string[]; values: string[] }
 export interface CollectionRecord extends SourceRecord {

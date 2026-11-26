@@ -18,8 +18,8 @@ export const clampColumnWidth = (width: number) => Math.min(MAX_COLUMN_WIDTH, Ma
       [attr.aria-label]="'Ancho de ' + label()" aria-orientation="horizontal"
       [attr.aria-valuemin]="minimum" [attr.aria-valuemax]="maximum"
       [attr.aria-valuenow]="width()" [attr.aria-valuetext]="width() + ' píxeles'"
-      [attr.aria-expanded]="opened()" title="Ajustar ancho: arrastrar, usar flechas o abrir opciones"
-      (pointerdown)="start($event)" (click)="toggle()" (dblclick)="restore()" (keydown)="key($event)">↔</button>
+      [attr.aria-expanded]="opened()" title="Ajustar ancho: arrastrar, usar flechas, doble clic para ajustar al contenido o abrir opciones"
+      (pointerdown)="start($event)" (click)="toggle()" (dblclick)="fit()" (keydown)="key($event)"></button>
     <div #panel class="museum-column-width" [attr.popover]="nativePopover ? 'auto' : null"
       [hidden]="!opened()" (keydown.escape)="close()" (toggle)="popoverToggle($event)">
       <label>Ancho de {{ label() }} (píxeles)
@@ -39,6 +39,8 @@ export class ColumnWidthControl {
   readonly width = input.required<number>();
   readonly resized = output<number>();
   readonly resetRequested = output<void>();
+  /** Doble clic: ajustar la columna a su contenido (si no se puede medir, vuelve al ancho por defecto). */
+  readonly fitRequested = output<void>();
   readonly minimum = MIN_COLUMN_WIDTH;
   readonly maximum = MAX_COLUMN_WIDTH;
   readonly opened = signal(false);
@@ -87,6 +89,10 @@ export class ColumnWidthControl {
     this.close();
   }
   restore() { this.resetRequested.emit(); this.close(); }
+  fit() {
+    this.fitRequested.emit();
+    if (this.opened()) this.close();
+  }
   key(event: KeyboardEvent) {
     const width = event.key === 'ArrowLeft' ? this.width() - 16
       : event.key === 'ArrowRight' ? this.width() + 16

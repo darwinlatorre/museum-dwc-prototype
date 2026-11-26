@@ -1,23 +1,22 @@
 <a class="skip-link" href="#main">Ir al espacio de trabajo</a>
 <aside id="museum-navigation" class="sidebar" [hidden]="!navigationOpen()">
-  <a class="brand" routerLink="/analisis" aria-label="Inicio de colecciones del museo">
-    <span class="specimen-mark" aria-hidden="true">✳</span>
+  <a class="brand flex items-center gap-[0.8rem] max-compact:mb-4" routerLink="/analisis" aria-label="Inicio de colecciones del museo">
+    <span class="specimen-mark" aria-hidden="true"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14Z" /><path d="M5 19 13 11" /></svg></span>
     <span>Colecciones del museo<small>Universidad del Cauca</small></span>
   </a>
-  <p class="workspace-label">Gestión de datos</p>
-  <nav aria-label="Navegación principal">
+  <nav class="mt-10 grid gap-2 max-compact:mt-0 max-compact:flex max-compact:gap-[0.2rem] max-compact:overflow-auto" aria-label="Navegación principal">
     <a routerLink="/analisis" routerLinkActive="active" ariaCurrentWhenActive="page">
-      <span aria-hidden="true">▤</span> Análisis de colecciones</a>
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z" /><path d="M14 3v5h5" /><path d="m9 15 2 2 4-4" /></svg> Análisis de colecciones</a>
     <a routerLink="/fuentes-de-registros" routerLinkActive="active" ariaCurrentWhenActive="page">
-      <span aria-hidden="true">☷</span> Fuentes de registros biológicos</a>
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></svg> Fuentes de registros biológicos</a>
     <a routerLink="/collections" routerLinkActive="active" ariaCurrentWhenActive="page">
-      <span aria-hidden="true">▤</span> Colecciones</a>
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3Z" /><path d="M5 4h14" /><path d="M10 11h4" /></svg> Colecciones</a>
     <a routerLink="/catalogo" routerLinkActive="active" ariaCurrentWhenActive="page">
-      <span aria-hidden="true">▦</span> Catálogo Darwin Core</a>
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z" /><path d="M4 21V5" /><path d="M9 8h6" /></svg> Catálogo Darwin Core</a>
   </nav>
 </aside>
-<div class="workspace">
-  <header class="topbar">
+<div class="workspace flex min-h-0 min-w-0 flex-1 flex-col">
+  <header class="topbar flex shrink-0 items-center justify-between gap-4 px-10 py-3 max-desktop:px-8 max-compact:p-4">
     <button #navigationToggle class="navigation-toggle" type="button" aria-controls="museum-navigation"
       [attr.aria-expanded]="navigationOpen()" [attr.aria-label]="navigationOpen() ? 'Ocultar navegación' : 'Mostrar navegación'"
       [title]="navigationOpen() ? 'Ocultar navegación' : 'Mostrar navegación'" (click)="toggleNavigation(navigationToggle)">
@@ -26,8 +25,7 @@
         <path [attr.d]="navigationOpen() ? 'm16 9-3 3 3 3' : 'm14 9 3 3-3 3'" />
       </svg>
     </button>
-    <div class="topbar-title"><span>Museo de Historia Natural</span><h1>Calidad de los datos de colecciones</h1></div>
-    <span class="environment">Espacio de investigación</span>
+    <div class="topbar-title min-w-0 flex-1"><h1>Calidad de los datos de colecciones</h1></div>
   </header>
   <main id="main" tabindex="-1" [class.normalization-wide]="analysisActive() && normalizationVisible()">
     @if (catalogSnapshot.isPending() || configuration.isPending()) {
@@ -52,7 +50,7 @@
       }
     }
   </main>
-  <footer>Universidad del Cauca · Museo de Historia Natural
+  <footer class="flex shrink-0 justify-between gap-4 px-6 pb-6 max-compact:p-4">Museo de Historia Natural, Universidad del Cauca
     <span>Utilice este espacio solo con personas de confianza.</span>
   </footer>
 </div>

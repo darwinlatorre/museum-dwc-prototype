@@ -1,7 +1,6 @@
 <section class="normalization-sheet" aria-labelledby="normalization-title">
   <header class="normalization-heading">
     <h3 id="normalization-title">Normalización</h3>
-    <p>Revise la copia antes de aplicar. Los originales se conservan.</p>
   </header>
   <div class="normalization-tools" role="group" aria-label="Presentación de la hoja">
     <div class="normalization-views" role="group" aria-label="Vista de registros">
@@ -42,23 +41,23 @@
     }
     @if (state().paging()) { <p>Cargando ventana… La hoja visible corresponde a la ventana anterior.</p> }
     @if (state().metadata(); as metadata) {
-      <p class="normalization-range">{{ viewName() }} · {{ range() }} · {{ metadata.totalRows }} registros en total</p>
+      <p class="normalization-range">{{ viewName() }}: {{ range() }} ({{ metadata.totalRows }} registros en total)</p>
     }
   </div>
   @if (state().metadata(); as metadata) {
     @if (state().status() === 'ready') {
       <details class="normalization-duplicates workbench-help" aria-label="Avisos de duplicados">
-        <summary>Duplicados · {{ metadata.duplicates.equalRows.groups.length }} grupos de filas · {{ metadata.duplicates.occurrenceIds.groups.length }} grupos de ID</summary>
+        <summary>Duplicados: {{ metadata.duplicates.equalRows.groups.length }} grupos de filas y {{ metadata.duplicates.occurrenceIds.groups.length }} grupos de ID</summary>
         @if (!metadata.duplicates.enabled) { <p>Comprobación de duplicados desactivada.</p> }
         @else {
-          <p>Filas completas iguales: {{ metadata.duplicates.equalRows.groups.length }} grupos · {{ metadata.duplicates.equalRows.affectedRows }} registros.</p>
-          <p>occurrenceID repetido: {{ metadata.duplicates.occurrenceIds.groups.length }} grupos · {{ metadata.duplicates.occurrenceIds.affectedRows }} registros.</p>
+          <p>Filas completas iguales: {{ metadata.duplicates.equalRows.groups.length }} grupos que afectan a {{ metadata.duplicates.equalRows.affectedRows }} registros.</p>
+          <p>occurrenceID repetido: {{ metadata.duplicates.occurrenceIds.groups.length }} grupos que afectan a {{ metadata.duplicates.occurrenceIds.affectedRows }} registros.</p>
           <p>Los criterios pueden coincidir en un registro; no se suman como registros únicos. Solo avisos: no se elimina ni fusiona nada.</p>
           @if (metadata.duplicates.occurrenceIdColumnIndex === null) { <p>Sin occurrenceID mapeado; se comprobaron las filas completas.</p> }
           @if (duplicateGroups().length) {
             <details><summary>Consultar grupos y filas físicas</summary>
               @for (group of duplicateGroups().slice(groupPage() * 10, groupPage() * 10 + 10); track group.groupId) {
-                <details><summary>{{ group.criterion }} · {{ group.groupId }} · {{ group.sourceRows.length }} filas</summary>
+                <details><summary>{{ group.criterion }}, grupo {{ group.groupId }} ({{ group.sourceRows.length }} filas)</summary>
                   @for (i of chunks(group.sourceRows.length); track i) {
                     <details><summary>Filas {{ i + 1 }}–{{ i + 100 < group.sourceRows.length ? i + 100 : group.sourceRows.length }}</summary><p class="literal">{{ group.sourceRows.slice(i, i + 100).join(', ') }}</p></details>
                   }
@@ -72,19 +71,19 @@
       </details>
     }
     @if (state().ready() && state().window().rowFilter === 'changed' && state().viewTotal() === 0) {
-      <div class="normalization-empty" role="status"><p>Sin cambios. Pulse «Aplicar normalización y validar» para completar la revisión y poder finalizar.</p><button type="button" (click)="showAll()">Mostrar todos</button></div>
+      <div class="normalization-empty" role="status"><p>Sin cambios en esta vista.</p><button type="button" (click)="showAll()">Mostrar todos</button></div>
     }
     @if (state().visibleColumns().length === 0) { <p>Todas las columnas están ocultas. Los {{ metadata.totalRows }} registros siguen presentes. Desactive «Ocultar columnas sin datos» para restaurarlas.</p> }
     @if (state().visibleColumns().length > 50) {
       <nav class="normalization-column-nav" aria-label="Ventana de columnas">
         <button [disabled]="!state().ready() || !state().canMoveColumns(-1)" (click)="state().moveColumns(-1)">Columnas anteriores</button>
-        <span>{{ columnRange() }} · Hasta 50 por ventana</span>
+        <span>{{ columnRange() }}, hasta 50 por ventana</span>
         <button [disabled]="!state().ready() || !state().canMoveColumns(1)" (click)="state().moveColumns(1)">Columnas siguientes</button>
       </nav>
     }
-    <p id="normalization-grid-help" class="sr-only">Flechas: recorrer celdas · Tab: salir · Activar: ver original · Escape: cerrar · ∅ vacío.</p>
+    <p id="normalization-grid-help" class="sr-only">Flechas: recorrer celdas; Tab: salir; Activar: ver original; Escape: cerrar; ∅ indica vacío.</p>
     <div class="normalization-scroll" tabindex="0" role="region" [attr.aria-label]="viewName()" [attr.aria-busy]="!state().ready()">
-      <table class="normalization-grid museum-data-table" aria-describedby="normalization-grid-help" museumResizableTable [resizeContext]="state()">
+      <table class="normalization-grid museum-data-table" aria-describedby="normalization-grid-help" museumResizableTable [resizeContext]="state()" [resizeAutoFit]="true">
         <thead><tr><th museumResizableColumn="physical-row" resizeLabel="Fila de origen" [initialColumnWidth]="128" museumSortHeader scope="col" label="Fila de origen" [direction]="state().sortDirection(null)" [disabled]="state().status() !== 'ready'" (sortRequested)="state().sort(null)"></th>
           @for (column of state().columns(); track column.columnIndex) {
             <th [museumResizableColumn]="'field:' + column.columnIndex" [resizeLabel]="column.effectiveField" [initialColumnWidth]="192" [growColumn]="true" museumSortHeader scope="col" [label]="column.effectiveField + (column.sourceHeader !== column.effectiveField ? ' · ' + column.sourceHeader : '') + ' · Columna ' + (column.columnIndex + 1)" [direction]="state().sortDirection(column.columnIndex)"
@@ -97,11 +96,11 @@
         <tbody>
           @for (row of state().rows(); track row.sourceRow) {
             <tr><th scope="row">{{ row.sourceRow }}
-              @if (row.equalRowGroup) { <small>Fila igual · {{ row.equalRowGroup }}</small> }
-              @if (row.occurrenceIdGroup) { <small>ID repetido · {{ row.occurrenceIdGroup }}</small> }
+              @if (row.equalRowGroup) { <small>Fila igual, grupo {{ row.equalRowGroup }}</small> }
+              @if (row.occurrenceIdGroup) { <small>ID repetido, grupo {{ row.occurrenceIdGroup }}</small> }
             </th>
               @for (cell of row.cells; track cell.columnIndex) {
-                <td [class.normalization-changed]="cell.kinds.length > 0"><button type="button" [attr.data-cell]="key(row.sourceRow, cell.columnIndex)"
+                <td [class.normalization-changed]="cell.kinds.length > 0"><button type="button" data-fit-text [attr.data-cell]="key(row.sourceRow, cell.columnIndex)"
                   [attr.tabindex]="tabIndex(row.sourceRow, cell.columnIndex)" [attr.aria-expanded]="cell.kinds.length ? detail()?.cell === cell : null"
                   [attr.aria-controls]="cell.kinds.length ? panelId : null"
                   (focus)="focusKey.set(key(row.sourceRow, cell.columnIndex)); open(cell, row.sourceRow, $event)"
@@ -133,7 +132,7 @@
   }
   @if (detail(); as selected) {
     <section #originalRegion class="normalization-original" [id]="panelId" role="region" [attr.aria-labelledby]="panelId + '-title'">
-      <div class="section-heading"><h4 [id]="panelId + '-title'">Original y copia · fila {{ selected.row }} · columna {{ selected.cell.columnIndex + 1 }}</h4><button (click)="close(true)">Cerrar original</button></div>
+      <div class="section-heading"><h4 [id]="panelId + '-title'">Original y copia de la fila {{ selected.row }}, columna {{ selected.cell.columnIndex + 1 }}</h4><button (click)="close(true)">Cerrar original</button></div>
       <dl><dt>Original exacto</dt><dd class="literal">{{ selected.cell.before }}</dd><dt>Copia exacta</dt><dd class="literal">{{ selected.cell.after }}</dd></dl>
       <p>Espacios visibles: <span class="literal">{{ visible(selected.cell.before) }}</span> → <span class="literal">{{ visible(selected.cell.after) }}</span></p>
     </section>

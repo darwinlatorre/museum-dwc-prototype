@@ -1,3 +1,5 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
 import { Component, computed, effect, inject, input, linkedSignal, output, signal, untracked } from '@angular/core';
 import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
@@ -8,11 +10,12 @@ import { CONTEXTS, type Context, type ValidationConfiguration } from '../../mode
 
 @Component({
   selector: 'app-validation-configuration',
-  imports: [DwcPicker],
+  imports: [DwcPicker, I18nPluralPipe],
   templateUrl: './validation-configuration.html',
   host: { '(window:beforeunload)': 'beforeUnload($event)' },
 })
 export class ValidationConfigurationEditor {
+  readonly plurals = PLURALS;
   readonly configuration = input.required<ValidationConfiguration>();
   readonly terms = input.required<Term[]>();
   readonly client = inject(QueryClient);

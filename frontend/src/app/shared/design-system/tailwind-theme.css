@@ -1,0 +1,38 @@
+/*
+ * Tailwind consume los tokens del museo; no define una segunda paleta.
+ * Se reinician los espacios de nombres por defecto para que solo existan utilidades del sistema.
+ * Colores PrimeNG (primary-*, surface-*, text-muted-color...) llegan desde tailwindcss-primeui.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-ink: var(--museum-text);
+  --color-muted: var(--museum-text-muted);
+  --color-heading: var(--museum-heading);
+  --color-page: var(--museum-page);
+  --color-sunken: var(--museum-surface-sunken);
+  --color-line: var(--museum-line);
+  --color-line-strong: var(--museum-line-strong);
+  --color-pine: var(--pine);
+
+  --font-*: initial;
+  --font-sans: var(--museum-font-family);
+
+  /* Escala 0.25rem idéntica a --museum-space-N: gap-4 equivale a --museum-space-4. */
+  --spacing: var(--museum-space-1);
+
+  --radius-*: initial;
+  --radius-sm: var(--museum-radius-sm);
+  --radius-md: var(--museum-radius-md);
+  --radius-lg: var(--museum-radius-lg);
+  --radius-panel: var(--museum-radius-panel);
+
+  /*
+   * Mismos cortes que los @media existentes (max-width: 700/800/1050px, inclusivos):
+   * max-tablet:flex-col aplica hasta 800px, igual que el CSS que reemplaza.
+   */
+  --breakpoint-*: initial;
+  --breakpoint-compact: 701px;
+  --breakpoint-tablet: 801px;
+  --breakpoint-desktop: 1051px;
+}

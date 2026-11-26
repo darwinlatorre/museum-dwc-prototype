@@ -1,5 +1,5 @@
 @if (rows().length) {
-  <p class="mapping-summary">{{ populatedCount() }} campos con datos · {{ headers().length - populatedCount() }} campos sin datos</p>
+  <p class="mapping-summary">{{ populatedCount() }} campos con datos y {{ headers().length - populatedCount() }} sin datos</p>
 }
 <p-table #table museumResizableTable [resizeContext]="headers()" class="mapping-table museum-data-table" [value]="columns()" [first]="first()" (onPage)="first.set($event.first)" [paginator]="true" [rows]="12" [rowsPerPageOptions]="[12, 25, 50, 100]" [showCurrentPageReport]="true" currentPageReportTemplate="{first}–{last} de {totalRecords} columnas">
   <ng-template #header>

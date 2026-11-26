@@ -9,7 +9,7 @@ import { CatalogMetadata } from '../../features/catalog/services/catalog-metadat
 import { RecordSourcesMetadata } from '../../features/record-sources/services/record-sources-metadata';
 import { configurationFixture } from '../../testing/validation-fixture';
 
-@Component({ template: '', styleUrl: '../../../styles.scss' })
+@Component({ template: '', styleUrl: '../../../styles.css' })
 class MappingStyleContract {}
 
 describe('Collection workspace', () => {
