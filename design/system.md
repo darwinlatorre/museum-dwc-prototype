@@ -1,10 +1,10 @@
 # Sistema de diseño del museo
 
-Sincronización S12 para `odd/tasks/collections-management.md`, T1. Sistema existente, no propuesta inicial. Fuentes productivas leídas, nunca modificadas. La referencia se vuelve a contrastar con `_tokens.scss`; no se introduce una paleta nueva.
+Sincronización S12 para `odd/tasks/collections-management.md`, T1. Sistema existente, no propuesta inicial. Fuentes productivas leídas, nunca modificadas. La referencia se vuelve a contrastar con `tokens.css`; no se introduce una paleta nueva.
 
 ## Tokens de origen
 
-Fuente de **cada entrada** de esta tabla: `frontend/src/app/shared/design-system/_tokens.scss`. Prefijo `--museum-`; los alias conservan su referencia.
+Fuente de **cada entrada** de esta tabla: `frontend/src/app/shared/design-system/tokens.css`. Prefijo `--museum-`; los alias conservan su referencia.
 
 | Grupo | Nombres | Valores en orden |
 |---|---|---|
@@ -24,20 +24,20 @@ Fuente de **cada entrada** de esta tabla: `frontend/src/app/shared/design-system
 
 No son tokens nuevos. Cada línea identifica su fuente bajo `frontend/src/app/shared/design-system/`.
 
-- `_base.scss`: raíz 14px; h2 1.75rem/-0.04em; h3 1.35rem; h4 1.05rem; párrafos 1.6 y máximo 80ch; `.literal` usa `pre-wrap`. Foco de botones/enlaces 2px primary-700, offset 3px. Movimiento reducido desactiva animación, transición y scroll suave.
-- `_forms.scss`: botón .55rem .8rem/1.3; label .92rem/600; inputs .6rem .7rem, mínimo 39px; checkbox 18px. Selects altura 3.15rem, radio md, sin sombra. Conservar selects nativos.
-- `_layout.scss`: toolbar #edf2ef; search máximo 440px; form-grid dos columnas, una a 800px.
-- `_feedback.scss`: badge #edf0eb/#d7ded5; published #e6f3ec/#bfdccd con texto primary-600; danger #913727/#fff0eb con error-line; notice #e9f3ed con primary-500/700.
-- `_primeng.scss`: option-focus #edf4ef; option-selected #e2eee6, texto primary-700; overlay máximo calc(100vw - 2rem), opciones envueltas con altura de control.
+- `base.css`: raíz 14px; h2 1.75rem/-0.04em; h3 1.35rem; h4 1.05rem; párrafos 1.6 y máximo 80ch; `.literal` usa `pre-wrap`. Foco de botones/enlaces 2px primary-700, offset 3px. Movimiento reducido desactiva animación, transición y scroll suave.
+- `forms.css`: botón .55rem .8rem/1.3; label .92rem/600; inputs .6rem .7rem, mínimo 39px; checkbox 18px. Selects altura 3.15rem, radio md, sin sombra. Conservar selects nativos.
+- `layout.css`: toolbar #edf2ef; search máximo 440px; form-grid dos columnas, una a 800px.
+- `feedback.css`: badge #edf0eb/#d7ded5; published #e6f3ec/#bfdccd con texto primary-600; danger #913727/#fff0eb con error-line; notice #e9f3ed con primary-500/700.
+- `primeng.css`: option-focus #edf4ef; option-selected #e2eee6, texto primary-700; overlay máximo calc(100vw - 2rem), opciones envueltas con altura de control.
 
 Son **10 colores locales adicionales**, no una segunda paleta. No existe escala de sombras.
 
 ## Componentes y propiedad
 
-- `frontend/DESIGN_SYSTEM.md`: entrada única `frontend/src/styles.scss`, estilos de funcionalidades globales para overlays, corte móvil 800px; reutilizar primitivas y picker DwC.
+- `frontend/DESIGN_SYSTEM.md`: entrada única `frontend/src/styles.css`, estilos de funcionalidades globales para overlays, corte móvil 800px; reutilizar primitivas y picker DwC.
 - `frontend/src/app/shared/design-system/museum.preset.ts`: MuseumPreset/Aura referencia los 11 primarios CSS; no copia hexadecimales.
-- `frontend/src/app/shared/design-system/_tables.scss`: cabecera table-heading, texto muted, borde line, radio lg, celdas alineadas arriba.
-- `_base.scss`, `_forms.scss`, `_layout.scss`, `_feedback.scss` y `_primeng.scss`: propiedad de tipografía/foco, controles, composición, mensajes y overlays respectivamente.
+- `frontend/src/app/shared/design-system/tables.css`: cabecera table-heading, texto muted, borde line, radio lg, celdas alineadas arriba.
+- `base.css`, `forms.css`, `layout.css`, `feedback.css` y `primeng.css`: propiedad de tipografía/foco, controles, composición, mensajes y overlays respectivamente.
 
 ## Aplicación a Colecciones
 

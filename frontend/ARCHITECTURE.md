@@ -9,7 +9,7 @@ fuentes de registros biológicos, análisis local e importación confirmada, y c
 | Ubicación | Responsabilidad |
 | --- | --- |
 | `features/catalog/pages/catalog` | `Catalog`, su HTML y sus pruebas; el contrato `Term` pertenece a `features/catalog/models/catalog-term.ts`. |
-| `features/record-sources` | Administrador de fuentes, HTML/SCSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
+| `features/record-sources` | Administrador de fuentes, HTML/CSS/pruebas y contratos `ValidationConfiguration`, `ContextRequirements`, `Context` en `models/validation-configuration.ts`. |
 | `features/importer/pages/import-workbench` | Orquestación del análisis y HTML; conserva `map`, invalidación, cancelación y guardas de generación/navegación. |
 | `features/importer/components` | `column-mapping`, `record-context`, `normalization-preview` e `import-confirmation`: mapeo, preview y resumen/consentimiento/recibo de importación. |
 | `features/importer/engine` | Parser CSV/XLSX, normalizador, validador, exportación y `analysis.worker`; pruebas del motor colocadas aquí. |
@@ -18,7 +18,7 @@ fuentes de registros biológicos, análisis local e importación confirmada, y c
 | `features/record-sources/services` | `RecordSourcesMetadata`: lectura y escritura de configuración con revisión. |
 | `features/collections` | `pages/collections-page`: listado, hoja paginada y editor; `models`: contratos propios; `data-access/collections-api`: transporte biológico con el HttpClient existente y `BASE_URL`, sin pasar por `Api` de metadatos; `guards/unsaved-collection`: salida y reconciliación. |
 | `layouts/museum-layout` | Shell persistente, consultas globales y contrato reactivo de metadatos para el outlet. |
-| `core/api` | `Api.request`: transporte genérico HttpClient con puente Promise/AbortSignal y errores vigentes; base pública desde environment.baseUrl mediante BASE_URL; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. |
+| `core/api` | `abortable`: único puente HttpClient→Promise/AbortSignal para TanStack Query, compartido por los servicios de cada feature; `Api.request` lo usa con los errores de metadatos. Base pública desde environment.baseUrl mediante BASE_URL; sin endpoints ni DTO de negocio. No recibe archivos ni registros biológicos. HttpClient usa `provideHttpClient(withFetch())`. |
 | `core/i18n` | Etiquetas y presentación localizada; conserva citas oficiales y texto arbitrario del usuario. |
 | `shared/ui/dwc-picker` | Selector reutilizable de una entrada; conserva valor libre, limpieza y deshabilitación con Signal Forms. |
 | `shared/ui/table-header` | Cabecera presentacional controlada, sin acceso a datos ni paginación. |
@@ -84,28 +84,31 @@ El motor no importa transporte ni vistas: parsing, análisis y preview son local
   El editor guarda cinco contextos con revisión, sin enviar datos del archivo. Query actualiza
   el snapshot global y el importador invalida su generación cuando cambia. Los errores
   conservan las entradas locales; el shell protege la salida con cambios sin guardar.
-- Cada funcionalidad posee su hoja SCSS. `src/styles.scss` las carga después de
-  las primitivas compartidas, de forma global para conservar overlays y encapsulación.
+- Cada funcionalidad posee su hoja CSS nativa (sin SCSS). `src/styles.css` las carga después de
+  las primitivas compartidas, en la capa `components`, de forma global para conservar overlays y encapsulación.
+  La distribución y el espaciado de contenedores propios viven en utilidades Tailwind v4 dentro de las plantillas.
   `app.config.ts` consume `MuseumPreset`; la paleta solo se define en los tokens CSS.
   El contrato visual y su escala están documentados en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
-- Las pruebas de estilos trasladadas a `testing` apuntan a `../../styles.scss`.
+- Las pruebas de estilos trasladadas a `testing` apuntan a `../../styles.css`.
   La suite y el build deben ejecutarse sobre el árbol integrado con sus estilos definitivos.
 
 ## Co-localización y nombres
 
 Cada componente productivo tiene una carpeta con su nombre en kebab-case y sus
-archivos TS/HTML/SCSS/spec cuando corresponden. Las páginas de las cuatro
+archivos TS/HTML/CSS/spec cuando corresponden. Las páginas de las cuatro
 funcionalidades viven en `pages/<nombre>/`; los elementos subordinados del
 importador viven en `components/<nombre>/`. No crear carpetas vacías por tipo ni
 separar `interfaces` de `models` sin una responsabilidad distinta. Se conserva
 la convención Angular moderna sin sufijo `.component` usada por el proyecto.
 `app.ts` es la entrada mínima; la composición vive en
-`layouts/museum-layout`, junto a su HTML/SCSS/spec. Las pruebas de rutas reales
+`layouts/museum-layout`, junto a su HTML/CSS/spec. Las pruebas de rutas reales
 viven en `routes.spec.ts` y las de consultas en `testing/query-usage.spec.ts`.
 Los estilos de catálogo, fuentes y colecciones se co-localizan con su página, pero siguen
-importados globalmente desde `styles.scss` para preservar overlays PrimeNG.
+importados globalmente desde `styles.css` para preservar overlays PrimeNG.
 
-Por indicación explícita, los archivos raíz `app.ts`, `app.html`, `app.scss`,
+Por indicación explícita, los archivos raíz `app.ts`, `app.html` (sin hoja propia),
 `app.spec.ts` y `routes.spec.ts` viven directamente en `src/app/`, junto a
 `app.config.ts` y `app.routes.ts`, sin un segundo directorio `app/`. El resto
 de componentes y páginas conserva carpeta individual dentro de su propietario.
+
+Pantallas de estado: `shared/ui/status-page` (presentación reutilizable: código o símbolo, título, mensaje, enlace y reintento opcional) y `layouts/status-pages` (No encontrado en `**`, Error en `/error`), ambas dentro de `MuseumLayout` y sin carga diferida. `withNavigationErrorHandler` lleva los fallos de navegación a `/error` con `skipLocationChange`, de modo que Reintentar recarga la URL pedida.
