@@ -42,7 +42,8 @@ JSON UTF-8; los cuerpos descritos son objetos completos: **todas las propiedades
   "context": "collection",
   "revision": 1,
   "activeCount": 1,
-  "trashCount": 0
+  "trashCount": 0,
+  "emoji": null
 }
 ```
 
@@ -106,6 +107,7 @@ Este ejemplo ilustra la forma; no satisface necesariamente los campos obligatori
 | `PUT /api/collections/{id}/records/{recordId}` | Edición descrita abajo | 200 `CollectionInfo` |
 | `POST /api/collections/{id}/records/{recordId}/trash` | `{"expectedRevision": 1}` | 200 `CollectionInfo` |
 | `POST /api/collections/{id}/records/{recordId}/restore` | Restauración descrita abajo | 200 `CollectionInfo` |
+| `PUT /api/collections/{id}/emoji` | `{ "emoji": "🦋" \| null, "expectedRevision": n }`; solo emojis de `CollectionEmoji.ANIMALS`, null lo quita; mismo bloqueo global y de colección, avanza la revisión | 200 `CollectionInfo`; 400 `INVALID_REQUEST`; 409 `REVISION_CONFLICT` |
 
 Alta:
 
@@ -217,6 +219,8 @@ Un rechazo deja listas, detalle, cuentas, revisiones y recibos sin efectos. No s
 - Hashes SHA-256 de filas canónicas e IDs literales permiten índices únicos activos acotados, sin indexar textos arbitrarios largos. Un choque criptográfico hipotético se trata conservadoramente como conflicto, nunca como permiso para insertar un duplicado. La revisión es explícita de colección, no un contador de cliente ni un `@Version` de registro.
 
 ### Migración aditiva
+
+`V6__collection_emoji.sql` solo añade la columna opcional `biological_collection.emoji` (varchar(16) con CHECK de longitud); no reescribe datos ni migraciones anteriores.
 
 `V5__collections.sql` crea únicamente `biological_collection`, `collection_record`, `collection_import`, índices y la función/trigger propios `preserve_collection_record_origin()` / `immutable_collection_record_origin`. V1–V4 no cambian. No elimina, reescribe ni migra datos de catálogo/configuración/Flyway; no se ejecutó contra bases vivas.
 

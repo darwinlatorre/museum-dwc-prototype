@@ -18,6 +18,7 @@ import co.edu.unicauca.backend.collections.application.port.in.CollectionOperati
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Trash;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.dto.req.AddRequest;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.dto.req.EditRequest;
+import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.dto.req.EmojiRequest;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.dto.req.ImportRequest;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.dto.req.RestoreRequest;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.in.web.dto.req.RevisionRequest;
@@ -76,5 +77,9 @@ public class CollectionController {
     public InfoResponse restore(@PathVariable UUID id, @PathVariable UUID recordId,
             @Valid @RequestBody RestoreRequest request) {
         return mapper.info(operations.restore(id, recordId, mapper.command(request)));
+    }
+    @PutMapping("/{id}/emoji")
+    public InfoResponse emoji(@PathVariable UUID id, @Valid @RequestBody EmojiRequest request) {
+        return mapper.info(operations.emoji(id, request.emoji(), request.expectedRevision()));
     }
 }

@@ -9,7 +9,7 @@ import lombok.Builder;
 public final class CollectionModel {
     private CollectionModel() {}
 
-    @Builder public record Info(UUID id, String name, String context, long revision, long activeCount, long trashCount) {}
+    @Builder public record Info(UUID id, String name, String context, long revision, long activeCount, long trashCount, String emoji) {}
     @Builder public record Row(int sourceRow, List<String> originalValues, List<String> values) {
         public Row {
             originalValues = List.copyOf(originalValues);

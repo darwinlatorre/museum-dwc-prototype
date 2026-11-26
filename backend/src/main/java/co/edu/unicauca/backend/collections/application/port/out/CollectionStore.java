@@ -16,6 +16,7 @@ public interface CollectionStore {
     Info lock(UUID id);
     void create(Info collection);
     void advance(UUID id, long revision);
+    void emoji(UUID id, String emoji);
     Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order);
     Record record(UUID collectionId, UUID recordId);
     boolean collision(Record candidate, UUID excludedId);

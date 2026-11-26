@@ -18,4 +18,5 @@ public interface CollectionOperations {
     Info edit(UUID collectionId, UUID recordId, CollectionCommands.Edit command);
     Info trash(UUID collectionId, UUID recordId, long expectedRevision);
     Info restore(UUID collectionId, UUID recordId, CollectionCommands.Restore command);
+    Info emoji(UUID collectionId, String emoji, long expectedRevision);
 }

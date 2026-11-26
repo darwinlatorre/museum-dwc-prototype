@@ -51,6 +51,10 @@ public final class JpaCollectionStore implements CollectionStore {
         collections.findById(id).orElseThrow(() -> new CollectionFailure(Code.NOT_FOUND)).setRevision(revision);
         collections.flush();
     }
+    @Override public void emoji(UUID id, String emoji) {
+        collections.findById(id).orElseThrow(() -> new CollectionFailure(Code.NOT_FOUND)).setEmoji(emoji);
+        collections.flush();
+    }
     @Override public Page<Record> records(UUID id, Trash trash, int page, int size, RecordOrder order) {
         var result = records.sorted(id, trash == Trash.ALL, trash == Trash.TRASHED,
             order.field() == null ? "" : order.field(), order.field() == null,

@@ -21,6 +21,7 @@ import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Row;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Page;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Severity;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Trash;
+import co.edu.unicauca.backend.collections.domain.validation.CollectionEmoji;
 import co.edu.unicauca.backend.collections.domain.validation.CollectionIdentity;
 import co.edu.unicauca.backend.collections.domain.validation.CollectionValidator;
 
@@ -64,7 +65,7 @@ public final class CollectionService implements CollectionOperations {
         if (command.collectionId() == null) {
             if (command.expectedRevision() != null || !CollectionValidator.text(command.name(), 200) || CollectionValidator.blank(command.name()))
                 throw new CollectionFailure(Code.INVALID_REQUEST);
-            collection = new Info(UUID.randomUUID(), command.name(), command.context(), 0, 0, 0);
+            collection = new Info(UUID.randomUUID(), command.name(), command.context(), 0, 0, 0, null);
         } else {
             if (command.name() != null || command.expectedRevision() == null) throw new CollectionFailure(Code.INVALID_REQUEST);
             collection = current(command.collectionId(), command.expectedRevision());
@@ -134,6 +135,14 @@ public final class CollectionService implements CollectionOperations {
             row.importKey(), snapshot.configurationRevision(), snapshot.catalogVersion(), false);
         if (store.collision(restored, row.id())) throw new CollectionFailure(Code.DUPLICATE);
         store.update(restored);
+        return advance(collection);
+    }
+    @Override public Info emoji(UUID id, String emoji, long expectedRevision) {
+        var value = CollectionEmoji.require(emoji);
+        // Mismo orden de bloqueo que las demás mutaciones y la misma comprobación de revisión.
+        authority.lockCurrent();
+        var collection = current(id, expectedRevision);
+        store.emoji(id, value);
         return advance(collection);
     }
     private Info advance(Info collection) {

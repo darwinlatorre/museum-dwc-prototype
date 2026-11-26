@@ -19,6 +19,7 @@ public class BiologicalCollectionEntity extends AssignedIdEntity {
     private String name;
     private String context;
     private long revision;
+    private String emoji;
 
     public BiologicalCollectionEntity(UUID id) { this.id = id; }
 }

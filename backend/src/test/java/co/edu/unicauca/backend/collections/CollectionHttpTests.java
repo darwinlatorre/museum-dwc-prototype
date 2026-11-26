@@ -334,6 +334,36 @@ class CollectionHttpTests {
         submit(newCollection, 201);
     }
 
+    @Test void animalEmojiIsOptionalRevisionedRestrictedAndVisibleInListAndDetail() throws Exception {
+        String id = submit(command(List.of("occurrenceID"), List.of(List.of("emoji-base"))), 201).get("collectionId").asString();
+        String uri = API + "/" + id + "/emoji";
+        assertThat(read(API + "/" + id).get("emoji").isNull()).isTrue();
+        var updated = json.readTree(mvc.perform(put(uri).contentType("application/json")
+            .content(json.writeValueAsString(Map.of("emoji", "\uD83E\uDD8B", "expectedRevision", 1))))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(updated.get("emoji").asString()).isEqualTo("\uD83E\uDD8B");
+        assertThat(updated.get("revision").asLong()).isEqualTo(2);
+        assertThat(read(API + "/" + id).get("emoji").asString()).isEqualTo("\uD83E\uDD8B");
+        var listed = read(API + "?size=200").get("items").valueStream()
+            .filter(item -> item.get("id").asString().equals(id)).findFirst().orElseThrow();
+        assertThat(listed.get("emoji").asString()).isEqualTo("\uD83E\uDD8B");
+        String before = state(id);
+        mvc.perform(put(uri).contentType("application/json").content(json.writeValueAsString(Map.of("emoji", "\uD83D\uDC1D", "expectedRevision", 1))))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("REVISION_CONFLICT"));
+        mvc.perform(put(uri).contentType("application/json").content(json.writeValueAsString(Map.of("emoji", "hola", "expectedRevision", 2))))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        mvc.perform(put(uri).contentType("application/json").content("{\"emoji\":\"\uD83D\uDC1D\",\"expectedRevision\":2,\"extra\":1}"))
+            .andExpect(status().isBadRequest());
+        assertThat(state(id)).isEqualTo(before);
+        var cleared = new LinkedHashMap<String, Object>();
+        cleared.put("emoji", null);
+        cleared.put("expectedRevision", 2);
+        var removed = json.readTree(mvc.perform(put(uri).contentType("application/json").content(json.writeValueAsString(cleared)))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(removed.get("emoji").isNull()).isTrue();
+        assertThat(removed.get("revision").asLong()).isEqualTo(3);
+    }
+
     @Test void concurrentRecordEditsDoNotLoseUpdatesAndStaleTrashHasNoEffects() throws Exception {
         String id = submit(command(List.of("occurrenceID"), List.of(List.of("edit-base"))), 201).get("collectionId").asString();
         String rowId = read(API + "/" + id + "/records").get("items").get(0).get("id").asString();

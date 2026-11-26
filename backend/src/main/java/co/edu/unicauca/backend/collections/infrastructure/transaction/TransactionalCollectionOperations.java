@@ -34,4 +34,6 @@ public class TransactionalCollectionOperations implements CollectionOperations {
     public Info trash(UUID id, UUID recordId, long revision) { return delegate.trash(id, recordId, revision); }
     @Override @Transactional
     public Info restore(UUID id, UUID recordId, CollectionCommands.Restore command) { return delegate.restore(id, recordId, command); }
+    @Override @Transactional
+    public Info emoji(UUID id, String emoji, long expectedRevision) { return delegate.emoji(id, emoji, expectedRevision); }
 }
