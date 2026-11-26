@@ -2,6 +2,7 @@ package co.edu.unicauca.backend.collections.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import co.edu.unicauca.backend.collections.domain.model.RecordOrder;
@@ -12,11 +13,13 @@ import co.edu.unicauca.backend.collections.application.port.out.CollectionStore;
 import co.edu.unicauca.backend.collections.application.port.out.ValidationAuthority;
 import co.edu.unicauca.backend.collections.application.port.out.ValidationAuthority.Snapshot;
 import co.edu.unicauca.backend.collections.domain.model.CollectionFailure;
+import co.edu.unicauca.backend.collections.domain.model.CollectionFailure.Code;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Info;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Record;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Receipt;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Row;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Page;
+import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Severity;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Trash;
 import co.edu.unicauca.backend.collections.domain.validation.CollectionIdentity;
 import co.edu.unicauca.backend.collections.domain.validation.CollectionValidator;
@@ -34,16 +37,16 @@ public final class CollectionService implements CollectionOperations {
     }
     @Override public Record record(UUID id, UUID recordId) { return store.record(id, recordId); }
     private static void paging(int page, int size) {
-        if (page < 0 || size < 1 || size > 200 || (long) page * size > Integer.MAX_VALUE) throw new CollectionFailure("INVALID_PAGING");
+        if (page < 0 || size < 1 || size > 200 || (long) page * size > Integer.MAX_VALUE) throw new CollectionFailure(Code.INVALID_PAGING);
     }
     private static void snapshots(Snapshot snapshot, long configurationRevision, long catalogVersion) {
-        if (configurationRevision < 0 || catalogVersion < 0) throw new CollectionFailure("INVALID_REQUEST");
-        if (snapshot.configurationRevision() != configurationRevision) throw new CollectionFailure("CONFIGURATION_CHANGED");
-        if (snapshot.catalogVersion() != catalogVersion) throw new CollectionFailure("CATALOG_CHANGED");
+        if (configurationRevision < 0 || catalogVersion < 0) throw new CollectionFailure(Code.INVALID_REQUEST);
+        if (snapshot.configurationRevision() != configurationRevision) throw new CollectionFailure(Code.CONFIGURATION_CHANGED);
+        if (snapshot.catalogVersion() != catalogVersion) throw new CollectionFailure(Code.CATALOG_CHANGED);
     }
     private Info current(UUID id, long expectedRevision) {
         Info info = store.lock(id);
-        if (expectedRevision < 0 || info.revision() != expectedRevision) throw new CollectionFailure("REVISION_CONFLICT");
+        if (expectedRevision < 0 || info.revision() != expectedRevision) throw new CollectionFailure(Code.REVISION_CONFLICT);
         return info;
     }
     @Override public Receipt importRows(CollectionCommands.Import command) {
@@ -51,21 +54,21 @@ public final class CollectionService implements CollectionOperations {
         String identity = identity(command);
         var previous = store.receipt(command.idempotencyKey());
         if (previous.isPresent()) {
-            if (!previous.get().identity().equals(identity)) throw new CollectionFailure("IDEMPOTENCY_CONFLICT");
+            if (!previous.get().identity().equals(identity)) throw new CollectionFailure(Code.IDEMPOTENCY_CONFLICT);
             return previous.get(); // Replay of committed work is not a new validation or write.
         }
         snapshots(snapshot, command.configurationRevision(), command.catalogVersion());
         if (command.idempotencyKey() == null || command.context() == null || !snapshot.requiredFields().containsKey(command.context()))
-            throw new CollectionFailure("INVALID_REQUEST");
+            throw new CollectionFailure(Code.INVALID_REQUEST);
         Info collection;
         if (command.collectionId() == null) {
             if (command.expectedRevision() != null || !CollectionValidator.text(command.name(), 200) || CollectionValidator.blank(command.name()))
-                throw new CollectionFailure("INVALID_REQUEST");
+                throw new CollectionFailure(Code.INVALID_REQUEST);
             collection = new Info(UUID.randomUUID(), command.name(), command.context(), 0, 0, 0);
         } else {
-            if (command.name() != null || command.expectedRevision() == null) throw new CollectionFailure("INVALID_REQUEST");
+            if (command.name() != null || command.expectedRevision() == null) throw new CollectionFailure(Code.INVALID_REQUEST);
             collection = current(command.collectionId(), command.expectedRevision());
-            if (!collection.context().equals(command.context())) throw new CollectionFailure("CONTEXT_CONFLICT");
+            if (!collection.context().equals(command.context())) throw new CollectionFailure(Code.CONTEXT_CONFLICT);
         }
         validate(command.headers(), command.mapping(), command.rows(), collection, snapshot, command.warningsConfirmed());
         var rows = command.rows().stream().map(row -> candidate(collection.id(), command.headers(), command.mapping(), row,
@@ -76,7 +79,7 @@ public final class CollectionService implements CollectionOperations {
             String full = CollectionIdentity.row(row.headers(), row.mapping(), row.values());
             String occurrenceId = CollectionIdentity.occurrenceId(row.headers(), row.mapping(), row.values());
             if (!equalRows.add(full) || (occurrenceId != null && !ids.add(occurrenceId))
-                    || (command.collectionId() != null && store.collision(row, null))) throw new CollectionFailure("DUPLICATE");
+                    || (command.collectionId() != null && store.collision(row, null))) throw new CollectionFailure(Code.DUPLICATE);
         }
         if (command.collectionId() == null) store.create(collection);
         store.insertRows(rows);
@@ -91,7 +94,7 @@ public final class CollectionService implements CollectionOperations {
         var collection = current(id, command.expectedRevision());
         validate(command.headers(), command.mapping(), List.of(command.row()), collection, snapshot, command.warningsConfirmed());
         var row = candidate(id, command.headers(), command.mapping(), command.row(), null, snapshot);
-        if (store.collision(row, null)) throw new CollectionFailure("DUPLICATE");
+        if (store.collision(row, null)) throw new CollectionFailure(Code.DUPLICATE);
         store.save(row);
         return advance(collection);
     }
@@ -100,12 +103,12 @@ public final class CollectionService implements CollectionOperations {
         snapshots(snapshot, command.configurationRevision(), command.catalogVersion());
         var collection = current(id, command.expectedRevision());
         var old = store.record(id, recordId);
-        if (old.trashed()) throw new CollectionFailure("RECORD_TRASHED");
+        if (old.trashed()) throw new CollectionFailure(Code.RECORD_TRASHED);
         var row = new Row(old.sourceRow(), old.originalValues(), command.values());
         validate(old.headers(), old.mapping(), List.of(row), collection, snapshot, command.warningsConfirmed());
         var updated = new Record(old.id(), id, old.headers(), old.mapping(), old.sourceRow(), old.originalValues(),
             row.values(), old.importKey(), snapshot.configurationRevision(), snapshot.catalogVersion(), false);
-        if (store.collision(updated, old.id())) throw new CollectionFailure("DUPLICATE");
+        if (store.collision(updated, old.id())) throw new CollectionFailure(Code.DUPLICATE);
         store.save(updated);
         return advance(collection);
     }
@@ -114,7 +117,7 @@ public final class CollectionService implements CollectionOperations {
         authority.lockCurrent();
         var collection = current(id, expectedRevision);
         var row = store.record(id, recordId);
-        if (row.trashed()) throw new CollectionFailure("RECORD_TRASHED");
+        if (row.trashed()) throw new CollectionFailure(Code.RECORD_TRASHED);
         store.save(new Record(row.id(), id, row.headers(), row.mapping(), row.sourceRow(), row.originalValues(), row.values(),
             row.importKey(), row.configurationRevision(), row.catalogVersion(), true));
         return advance(collection);
@@ -124,12 +127,12 @@ public final class CollectionService implements CollectionOperations {
         snapshots(snapshot, command.configurationRevision(), command.catalogVersion());
         var collection = current(id, command.expectedRevision());
         var row = store.record(id, recordId);
-        if (!row.trashed()) throw new CollectionFailure("RECORD_ACTIVE");
+        if (!row.trashed()) throw new CollectionFailure(Code.RECORD_ACTIVE);
         validate(row.headers(), row.mapping(), List.of(new Row(row.sourceRow(), row.originalValues(), row.values())),
             collection, snapshot, command.warningsConfirmed());
         var restored = new Record(row.id(), id, row.headers(), row.mapping(), row.sourceRow(), row.originalValues(), row.values(),
             row.importKey(), snapshot.configurationRevision(), snapshot.catalogVersion(), false);
-        if (store.collision(restored, row.id())) throw new CollectionFailure("DUPLICATE");
+        if (store.collision(restored, row.id())) throw new CollectionFailure(Code.DUPLICATE);
         store.save(restored);
         return advance(collection);
     }
@@ -137,15 +140,15 @@ public final class CollectionService implements CollectionOperations {
         store.advance(collection.id(), Math.addExact(collection.revision(), 1));
         return store.detail(collection.id());
     }
-    private void validate(List<String> headers, java.util.Map<String, String> mapping, List<Row> rows,
+    private void validate(List<String> headers, Map<String, String> mapping, List<Row> rows,
             Info collection, Snapshot snapshot, boolean confirmed) {
         var required = snapshot.requiredFields().get(collection.context());
-        if (required == null) throw new CollectionFailure("INVALID_REQUEST");
+        if (required == null) throw new CollectionFailure(Code.INVALID_REQUEST);
         var issues = validator.validate(headers, mapping, rows, required, snapshot.termNames(), collection.context(), snapshot.configurationRevision());
-        if (issues.stream().anyMatch(issue -> issue.severity().equals("ERROR"))) throw new CollectionFailure("VALIDATION_FAILED", issues);
-        if (!confirmed && !issues.isEmpty()) throw new CollectionFailure("WARNINGS_UNCONFIRMED", issues);
+        if (issues.stream().anyMatch(issue -> issue.severity() == Severity.ERROR)) throw new CollectionFailure(Code.VALIDATION_FAILED, issues);
+        if (!confirmed && !issues.isEmpty()) throw new CollectionFailure(Code.WARNINGS_UNCONFIRMED, issues);
     }
-    private Record candidate(UUID id, List<String> headers, java.util.Map<String, String> mapping, Row row, UUID key, Snapshot snapshot) {
+    private Record candidate(UUID id, List<String> headers, Map<String, String> mapping, Row row, UUID key, Snapshot snapshot) {
         return new Record(UUID.randomUUID(), id, headers, mapping, row.sourceRow(), row.originalValues(), row.values(), key,
             snapshot.configurationRevision(), snapshot.catalogVersion(), false);
     }

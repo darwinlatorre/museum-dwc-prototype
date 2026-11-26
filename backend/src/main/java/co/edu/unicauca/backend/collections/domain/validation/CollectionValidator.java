@@ -8,8 +8,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import co.edu.unicauca.backend.collections.domain.model.CollectionFailure;
+import co.edu.unicauca.backend.collections.domain.model.CollectionFailure.Code;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Issue;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Row;
+import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Severity;
 
 /** Literal parity with importer/engine/validator.ts; intentionally does not normalize. */
 public final class CollectionValidator {
@@ -25,7 +27,7 @@ public final class CollectionValidator {
             List<String> required, List<String> terms, String context, long revision) {
         shape(headers, mapping, rows);
         var fields = headers.stream().map(header -> effectiveField(header, mapping)).toList();
-        if (new HashSet<>(fields).size() != fields.size()) throw new CollectionFailure("INVALID_MAPPING");
+        if (new HashSet<>(fields).size() != fields.size()) throw new CollectionFailure(Code.INVALID_MAPPING);
         var issues = new ArrayList<Issue>();
         for (int i = 0; i < fields.size(); i++) {
             if (!terms.contains(fields.get(i))) {
@@ -33,16 +35,16 @@ public final class CollectionValidator {
                 var proposed = terms.stream().filter(term -> key(term).equals(needle)
                     || (needle.length() > 3 && (key(term).contains(needle) || needle.contains(key(term)))))
                     .limit(3).toList();
-                add(issues, new Issue(headers.get(i), null, "WARNING", "system", revision,
+                add(issues, new Issue(headers.get(i), null, Severity.WARNING, "system", revision,
                     "Columna desconocida." + (proposed.isEmpty() ? " No se encontró una equivalencia Darwin Core."
                     : " Posible equivalencia: " + String.join(", ", proposed) + ".")));
             }
         }
         for (String field : required) {
             int index = fields.indexOf(field);
-            if (index < 0) add(issues, new Issue(field, null, "ERROR", context, revision, field + " es obligatorio en este contexto."));
+            if (index < 0) add(issues, new Issue(field, null, Severity.ERROR, context, revision, field + " es obligatorio en este contexto."));
             else for (Row row : rows) if (blank(row.values().get(index)))
-                add(issues, new Issue(field, row.sourceRow(), "ERROR", context, revision, field + " es obligatorio en este contexto."));
+                add(issues, new Issue(field, row.sourceRow(), Severity.ERROR, context, revision, field + " es obligatorio en este contexto."));
         }
         for (Row row : rows) baseline(fields, row, issues, revision);
         return List.copyOf(issues);
@@ -50,22 +52,22 @@ public final class CollectionValidator {
     public void shape(List<String> headers, Map<String, String> mapping, List<Row> rows) {
         if (headers == null || mapping == null || rows == null || headers.isEmpty() || headers.size() > 500
                 || rows.isEmpty() || rows.size() > 50000 || new HashSet<>(headers).size() != headers.size())
-            throw new CollectionFailure("INVALID_REQUEST");
+            throw new CollectionFailure(Code.INVALID_REQUEST);
         if (headers.stream().anyMatch(s -> !text(s, 2000)) || mapping.size() > 500
                 || mapping.entrySet().stream().anyMatch(e -> !headers.contains(e.getKey()) || !text(e.getValue(), 2000)))
-            throw new CollectionFailure("INVALID_REQUEST");
+            throw new CollectionFailure(Code.INVALID_REQUEST);
         long characters = headers.stream().mapToLong(String::length).sum();
         var sourceRows = new HashSet<Integer>();
         for (Row row : rows) {
             if (row == null || row.sourceRow() < 1 || !sourceRows.add(row.sourceRow())
                     || row.values().size() != headers.size() || row.originalValues().size() != headers.size())
-                throw new CollectionFailure("INVALID_REQUEST");
+                throw new CollectionFailure(Code.INVALID_REQUEST);
             for (var values : List.of(row.values(), row.originalValues())) for (String value : values) {
-                if (!text(value, 100000)) throw new CollectionFailure("INVALID_REQUEST");
+                if (!text(value, 100000)) throw new CollectionFailure(Code.INVALID_REQUEST);
                 characters += value.length();
             }
         }
-        if (characters > 20 * 1024 * 1024) throw new CollectionFailure("PAYLOAD_TOO_LARGE");
+        if (characters > 20 * 1024 * 1024) throw new CollectionFailure(Code.PAYLOAD_TOO_LARGE);
     }
     public static boolean text(String value, int limit) {
         if (value == null || value.length() > limit || value.indexOf('\0') >= 0) return false;
@@ -80,11 +82,11 @@ public final class CollectionValidator {
     }
     private static String key(String value) { return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", ""); }
     private static void add(List<Issue> issues, Issue issue) {
-        if (issues.size() >= 100000) throw new CollectionFailure("TOO_MANY_ISSUES");
+        if (issues.size() >= 100000) throw new CollectionFailure(Code.TOO_MANY_ISSUES);
         issues.add(issue);
     }
     private static void error(List<Issue> issues, String field, Row row, long revision, String message) {
-        add(issues, new Issue(field, row.sourceRow(), "ERROR", "system", revision, message));
+        add(issues, new Issue(field, row.sourceRow(), Severity.ERROR, "system", revision, message));
     }
     private static String get(List<String> fields, Row row, String field) {
         int index = fields.indexOf(field);

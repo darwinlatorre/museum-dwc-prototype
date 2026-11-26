@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import co.edu.unicauca.backend.collections.application.port.out.CollectionStore;
 import co.edu.unicauca.backend.collections.domain.model.CollectionFailure;
+import co.edu.unicauca.backend.collections.domain.model.CollectionFailure.Code;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Info;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Record;
 import co.edu.unicauca.backend.collections.domain.model.CollectionModel.Receipt;
@@ -43,10 +44,10 @@ public final class JpaCollectionStore implements CollectionStore {
         return new Page<>(result.stream().map(this::info).toList(), page, size, result.getTotalElements());
     }
     @Override public Info detail(UUID id) {
-        return info(collections.findById(id).orElseThrow(() -> new CollectionFailure("NOT_FOUND")));
+        return info(collections.findById(id).orElseThrow(() -> new CollectionFailure(Code.NOT_FOUND)));
     }
     @Override public Info lock(UUID id) {
-        return info(collections.lock(id).orElseThrow(() -> new CollectionFailure("NOT_FOUND")));
+        return info(collections.lock(id).orElseThrow(() -> new CollectionFailure(Code.NOT_FOUND)));
     }
     @Override public void create(Info source) {
         var entity = new BiologicalCollectionEntity(source.id());
@@ -54,7 +55,7 @@ public final class JpaCollectionStore implements CollectionStore {
         collections.saveAndFlush(entity);
     }
     @Override public void advance(UUID id, long revision) {
-        var entity = collections.findById(id).orElseThrow(() -> new CollectionFailure("NOT_FOUND"));
+        var entity = collections.findById(id).orElseThrow(() -> new CollectionFailure(Code.NOT_FOUND));
         entity.setRevision(revision);
         collections.saveAndFlush(entity);
     }
@@ -65,7 +66,7 @@ public final class JpaCollectionStore implements CollectionStore {
         return new Page<>(result.stream().map(row -> mapper.record(row, json)).toList(), page, size, result.getTotalElements());
     }
     @Override public Record record(UUID id, UUID recordId) {
-        return mapper.record(records.findByCollectionIdAndId(id, recordId).orElseThrow(() -> new CollectionFailure("NOT_FOUND")), json);
+        return mapper.record(records.findByCollectionIdAndId(id, recordId).orElseThrow(() -> new CollectionFailure(Code.NOT_FOUND)), json);
     }
     @Override public boolean collision(Record row, UUID excludedId) {
         String occurrence = CollectionIdentity.occurrenceId(row.headers(), row.mapping(), row.values());

@@ -274,7 +274,12 @@ class CollectionHttpTests {
                 valid.replace("\"expectedRevision\":1", "\"expectedRevision\":1.0"),
                 valid.replace("\"expectedRevision\":1", "\"expectedRevision\":\"1\""),
                 valid.replace("\"context\":\"other\"", "\"context\":\"OTHER\""),
-                valid.replace("\"headers\":", "\"file\":\"no\",\"headers\":"), "null", "{}")) {
+                valid.replace("\"headers\":", "\"file\":\"no\",\"headers\":"), "null", "{}",
+                // UUIDs are canonical text: blank must not become a new collection, padding is not trimmed.
+                valid.replace("\"collectionId\":\"" + id + "\"", "\"collectionId\":\"\""),
+                valid.replace("\"collectionId\":\"" + id + "\"", "\"collectionId\":\"   \""),
+                valid.replace("\"collectionId\":\"" + id + "\"", "\"collectionId\":\" " + id + " \""),
+                valid.replaceFirst("\"idempotencyKey\":\"([^\"]+)\"", "\"idempotencyKey\":\" $1 \""))) {
             mvc.perform(post(API + "/imports").contentType("application/json").content(body))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.detail").value("El contenido de la solicitud no es válido."));
             assertThat(state(id)).isEqualTo(before);
@@ -318,7 +323,7 @@ class CollectionHttpTests {
         String listBefore = read(API).toString();
         var request = append(id, 1, List.of("occurrenceID"), List.of(List.of("rollback-new")));
         var newCollection = command(List.of("occurrenceID"), List.of(List.of("rollback-create")));
-        Mockito.doThrow(new CollectionFailure("DUPLICATE")).when(importRepository).saveAndFlush(Mockito.any(CollectionImportEntity.class));
+        Mockito.doThrow(new CollectionFailure(CollectionFailure.Code.DUPLICATE)).when(importRepository).saveAndFlush(Mockito.any(CollectionImportEntity.class));
         try {
             submit(request, 409);
             submit(newCollection, 409);

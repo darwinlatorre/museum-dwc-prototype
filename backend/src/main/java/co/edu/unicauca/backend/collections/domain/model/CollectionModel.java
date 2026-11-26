@@ -26,7 +26,8 @@ public final class CollectionModel {
             values = List.copyOf(values);
         }
     }
-    public record Issue(String field, Integer row, String severity, String context,
+    public enum Severity { ERROR, WARNING }
+    public record Issue(String field, Integer row, Severity severity, String context,
             long configurationRevision, String description) {}
     public record Page<T>(List<T> items, int page, int size, long totalElements) {
         public Page { items = List.copyOf(items); }

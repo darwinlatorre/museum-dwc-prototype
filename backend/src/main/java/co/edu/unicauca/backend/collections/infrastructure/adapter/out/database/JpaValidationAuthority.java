@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
 import co.edu.unicauca.backend.collections.application.port.out.ValidationAuthority;
 import co.edu.unicauca.backend.collections.domain.model.CollectionFailure;
+import co.edu.unicauca.backend.collections.domain.model.CollectionFailure.Code;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.entity.CollectionConfigurationView;
 import co.edu.unicauca.backend.collections.infrastructure.adapter.out.database.entity.CollectionCatalogView;
 
@@ -21,7 +22,7 @@ public final class JpaValidationAuthority implements ValidationAuthority {
     @Override public Snapshot lockCurrent() {
         var configuration = entityManager.find(CollectionConfigurationView.class, (short) 1, LockModeType.PESSIMISTIC_WRITE);
         var catalog = entityManager.find(CollectionCatalogView.class, 1, LockModeType.PESSIMISTIC_READ);
-        if (configuration == null || catalog == null || catalog.getPayload() == null) throw new CollectionFailure("AUTHORITY_UNAVAILABLE");
+        if (configuration == null || catalog == null || catalog.getPayload() == null) throw new CollectionFailure(Code.AUTHORITY_UNAVAILABLE);
         var required = new LinkedHashMap<String, List<String>>();
         for (var context : json.readTree(configuration.getContexts())) {
             var fields = new ArrayList<String>();
