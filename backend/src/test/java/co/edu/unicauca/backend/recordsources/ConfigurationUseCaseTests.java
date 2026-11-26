@@ -1,5 +1,6 @@
 package co.edu.unicauca.backend.recordsources;
 
+import co.edu.unicauca.backend.recordsources.application.port.in.ConfigurationUpdate;
 import co.edu.unicauca.backend.recordsources.application.port.out.ConfigurationStore;
 import co.edu.unicauca.backend.recordsources.application.service.ConfigurationService;
 import co.edu.unicauca.backend.recordsources.domain.exception.ConfigurationConflictException;
@@ -10,6 +11,7 @@ import co.edu.unicauca.backend.recordsources.domain.model.ValidationConfiguratio
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
@@ -18,17 +20,17 @@ class ConfigurationUseCaseTests {
     final ConfigurationService service = new ConfigurationService(store);
     ValidationConfiguration value(long revision, List<String> fields) {
         return new ValidationConfiguration(revision, Arrays.stream(Context.values())
-            .map(context -> new ContextFields(context, fields)).toList());
+            .map(context -> new ContextFields(context, fields, List.of())).toList());
     }
     @Test void updateLocksBeforeRevisionValidationAndCopiesWithoutTrimming() {
         var fields = new ArrayList<>(List.of(" campo ", "campo"));
-        var result = service.update(value(0, fields));
+        var result = service.update(new ConfigurationUpdate(value(0, fields), Set.of()));
         fields.clear();
         assertThat(result.revision()).isEqualTo(1);
         assertThat(result.contexts().getFirst().requiredFields()).containsExactly(" campo ", "campo");
         assertThatThrownBy(() -> result.contexts().getFirst().requiredFields().clear()).isInstanceOf(UnsupportedOperationException.class);
         assertThat(store.events).containsExactly("lock", "replace");
-        assertThatThrownBy(() -> service.update(new ValidationConfiguration(0, null)))
+        assertThatThrownBy(() -> service.update(new ConfigurationUpdate(new ValidationConfiguration(0, null), Set.of())))
             .isInstanceOf(ConfigurationConflictException.class);
         assertThat(store.value).isEqualTo(result);
         assertThat(store.writes).isEqualTo(1);
@@ -37,7 +39,7 @@ class ConfigurationUseCaseTests {
         var original = store.value;
         for (List<String> fields : List.of(List.of(" "), List.of("\u2003"), List.of("x", "x"),
                 List.of("x".repeat(201)), Arrays.asList((String) null))) {
-            assertThatThrownBy(() -> service.update(value(0, fields))).isInstanceOf(ConfigurationValidationException.class);
+            assertThatThrownBy(() -> service.update(new ConfigurationUpdate(value(0, fields), Set.of()))).isInstanceOf(ConfigurationValidationException.class);
             assertThatThrownBy(() -> service.initialize(value(0, fields))).isInstanceOf(ConfigurationValidationException.class);
         }
         assertThatThrownBy(() -> service.initialize(value(1, List.of()))).isInstanceOf(ConfigurationValidationException.class);
@@ -46,7 +48,7 @@ class ConfigurationUseCaseTests {
     }
     @Test void bootstrapIsIdempotentAndEmptyListsAreExplicitConfiguration() {
         service.initialize(value(0, List.of("seed")));
-        var saved = service.update(value(0, List.of()));
+        var saved = service.update(new ConfigurationUpdate(value(0, List.of()), Set.of()));
         service.initialize(value(0, List.of("different seed")));
         assertThat(service.get()).isEqualTo(saved);
         assertThat(saved.contexts()).allSatisfy(entry -> assertThat(entry.requiredFields()).isEmpty());
@@ -54,7 +56,7 @@ class ConfigurationUseCaseTests {
     }
     static class FakeStore implements ConfigurationStore {
         ValidationConfiguration value = new ValidationConfiguration(0, Arrays.stream(Context.values())
-            .map(context -> new ContextFields(context, List.of("original"))).toList());
+            .map(context -> new ContextFields(context, List.of("original"), List.of())).toList());
         final List<String> events = new ArrayList<>();
         int writes;
         @Override public ValidationConfiguration get() { return value; }

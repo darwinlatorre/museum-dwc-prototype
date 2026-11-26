@@ -2,6 +2,4 @@ package co.edu.unicauca.backend.recordsources.infrastructure.adapter.in.web.dto.
 
 import java.util.List;
 
-public record ConfigurationResponse(long revision, List<ContextResponse> contexts) {
-    public record ContextResponse(String context, List<String> requiredFields, List<String> optionalFields) {}
-}
+public record ConfigurationResponse(long revision, List<ContextResponse> contexts) {}
