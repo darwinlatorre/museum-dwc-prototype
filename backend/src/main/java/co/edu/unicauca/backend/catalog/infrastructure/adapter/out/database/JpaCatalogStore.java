@@ -20,10 +20,9 @@ public class JpaCatalogStore implements CatalogStore {
     private final CatalogRepository repository;
     private final CatalogPersistenceMapper mapper;
     private final Clock clock;
-
     private final ObjectMapper json;
 
-    @Transactional
+    @Override @Transactional
     public void initialize() throws IOException {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         if (snapshot.getPayload() != null) return;
@@ -33,13 +32,13 @@ public class JpaCatalogStore implements CatalogStore {
         mapper.initialize(snapshot, payload, resource("provenance.json"), seed.size(), clock.instant(), json);
     }
 
-    @Transactional(readOnly = true)
+    @Override @Transactional(readOnly = true)
     public String payload() { return current().getPayload(); }
 
-    @Transactional(readOnly = true)
+    @Override @Transactional(readOnly = true)
     public CatalogStatus status() { return mapper.toDomain(current(), json); }
 
-    @Transactional
+    @Override @Transactional
     public long beginAttempt() {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         snapshot.setLastAttempt(clock.instant());
@@ -48,7 +47,7 @@ public class JpaCatalogStore implements CatalogStore {
         return generation;
     }
 
-    @Transactional
+    @Override @Transactional
     public void activate(long generation, CatalogCandidate candidate) {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         if (snapshot.getGeneration() != generation) return;
@@ -62,7 +61,7 @@ public class JpaCatalogStore implements CatalogStore {
         snapshot.setLastFailure(null);
     }
 
-    @Transactional
+    @Override @Transactional
     public void fail(long generation) {
         CatalogSnapshot snapshot = repository.lockSnapshot();
         if (snapshot.getGeneration() == generation) snapshot.setLastFailure(CatalogPolicy.SYNC_FAILURE);

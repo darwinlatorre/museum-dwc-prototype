@@ -15,7 +15,5 @@ public class TransactionalConfigurationOperations implements ConfigurationOperat
     @Override @Transactional
     public ValidationConfiguration update(ConfigurationUpdate command) { return delegate.update(command); }
     @Override @Transactional
-    public ValidationConfiguration update(ValidationConfiguration configuration) { return delegate.update(configuration); }
-    @Override @Transactional
     public void initialize(ValidationConfiguration seed) { delegate.initialize(seed); }
 }

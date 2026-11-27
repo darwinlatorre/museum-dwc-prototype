@@ -1,0 +1,84 @@
+.definition {
+  max-width: 550px;
+  min-width: 280px;
+  line-height: 1.55;
+}
+
+.catalog-sync-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 17rem;
+  height: var(--select-control-height);
+  min-height: var(--select-control-height);
+  white-space: nowrap;
+}
+
+.catalog-sync-button:disabled {
+  opacity: 1;
+  background: var(--museum-surface-sunken);
+  color: var(--pine);
+  border-color: var(--museum-button-border);
+  cursor: progress;
+}
+
+.sync-indicator {
+  display: inline-flex;
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+}
+
+.sync-indicator svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sync-indicator.is-spinning {
+  animation: catalog-spin 1.2s linear infinite;
+}
+
+@keyframes catalog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.catalog-sync-status[hidden] {
+  display: none;
+}
+
+.catalog-sync-status {
+  display: flex;
+  align-items: center;
+  min-height: 5rem;
+  padding: 0.85rem 1rem;
+  margin: -0.4rem 0 1rem;
+  border: 1px solid var(--museum-line);
+  border-radius: var(--museum-radius-lg);
+  background: var(--museum-page);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.catalog-sync-status.sync-success {
+  border-color: var(--museum-primary-200);
+  background: var(--museum-primary-50);
+  color: var(--pine);
+}
+
+.catalog-sync-status.sync-failure {
+  border-color: var(--museum-error-line);
+  color: var(--museum-error-text);
+  background: var(--museum-error-surface);
+}
+
+@media (max-width: 800px) {
+  app-catalog .section-heading {
+    flex-wrap: wrap;
+  }
+  .catalog-sync-status {
+    min-height: 8rem;
+  }
+}
+/* La regla global de movimiento reducido también cubre este indicador. */

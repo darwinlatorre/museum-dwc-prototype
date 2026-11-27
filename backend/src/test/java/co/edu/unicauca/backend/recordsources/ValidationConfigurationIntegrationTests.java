@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import jakarta.persistence.EntityManager;
 import co.edu.unicauca.backend.recordsources.infrastructure.adapter.in.bootstrap.ConfigurationBootstrap;
 import co.edu.unicauca.backend.recordsources.application.port.in.ConfigurationOperations;
+import co.edu.unicauca.backend.recordsources.application.port.in.ConfigurationUpdate;
 import co.edu.unicauca.backend.recordsources.domain.model.ValidationConfiguration;
 import co.edu.unicauca.backend.recordsources.domain.exception.ConfigurationValidationException;
 import co.edu.unicauca.backend.BackendApplication;
@@ -176,6 +177,22 @@ class ValidationConfigurationIntegrationTests {
             .andExpect(status().isOk()).andReturn().getResponse();
         assertThat(json.readTree(response.getContentAsString()).get("contexts"))
             .isEqualTo(json.readTree(fullBody(revision(), fields, List.of())).get("contexts"));
+    }
+
+    @Test void invalidShapeIsRejectedBeforeTheRevisionConflict() throws Exception {
+        String before = configuration();
+        long stale = revision() + 1;
+        var parsed = json.readTree(body(stale, List.of("county")));
+        var contexts = new ArrayList<JsonNode>();
+        parsed.get("contexts").forEach(contexts::add);
+        contexts.set(1, contexts.get(0));
+        for (String content : List.of(body(stale, List.of("county", "county")),
+                json.writeValueAsString(Map.of("revision", stale, "contexts", contexts)))) {
+            mvc.perform(put(API).contentType("application/json").content(content))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("El contenido de la configuración de validación no es válido."));
+            assertThat(configuration()).isEqualTo(before);
+        }
     }
 
     @Test void concurrentClientsHaveExactlyOneWinnerWithoutLostUpdate() throws Exception {
@@ -424,7 +441,7 @@ class ValidationConfigurationIntegrationTests {
         String before = configuration();
         var current = operations.get();
         assertThatThrownBy(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            operations.update(current);
+            operations.update(new ConfigurationUpdate(current, java.util.Set.of()));
             throw new IllegalStateException("fallo después del flush");
         })).isInstanceOf(IllegalStateException.class);
         assertThat(configuration()).isEqualTo(before);
@@ -432,7 +449,7 @@ class ValidationConfigurationIntegrationTests {
 
     @Test void invalidCoreUpdateAndSeedRollBackWithoutWrites() throws Exception {
         String before = configuration();
-        assertThatThrownBy(() -> operations.update(new ValidationConfiguration(revision(), List.of())))
+        assertThatThrownBy(() -> operations.update(new ConfigurationUpdate(new ValidationConfiguration(revision(), List.of()), java.util.Set.of())))
             .isInstanceOf(ConfigurationValidationException.class);
         assertThatThrownBy(() -> operations.initialize(new ValidationConfiguration(0, List.of())))
             .isInstanceOf(ConfigurationValidationException.class);

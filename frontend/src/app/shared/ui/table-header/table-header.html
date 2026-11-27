@@ -1,0 +1,8 @@
+<button type="button" [disabled]="disabled()" [attr.aria-label]="'Ordenar por ' + label()"
+  [title]="'Ordenar por ' + label()" (click)="sortRequested.emit()">
+  <span><ng-content>{{ label() }}</ng-content></span>
+  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path d="m8 9 4-4 4 4" [attr.opacity]="direction() === 'desc' ? 0.25 : 1" />
+    <path d="m8 15 4 4 4-4" [attr.opacity]="direction() === 'asc' ? 0.25 : 1" />
+  </svg>
+</button>

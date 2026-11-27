@@ -1,50 +1,45 @@
 <section class="validation-configuration" aria-labelledby="configuration-title">
   <header>
-    <p>Administración · Campos configurados</p>
     <h2 id="configuration-title">Fuentes de registros biológicos</h2>
     <p>Seleccione una fuente y defina sus campos obligatorios u opcionales para el diagnóstico.</p>
-    <div class="configuration-topline">
-      <span class="configuration-state">Revisión {{ draft()?.revision }} · {{ dirty() ? 'Cambios sin guardar' : 'Sin cambios pendientes' }}</span>
-      <span>5 tipos de fuente · Configuración global</span>
+    <div class="configuration-topline flex flex-wrap items-center justify-between gap-4">
+      <span class="configuration-state">Revisión {{ draft()?.revision }}: {{ dirty() ? 'cambios sin guardar' : 'sin cambios pendientes' }}</span>
     </div>
   </header>
   @if (dirty() && configuration().revision !== draft()?.revision) {
-    <p class="notice" role="status">Hay una revisión más reciente en el servidor. Sus cambios locales se conservan;
-      actualice antes de volver a guardar.</p>
+    <p class="notice" role="status">Hay una configuración más reciente. Sus cambios sin guardar se conservan.
+      Use Cargar configuración guardada antes de volver a guardar; sus cambios solo se reemplazarán si la carga se completa.</p>
   }
-  <div class="configuration-workspace">
-    <aside class="configuration-panel" aria-labelledby="sources-title">
+  <div class="configuration-workspace my-6 grid grid-cols-[250px_minmax(0,1fr)] items-start gap-6 max-tablet:grid-cols-1">
+    <aside class="configuration-panel configuration-sources-panel min-w-0 pe-6 max-tablet:pe-0 max-tablet:pb-6" aria-labelledby="sources-title">
       <h3 id="sources-title">Tipo de fuente</h3>
-      <p>No se crean ni eliminan tipos.</p>
-      <div class="configuration-sources" role="group" aria-label="Fuente">
+      <div class="configuration-sources grid gap-3 max-tablet:grid-cols-2" role="group" aria-label="Fuente">
         @for (source of sources(); track source.context) {
           <button class="configuration-source" type="button" [value]="source.context"
             [attr.aria-pressed]="context() === source.context" (click)="chooseContext($event)"
             [disabled]="mutation.isPending() || refreshing()" aria-controls="configuration-field-workspace">
             <strong>{{ label(source.context) }}</strong>
-            <span>{{ source.count }} campos · {{ source.required }} obligatorios · {{ source.optional }} opcionales{{ context() === source.context ? ' · Seleccionada' : '' }}</span>
+            <span>{{ source.count | i18nPlural: plurals.field }}: {{ source.required | i18nPlural: plurals.required }} y {{ source.optional | i18nPlural: plurals.optional }}</span>
           </button>
         }
       </div>
     </aside>
-    <section id="configuration-field-workspace" class="configuration-panel" aria-labelledby="fields-title">
-      <div class="configuration-topline">
-        <div><h3 id="fields-title">{{ label(context()) }}</h3><p>{{ fields().length }} campos · {{ required().length }} obligatorios · {{ optional().length }} opcionales</p></div>
-        <span class="configuration-state">Fuente seleccionada</span>
+    <section id="configuration-field-workspace" class="configuration-panel min-w-0" aria-labelledby="fields-title">
+      <div class="configuration-topline flex flex-wrap items-center justify-between gap-4">
+        <div><h3 id="fields-title">{{ label(context()) }}</h3><p>{{ fields().length | i18nPlural: plurals.field }}: {{ required().length | i18nPlural: plurals.required }} y {{ optional().length | i18nPlural: plurals.optional }}</p></div>
       </div>
-      <p>El botón de estado alterna entre Obligatorio y Opcional; el campo permanece guardado y visible. Quitar lo retira de esta fuente, no del catálogo.</p>
       <p class="field-label">Agregar campo obligatorio</p>
-      <div class="configuration-add">
-        <app-dwc-picker [terms]="terms()" label="Agregar campo obligatorio" [(value)]="field"
+      <div class="configuration-add flex items-end gap-3 max-tablet:flex-col max-tablet:items-stretch">
+        <app-dwc-picker class="min-w-0 flex-1" [terms]="terms()" label="Agregar campo obligatorio" [(value)]="field"
           [disabled]="mutation.isPending() || refreshing()" />
         <button type="button" (click)="add()" [disabled]="!!fieldError() || mutation.isPending() || refreshing()">Agregar campo</button>
       </div>
-      <p>Elija un término DwC o escriba un valor libre. Máximo 200 caracteres; 500 campos por fuente.</p>
+      <p>Campo Darwin Core (DwC) o nombre propio, hasta 200 caracteres.</p>
       @if (field() && fieldError()) { <p class="error" role="alert">{{ fieldError() }}</p> }
-      <div class="configuration-search">
+      <div class="configuration-search mt-6">
         <label for="configuration-search">Buscar entre los campos configurados</label>
-        <div class="configuration-search-controls">
-          <input id="configuration-search" type="search" placeholder="Nombre del campo" [value]="search()"
+        <div class="configuration-search-controls flex gap-2 max-tablet:flex-col max-tablet:items-stretch">
+          <input id="configuration-search" class="min-w-0 flex-1" type="search" placeholder="Nombre del campo" [value]="search()"
             (input)="search.set($any($event.target).value)" aria-controls="configuration-fields">
           <button type="button" (click)="search.set('')" [disabled]="!search()">Limpiar búsqueda</button>
         </div>
@@ -52,7 +47,7 @@
       </div>
       <ul id="configuration-fields" class="configuration-fields" [attr.aria-label]="'Campos configurados de ' + label(context())" tabindex="0">
         @for (field of visibleFields(); track field) {
-          <li><span class="literal">{{ field }}</span><div class="configuration-field-actions">
+          <li class="flex flex-wrap items-center justify-between gap-3 py-2"><span class="literal min-w-0 flex-[1_1_12ch]">{{ field }}</span><div class="configuration-field-actions flex flex-wrap gap-2">
             <button type="button" [attr.aria-pressed]="required().includes(field)"
               [attr.aria-label]="'Cambiar ' + field + (required().includes(field) ? ' a opcional' : ' a obligatorio')"
               [disabled]="mutation.isPending() || refreshing()" (click)="toggle(field)">
@@ -61,31 +56,31 @@
               [disabled]="mutation.isPending() || refreshing()" (click)="remove(field)">Quitar</button>
           </div></li>
         } @empty {
-          <li>{{ fields().length ? 'Ningún campo coincide con la búsqueda.' : 'No hay campos configurados para este contexto.' }}</li>
+          <li class="flex flex-wrap items-center justify-between gap-3 py-2">{{ fields().length ? 'Ningún campo coincide con la búsqueda.' : 'No hay campos configurados para esta fuente.' }}</li>
         }
       </ul>
     </section>
   </div>
   <section class="configuration-savebar" aria-labelledby="configuration-save-title">
     <h3 id="configuration-save-title">Guardar los cambios de las cinco fuentes</h3>
-    <p>No se guardan automáticamente. Solo se envían metadatos, nunca archivos ni registros biológicos.</p>
+    <p>Los cambios no se guardan automáticamente.</p>
     <div class="actions">
-      <button class="primary" type="button" (click)="save()" [disabled]="!dirty() || mutation.isPending() || refreshing()">
+      <button class="button-primary" type="button" (click)="save()" [disabled]="!dirty() || mutation.isPending() || refreshing()">
         {{ mutation.isPending() ? 'Guardando…' : 'Guardar configuración' }}</button>
       <button type="button" (click)="refresh()" [disabled]="mutation.isPending() || refreshing()">
-        {{ refreshing() ? 'Actualizando…' : dirty() ? 'Actualizar del servidor y descartar cambios locales' : 'Actualizar del servidor' }}</button>
+        {{ refreshing() ? 'Cargando…' : 'Cargar configuración guardada' }}</button>
     </div>
     @if (mutation.isError()) { <p class="error" role="alert">{{ mutation.error()?.message }}</p> }
     @if (refreshError()) { <p class="error" role="alert">{{ refreshError() }}</p> }
     <p role="status" aria-live="polite">{{ notice() }}</p>
   </section>
   <details class="workbench-help"><summary>Alcance de la configuración</summary>
-    <p>Se guarda la configuración completa de los cinco contextos con su revisión vigente.
-      Una revisión obsoleta se rechaza sin sobrescribir cambios ajenos. Actualizar descarta sus cambios
-      únicamente después de una lectura correcta del servidor.</p>
+    <p>Obligatorio u Opcional cambia si un campo se exige en la revisión de datos; el campo sigue en la lista. Quitar lo retira de esta fuente, no del catálogo. Cada fuente admite hasta 500 campos. Solo se guarda la elección de campos, no archivos ni registros.</p>
+    <p>Se guardan los campos elegidos de las cinco fuentes. Si alguien guardó otros cambios antes,
+      se rechaza el guardado para no borrar cambios de otra persona. Cargar configuración guardada reemplaza sus cambios solo cuando se haya podido obtener la configuración guardada. Si falla, sus cambios se conservan.</p>
     <p>Solo los campos obligatorios generan incidencias por datos ausentes; los opcionales permanecen configurados. La obligatoriedad configurada orienta el diagnóstico, no certifica una publicación SiB ni modifica
       el vocabulario TDWG. Las comprobaciones básicas de fechas y coordenadas siguen activas.</p>
-    <p>Al salir con cambios o una entrada sin agregar, se solicita confirmación. Guardar y actualizar
-      bloquean la edición hasta finalizar; un fallo conserva el borrador.</p>
+    <p>Al salir con cambios o una entrada sin agregar, se solicita confirmación. Mientras se guarda o se carga la configuración,
+      no se puede editar; un fallo conserva sus cambios.</p>
   </details>
 </section>

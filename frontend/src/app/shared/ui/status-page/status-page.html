@@ -1,0 +1,17 @@
+<section class="status-page flex items-start gap-8 max-compact:flex-col max-compact:gap-4" [attr.aria-labelledby]="headingId">
+  @if (code(); as value) {
+    <p class="status-page-code" aria-hidden="true">{{ value }}</p>
+  } @else {
+    <svg class="status-page-mark" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5.5" /><path d="M12 16.5h.01" /></svg>
+  }
+  <div class="min-w-0">
+    <h2 [id]="headingId" tabindex="-1">{{ heading() }}</h2>
+    <p class="status-page-message">{{ message() }}</p>
+    <div class="actions items-center">
+      @if (retryLabel(); as label) {
+        <button type="button" class="button-primary" (click)="retry.emit()">{{ label }}</button>
+      }
+      <a [routerLink]="link()" [class.button-primary]="!retryLabel()" [class.status-page-secondary]="!!retryLabel()">{{ linkLabel() }}</a>
+    </div>
+  </div>
+</section>

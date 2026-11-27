@@ -2,6 +2,8 @@ package co.edu.unicauca.backend.recordsources.infrastructure.adapter.out.databas
 
 import co.edu.unicauca.backend.recordsources.application.port.out.ConfigurationStore;
 import co.edu.unicauca.backend.recordsources.domain.model.ValidationConfiguration;
+import co.edu.unicauca.backend.recordsources.domain.validation.ConfigurationValidation;
+import co.edu.unicauca.backend.recordsources.infrastructure.adapter.out.database.entity.ConfigurationEntity;
 import co.edu.unicauca.backend.recordsources.infrastructure.adapter.out.database.mapper.ConfigurationPersistenceMapper;
 import co.edu.unicauca.backend.recordsources.infrastructure.adapter.out.database.repository.ConfigurationRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +17,14 @@ public class JpaConfigurationStore implements ConfigurationStore {
     private final ObjectMapper json;
 
     @Override public ValidationConfiguration get() {
-        return mapper.toDomain(repository.findById(GLOBAL_ID).orElseThrow(), json);
+        return read(repository.findById(GLOBAL_ID).orElseThrow());
     }
     @Override public ValidationConfiguration lock() {
-        return mapper.toDomain(repository.lockGlobal().orElseThrow(), json);
+        return read(repository.lockGlobal().orElseThrow());
+    }
+    // Durable metadata crosses the same domain invariants as requests and seeds.
+    private ValidationConfiguration read(ConfigurationEntity entity) {
+        return ConfigurationValidation.copy(mapper.toDomain(entity, json));
     }
     @Override public void replace(ValidationConfiguration configuration) {
         var managed = repository.findById(GLOBAL_ID).orElseThrow();

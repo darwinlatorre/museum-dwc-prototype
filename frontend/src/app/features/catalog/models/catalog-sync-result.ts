@@ -1,3 +1,7 @@
+import type { Term } from './catalog-term';
+
+export interface CatalogSnapshot { terms: Term[]; snapshotVersion: number }
+
 export interface CatalogSyncResult {
   outcome: 'SUCCESS' | 'FAILED' | 'SUPERSEDED';
   status: {

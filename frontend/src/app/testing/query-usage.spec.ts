@@ -20,7 +20,9 @@ async function setup() {
     updateValidationConfiguration: vi.fn().mockResolvedValue(saved), syncCatalog: vi.fn().mockResolvedValue({ outcome: 'SUCCESS' }),
   };
   TestBed.configureTestingModule({ providers: [provideRouter([]), provideTanStackQuery(client),
-    { provide: CatalogMetadata, useValue: api }, { provide: RecordSourcesMetadata, useValue: api }] });
+    { provide: CatalogMetadata, useValue: { ...api, snapshot: async (signal?: AbortSignal) => ({
+      terms: await api.catalog(signal), snapshotVersion: 1,
+    }) } }, { provide: RecordSourcesMetadata, useValue: api }] });
   for (const component of [MuseumLayout, Catalog, ValidationConfigurationEditor]) {
     TestBed.overrideComponent(component, { set: { template: '', imports: [] } });
   }

@@ -1,4 +1,6 @@
 import { Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { ResizableColumn, ResizableTable } from '../../../../shared/ui/table-resize/table-resize';
 import type { Normalization, NormalizationKind } from '../../models/normalization';
 import type { PreviewCell } from '../../models/normalization-preview';
 import type { NormalizationPreviewState } from '../../pages/import-workbench/normalization-preview-state';
@@ -7,6 +9,7 @@ let nextPanel = 0;
 @Component({
   selector: 'app-normalization-preview',
   templateUrl: './normalization-preview.html',
+  imports: [TableHeader, ResizableTable, ResizableColumn],
   host: { '(document:keydown.escape)': 'escape($event)' },
 })
 export class NormalizationPreview {
@@ -44,6 +47,12 @@ export class NormalizationPreview {
     const total = state.viewTotal();
     const { offset, limit } = state.window();
     return `${total ? offset + 1 : 0}–${Math.min(offset + limit, total)} de ${total}`;
+  });
+  readonly columnRange = computed(() => {
+    const state = this.state();
+    const columns = state.columns();
+    const first = columns[0], last = columns.at(-1);
+    return `Columnas fuente ${first ? first.columnIndex + 1 : 0}–${last ? last.columnIndex + 1 : 0} de ${state.metadata()?.columns.length ?? 0}`;
   });
   private readonly allButton = viewChild<ElementRef<HTMLButtonElement>>('allButton');
   private readonly originalRegion = viewChild<ElementRef<HTMLElement>>('originalRegion');

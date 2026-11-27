@@ -1,0 +1,175 @@
+/* Capa components: las utilidades Tailwind de la plantilla ganan sin !important. */
+@layer components {
+  :host {
+    display: flex;
+    min-height: 100dvh;
+  }
+
+  .sidebar[hidden] {
+    display: none;
+  }
+
+  .sidebar {
+    width: 248px;
+    flex-shrink: 0;
+    background: var(--museum-nav-surface);
+    color: var(--museum-nav-text);
+    display: flex;
+    flex-direction: column;
+    padding: var(--museum-space-8) 1.1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .brand {
+    text-decoration: none;
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .brand small {
+    color: var(--museum-nav-muted);
+    font-size: 0.75rem;
+  }
+
+  .specimen-mark {
+    display: inline-flex;
+    width: 2.4rem;
+    height: 2.4rem;
+    flex: 0 0 2.4rem;
+    color: var(--museum-nav-accent);
+  }
+
+  .specimen-mark svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  nav a {
+    background: transparent;
+    color: var(--museum-nav-link);
+    border: 0;
+    text-align: left;
+    text-decoration: none;
+    border-radius: var(--museum-control-radius);
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.9rem 0.6rem;
+    font-size: 0.92rem;
+  }
+
+  nav a:hover,
+  nav a.active {
+    background: var(--museum-nav-active);
+    color: white;
+  }
+
+  nav a.active {
+    font-weight: 600;
+  }
+
+  nav a svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: 0 0 1.15rem;
+    color: var(--museum-nav-muted);
+  }
+
+  nav a:hover svg, nav a.active svg {
+    color: var(--museum-nav-accent);
+  }
+
+  .topbar {
+    background: var(--museum-surface);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .navigation-toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    padding: var(--museum-space-2);
+    color: var(--museum-text);
+  }
+
+  .navigation-toggle svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .topbar h1 {
+    font-size: 1.05rem;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  main {
+    max-width: none;
+    /* Aire de escritorio: el contenido no queda pegado al borde del panel. */
+    padding: var(--museum-space-8);
+    background: var(--museum-surface);
+    margin: var(--museum-space-3);
+    border: 1px solid var(--museum-workspace-border);
+    border-radius: var(--museum-radius-panel);
+    flex: 1;
+    min-height: 0;
+    width: calc(100% - 1.5rem);
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  footer {
+    color: var(--museum-footer-text);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 1050px) {
+    main {
+      padding: var(--museum-space-6);
+    }
+    .sidebar {
+      width: 210px;
+      padding: var(--museum-space-6) 0.7rem;
+    }
+    footer span {
+      display: none;
+    }
+  }
+  @media (max-width: 700px) {
+    :host {
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+    .sidebar {
+      flex-shrink: 0;
+      position: static;
+      width: 100%;
+      height: auto;
+      padding: var(--museum-space-4);
+    }
+    .specimen-mark {
+      width: 2rem;
+      height: 2rem;
+      flex-basis: 2rem;
+    }
+    nav a {
+      font-size: 0.8rem;
+      white-space: nowrap;
+      padding: 0.7rem var(--museum-space-2);
+    }
+    nav a svg {
+      display: none;
+    }
+    main {
+      padding: var(--museum-space-4);
+      margin: 0.6rem;
+      width: calc(100% - 1.2rem);
+    }
+  }
+}

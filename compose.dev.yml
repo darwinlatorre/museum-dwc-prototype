@@ -83,6 +83,7 @@ services:
       - ./frontend/proxy.conf.cjs:/app/proxy.conf.cjs:ro
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:ro
+      - ./frontend/.postcssrc.json:/app/.postcssrc.json:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-T", "3", "-O", "/dev/null", "http://127.0.0.1:4200/"]
       interval: 5s

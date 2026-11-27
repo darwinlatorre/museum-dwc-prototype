@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colecciones · Registro progresivo</title>
+<style>
+:root {
+  --pine:#194c3a; --ink:#203a34; --muted:#526960; --heading:#1b3930;
+  --page:#f3f6f5; --surface:white; --line:#dce5e0; --soft:#edf6f2;
+  --nav:#163e31; --nav-text:#e8f1eb; --table:#f1f5f2; --link:#23634d;
+  --error-bg:#fff1ed; --error:#732b22; --error-border:#ae4030;
+  font-family:'Segoe UI',Frutiger,'Helvetica Neue',sans-serif;
+  font-size:14px; color:var(--ink); background:var(--page);
+}
+* { box-sizing:border-box; }
+body { margin:0; }
+header { padding:1rem 2rem; background:var(--nav); color:var(--nav-text); }
+header a { color:var(--nav-text); padding:.75rem; display:inline-block; }
+main { max-width:1440px; padding:2rem; margin:auto; }
+h1,h2,h3 { color:var(--heading); }
+h1 { font-size:1.75rem; letter-spacing:-.04em; }
+h2 { font-size:1.35rem; }
+h3 { font-size:1.05rem; }
+p { line-height:1.6; color:var(--muted); max-width:80ch; }
+a { color:var(--link); }
+button,input,textarea,select { font:inherit; color:var(--ink); background:var(--surface); min-height:44px; padding:.6rem .7rem; border:1px solid var(--pine); border-radius:5px; }
+button,summary { cursor:pointer; }
+button:hover,summary:hover { background:var(--soft); }
+button:disabled { opacity:.5; cursor:not-allowed; }
+:focus-visible { outline:2px solid var(--pine); outline-offset:3px; }
+label { display:block; font-weight:600; margin:.75rem 0; }
+label input:not([type="checkbox"]),label textarea,label select { display:block; width:100%; margin-top:.5rem; }
+label:has(input[type="checkbox"]) { display:flex; align-items:center; gap:.75rem; min-height:44px; }
+input[type="checkbox"] { flex-shrink:0; width:18px; min-height:18px; height:18px; accent-color:var(--pine); }
+summary { min-height:44px; padding:1rem; color:var(--pine); font-weight:600; }
+.catalog { padding:0; list-style:none; }
+.catalog > li { background:var(--surface); border:1px solid var(--line); border-radius:8px; margin:1rem 0; }
+.catalog > li > details > summary { font-size:1.35rem; }
+.content { padding:0 1.5rem 1.5rem; min-width:0; }
+.actions { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+.steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; list-style:none; padding:0; }
+.steps a { display:block; padding:1rem; border-bottom:2px solid var(--pine); }
+.sheet { overflow:auto; max-height:360px; border:1px solid var(--line); }
+table { border-collapse:separate; border-spacing:0; width:100%; min-width:1060px; }
+caption { text-align:left; padding:1rem; color:var(--muted); }
+th,td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:.75rem; }
+th { color:var(--muted); background:var(--table); }
+thead th { position:sticky; top:0; z-index:2; }
+tbody th { position:sticky; left:0; z-index:1; }
+td { white-space:pre-wrap; }
+form { padding:1rem; border:1px solid var(--line); border-radius:6px; }
+.fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.notice { background:var(--soft); padding:1rem; border-left:4px solid var(--pine); }
+.error { background:var(--error-bg); color:var(--error); padding:1rem; border-left:4px solid var(--error-border); }
+footer { padding:1rem 0; border-top:1px solid var(--line); }
+.skip { position:absolute; top:-100px; padding:1rem; background:var(--surface); }
+.skip:focus { top:0; }
+@media(max-width:800px) {
+  main,header,.content { padding:1rem; }
+  .steps,.fields { grid-template-columns:1fr; }
+}
+@media(prefers-reduced-motion:reduce) {
+  * { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header><strong>Museo de Historia Natural</strong><nav aria-label="Principal"><a href="#collections" aria-current="page">Colecciones</a><a href="#finalizar">Finalizar análisis</a></nav></header>
+<main id="main">
+<h1 id="collections">Colecciones</h1><p>Dirección 03 · Registro progresivo. Abra una colección y avance dentro de ella. Datos sintéticos; no hay persistencia.</p>
+<p>3 colecciones · Orden: nombre</p>
+<ul class="catalog">
+<li><details open id="amphibians"><summary>Anfibios del Cauca · 3 activos · 1 en papelera</summary>
+<div class="content">
+<p>Colección biológica · Revisión 7</p>
+<nav aria-label="Tareas de Anfibios del Cauca"><ol class="steps"><li><a href="#records">1. Consultar y gestionar</a></li><li><a href="#import">2. Importar aquí</a></li><li><a href="#finalizar">3. Revisar y confirmar</a></li></ol></nav>
+<section id="records" aria-labelledby="records-title"><h2 id="records-title">Registros activos</h2>
+<div class="actions"><a href="#new">Agregar registro</a><a href="#edit">Editar registro</a><a href="#trash">Papelera (1)</a></div>
+<p id="sheet-help">Tabla con cabeceras fijas y valores completos. Tab entra a la hoja; flechas desplazan horizontal y verticalmente. En móvil conserva todas las columnas.</p>
+<div class="sheet" role="region" aria-label="Hoja de registros" aria-describedby="sheet-help" tabindex="0">
+<table><caption>1–3 de 3 registros · Orden: occurrenceID</caption><thead><tr><th scope="col">Fila</th><th scope="col">occurrenceID</th><th scope="col">scientificName</th><th scope="col">eventDate</th><th scope="col">locality</th><th scope="col">Detalle</th></tr></thead>
+<tbody>
+<tr><th scope="row">1</th><td>MHNUC-000042</td><td>Atelopus eusebianus</td><td>2024-06-12</td><td>  Quebrada San Juan, margen oriental
+Sector de bosque ripario  </td><td><a href="#edit">Editar MHNUC-000042</a></td></tr>
+<tr><th scope="row">2</th><td>MHNUC-000043</td><td>Pristimantis palmeri</td><td>2024-06-13</td><td>Reserva Munchique</td><td><a href="#other-record">Ver MHNUC-000043</a></td></tr>
+<tr><th scope="row">3</th><td>MHNUC-000044</td><td>Rhinella marina</td><td>2024-06-14</td><td>Popayán</td><td><a href="#other-record">Ver MHNUC-000044</a></td></tr>
+</tbody></table></div>
+<p class="actions"><button disabled>Anterior</button> Página 1 de 1 <button disabled>Siguiente</button></p>
+<details id="other-record"><summary>Detalle de otros registros · Vista prevista</summary><p>Se abre el formulario con los valores completos del registro seleccionado; este boceto solo desarrolla MHNUC-000042. Cerrar devuelve el foco al origen, sin perder página ni desplazamiento.</p></details>
+<details id="edit"><summary>Editar MHNUC-000042</summary><form><div class="fields"><label>occurrenceID<input required value="MHNUC-000042"></label><label>scientificName<input value="Atelopus eusebianus"></label><label>eventDate<input value="2024-06-12"></label><label>locality<textarea rows="3">  Quebrada San Juan, margen oriental
+Sector de bosque ripario  </textarea></label></div>
+<p>Los valores se conservan literalmente, incluidos espacios y ceros. Salir de una celda no guarda.</p><div class="actions"><button>Guardar cambios</button><button type="reset">Restablecer borrador</button></div></form>
+<details><summary>Retirar registro</summary><p>Se moverá a papelera; no se borrará definitivamente.</p><button type="button" data-demo>Confirmar retiro de MHNUC-000042</button></details>
+<p class="error">Estado previsto: identificador duplicado en esta colección. No se guardó nada; conserve y corrija el borrador.</p>
+</details>
+<details id="new"><summary>Agregar registro</summary><form><div class="fields"><label>occurrenceID<input required placeholder="MHNUC-000045"></label><label>scientificName<input placeholder="Pristimantis palmeri"></label></div><p>Los demás campos y valores libres se agregan en el editor completo.</p><button>Guardar nuevo registro</button></form></details>
+<details id="trash"><summary>Papelera · 1 registro</summary><p>MHNUC-000041 · Atelopus eusebianus</p><button type="button" data-demo>Restaurar MHNUC-000041</button><p class="error">Estado previsto: restauración bloqueada por un duplicado activo. Ningún registro se modificó.</p><p>Restaurar revalida. No hay borrado definitivo ni eliminación de colecciones.</p></details>
+</section>
+<section id="import" aria-labelledby="import-title"><h2 id="import-title">Importar a Anfibios del Cauca</h2><label>Archivo CSV o XLSX<input type="file" accept=".csv,.xlsx"></label><p>Análisis en el navegador. Seleccionar un archivo no transmite nada. Los registros existentes se mantienen.</p><a href="#finalizar">Ver resumen del análisis</a></section>
+<section id="finalizar" aria-labelledby="finish-title"><h2 id="finish-title">Finalizar análisis</h2><p>Destino: Anfibios del Cauca · 24 registros<br>0 errores · 2 advertencias · 0 duplicados</p>
+<details><summary>Advertencias (2)</summary><p>Filas 8 y 19: precisión de coordenadas. Revise los valores; no hay normalización automática.</p></details>
+<details><summary>Resumen bloqueado · Ejemplo alternativo</summary><p class="error">1 error: fila 6, latitud fuera de rango. 2 duplicados: filas 9/10 entre sí y fila 12 contra esta colección. No se habilita el envío hasta corregirlos.</p><p>Otras colecciones son independientes. Los avisos del análisis no eliminan duplicados automáticamente.</p></details>
+<form><label><input type="checkbox" required> Revisé las 2 advertencias y confirmo enviar los 24 registros a esta colección.</label><p>Se envían registros, no archivos. El servidor revalida: si falla una fila, no se guarda ninguna.</p><button>Confirmar y enviar 24 registros</button></form>
+<details><summary>Resultado · Estados previstos</summary><p>Enviando y revalidando… Confirmación deshabilitada mientras termina.</p><p class="error">Rechazado por duplicado nuevo. 0 de 24 guardados; datos locales conservados. Corrija y vuelva a analizar.</p><p class="notice">24 de 24 guardados. Abrir colección actualizada.</p></details>
+</section>
+</div></details></li>
+<li><details><summary>Herbario CAUP · Sin registros</summary><div class="content"><h2>Colección vacía</h2><p>Agregue el primer registro o importe a esta colección. Este estado no es una búsqueda sin resultados.</p><p>Vista prevista: las mismas acciones se muestran con Herbario CAUP como destino.</p></div></details></li>
+<li><details><summary>Insectos de Popayán · 128 activos</summary><div class="content"><h2>Insectos de Popayán</h2><p>Vista prevista: 1–25 de 128 · Página 1 de 6. La selección conserva su propia página y posición; no se mezcla con otra colección.</p></div></details></li>
+</ul>
+<details><summary>Recuperación · Estados previstos</summary><p>Cargando página… Se conserva el resumen de colección.</p><p>No hay coincidencias para «MHNUC-99». Mantenga la consulta y ofrezca Limpiar búsqueda.</p><p class="error">No se pudo cargar la revisión actual. La página anterior está desactualizada; reintentar conserva los cambios pendientes.</p><p class="error">La revisión cambió durante la edición. No se sobrescribe el trabajo ajeno. Conserve su borrador y recargue antes de guardar.</p></details>
+<footer><p id="feedback" role="status" aria-live="polite">Boceto local · Los estados de guardado e importación no son resultados reales.</p></footer>
+</main>
+<script>
+function feedback() {
+  document.getElementById('feedback').textContent = 'Demostración: ningún registro enviado o modificado. El borrador permanece visible.';
+}
+document.querySelectorAll('form').forEach(form => {
+  form.addEventListener('submit', event => { event.preventDefault(); feedback(); });
+});
+document.querySelectorAll('[data-demo]').forEach(button => button.addEventListener('click', feedback));
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', () => {
+    const target = document.getElementById(link.getAttribute('href').slice(1));
+    if (!target) return;
+    let parent = target.parentElement;
+    while (parent) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+      parent = parent.parentElement;
+    }
+    if (target.tagName === 'DETAILS') {
+      target.open = true;
+      target.querySelector('summary').focus();
+    }
+  });
+});
+</script>
+</body>
+</html>

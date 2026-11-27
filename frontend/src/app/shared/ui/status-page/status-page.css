@@ -1,0 +1,53 @@
+/* Capa components: las utilidades Tailwind de la plantilla ganan sin !important. */
+@layer components {
+  :host {
+    display: block;
+  }
+  .status-page {
+    max-width: 48rem;
+    padding-block: var(--museum-space-10);
+  }
+  .status-page-code {
+    margin: 0;
+    font-size: 4.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--museum-primary-200);
+    font-variant-numeric: tabular-nums;
+  }
+  .status-page-mark {
+    flex: 0 0 4rem;
+    width: 4rem;
+    height: 4rem;
+    color: var(--museum-primary-300);
+  }
+  .status-page h2 {
+    margin: 0 0 var(--museum-space-2);
+  }
+  .status-page-message {
+    margin: 0 0 var(--museum-space-6);
+  }
+  .status-page button {
+    min-height: 44px;
+  }
+  .status-page a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--museum-button-border);
+    border-radius: var(--museum-control-radius);
+    text-decoration: none;
+  }
+  .status-page a.button-primary:hover {
+    background: var(--museum-primary-800);
+  }
+  .status-page-secondary {
+    color: var(--pine);
+    background: var(--museum-surface);
+  }
+  .status-page-secondary:hover {
+    background: var(--museum-primary-50);
+  }
+}

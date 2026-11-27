@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,11 +20,4 @@ public class ConfigurationEntity {
     @Setter @Column(nullable = false) private long revision;
     @Setter @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb")
     private String contexts;
-
-    @Builder
-    public ConfigurationEntity(Short id, long revision, String contexts) {
-        this.id = id;
-        this.revision = revision;
-        this.contexts = contexts;
-    }
 }

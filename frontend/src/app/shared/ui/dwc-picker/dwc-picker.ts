@@ -9,7 +9,7 @@ import type { Term } from '../../../features/catalog/models/catalog-term';
   selector: 'app-dwc-picker',
   imports: [FormsModule, SelectModule],
   templateUrl: './dwc-picker.html',
-  styleUrl: './dwc-picker.scss',
+  styleUrl: './dwc-picker.css',
 })
 export class DwcPicker implements FormValueControl<string> {
   readonly terms = input.required<Term[]>();

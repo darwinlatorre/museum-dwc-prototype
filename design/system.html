@@ -19,7 +19,12 @@ section { margin:1.5rem 0; background:white; border:1px solid #dce5e0; border-ra
 .swatch { height:64px; border:1px solid #526960; border-radius:4px; }
 code { font:inherit; overflow-wrap:anywhere; }
 label { display:block; font-weight:600; }
-button,input { font:inherit; border:1px solid #194c3a; border-radius:5px; min-height:44px; padding:.6rem .7rem; color:#203a34; background:white; }
+summary { cursor:pointer; min-height:44px; padding:.75rem 0; }
+table { border-collapse:collapse; width:100%; }
+th,td { text-align:left; padding:1rem; border-bottom:1px solid #dce5e0; }
+th { background:#f1f5f2; color:#526960; }
+button:disabled { cursor:not-allowed; opacity:.5; }
+button,input,select { font:inherit; border:1px solid #194c3a; border-radius:5px; min-height:44px; padding:.6rem .7rem; color:#203a34; background:white; }
 button { cursor:pointer; color:#194c3a; }
 button:hover { background:#edf6f2; }
 :focus-visible { outline:2px solid #194c3a; outline-offset:3px; }
@@ -32,12 +37,12 @@ button:hover { background:#edf6f2; }
 </head>
 <body>
 <main>
-<header><p>Museo de Historia Natural · Universidad del Cauca</p><h1>Sistema de diseño existente</h1><p>Sincronizado desde las fuentes Angular. No es una propuesta de nueva identidad. Referencias y reglas completas en design/system.md.</p></header>
+<header><p>Museo de Historia Natural · Universidad del Cauca</p><h1>Sistema de diseño existente</h1><p>Sincronización S12 · Colecciones. 49 tokens museum y 9 alias públicos contrastados con frontend/src/app/shared/design-system/_tokens.scss. Sistema existente, no nueva identidad. Fuentes, valores y reglas en design/system.md.</p></header>
 <section aria-labelledby="palette"><h2 id="palette">Colores de origen</h2><div class="grid" id="colors"></div></section>
 <section><h2>Tipografía del sistema</h2><p>Segoe UI, Frutiger, Helvetica Neue, sans-serif · raíz 14px · párrafo 1.6</p><h2>Encabezado 1.75rem</h2><h3>Subencabezado 1.35rem</h3><h4>Detalle 1.05rem</h4><p>Campos obligatorios por fuente. Los identificadores DwC y el texto del usuario se conservan literalmente.</p></section>
 <section><h2>Espaciado</h2><div id="spaces"></div></section>
 <section><h2>Radios y elevación</h2><div class="grid" id="radii"></div><p>Control: radio 5px y altura 3.15rem. Sin escala de sombras: los controles existentes usan none.</p></section>
-<section><h2>Primitivas</h2><label for="term">Agregar campo obligatorio</label><p><input id="term" value="occurrenceID"> <button type="button" onclick="document.getElementById('term').value='';document.getElementById('term').focus()">Limpiar</button></p><p class="notice">Revisión 0 · Sin cambios pendientes. El guardado es explícito y global.</p><p class="error">Este campo ya es obligatorio en el contexto.</p><details><summary>Reglas del editor</summary><p>Máximo 200 caracteres por campo y 500 campos por contexto. La actualización descarta cambios únicamente tras una lectura correcta. El picker productivo sigue siendo el compartido de DwC.</p></details></section>
+<section><h2>Primitivas</h2><label for="term">Campo DwC</label><p><input id="term" value="occurrenceID"> <button type="button" onclick="document.getElementById('term').value='';document.getElementById('term').focus()">Limpiar</button></p><p class="notice">Estado previsto · Cambios sin guardar. Guardar requiere una acción explícita.</p><p class="error">Estado previsto · occurrenceID ya existe en esta colección. No se guardó ningún registro.</p><button type="button" disabled>Guardar sin cambios</button><p>Deshabilitado: no hay cambios pendientes.</p><table><caption>Tabla nativa · valores literales</caption><thead><tr><th scope="col">occurrenceID</th><th scope="col">scientificName</th></tr></thead><tbody><tr><td>MHNUC-000042</td><td>Atelopus eusebianus</td></tr></tbody></table><details><summary>Reglas del editor</summary><p>Máximo 200 caracteres por campo y 500 campos por contexto. La actualización descarta cambios únicamente tras una lectura correcta. El picker productivo sigue siendo el compartido de DwC.</p></details></section>
 </main>
 <script>
 const groups = {
@@ -57,7 +62,7 @@ for (const [name,size] of [[1,'.25rem'],[2,'.5rem'],[3,'.75rem'],[4,'1rem'],[5,'
   const row=document.createElement('div'); row.textContent=`space-${name} · ${size}`;
   const bar=document.createElement('div'); bar.className='measure'; bar.style.width=size; row.append(bar); document.getElementById('spaces').append(row);
 }
-for (const [name,size] of [['sm','4px'],['md','5px'],['lg','6px'],['panel','8px']]) {
+for (const [name,size] of [['sm','4px'],['md','5px'],['lg','6px'],['panel','8px'],['control (alias md)','5px']]) {
   const tile=document.createElement('div'); tile.className='notice'; tile.style.borderRadius=size; tile.textContent=`radius-${name} · ${size}`; document.getElementById('radii').append(tile);
 }
 </script>

@@ -60,7 +60,7 @@ describe('API de metadatos globales', () => {
     const body = configurationFixture(); const before = JSON.stringify(body);
     const saving = sources.updateValidationConfiguration(body);
     const rejected = expect(saving).rejects.toThrow(
-      `API ${status}: Revisión o campos inválidos. No se guardaron los cambios. Actualice los datos antes de volver a intentarlo.`,
+      'No se pudo completar la solicitud: Revisión o campos inválidos. Actualice los datos antes de volver a intentarlo.',
     );
     http.expectOne({ url: 'http://localhost:8080/api/validation-configuration', method: 'PUT' })
       .flush('Revisión o campos inválidos', { status, statusText: 'Error' });
