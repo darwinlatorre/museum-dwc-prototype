@@ -1,3 +1,5 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
 import { Component, computed, effect, inject, input, linkedSignal, output, signal, untracked } from '@angular/core';
 import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
@@ -8,11 +10,12 @@ import { CONTEXTS, type Context, type ValidationConfiguration } from '../../mode
 
 @Component({
   selector: 'app-validation-configuration',
-  imports: [DwcPicker],
+  imports: [DwcPicker, I18nPluralPipe],
   templateUrl: './validation-configuration.html',
   host: { '(window:beforeunload)': 'beforeUnload($event)' },
 })
 export class ValidationConfigurationEditor {
+  readonly plurals = PLURALS;
   readonly configuration = input.required<ValidationConfiguration>();
   readonly terms = input.required<Term[]>();
   readonly client = inject(QueryClient);
@@ -51,10 +54,10 @@ export class ValidationConfigurationEditor {
     field.toLowerCase().includes(this.search().toLowerCase())));
   readonly fieldError = computed(() => {
     const value = this.field();
-    if (!value.trim()) return 'Escriba un campo no vacío.';
-    if (value.length > 200) return 'El campo no puede superar 200 caracteres.';
-    if (this.fields().includes(value)) return 'Este campo ya está configurado en el contexto.';
-    if (this.fields().length >= 500) return 'No se pueden agregar más de 500 campos por contexto.';
+    if (!value.trim()) return 'Escriba el nombre del campo.';
+    if (value.length > 200) return 'El nombre del campo no puede superar 200 caracteres.';
+    if (this.fields().includes(value)) return 'Este campo ya está configurado en esta fuente.';
+    if (this.fields().length >= 500) return 'No se pueden agregar más de 500 campos por fuente.';
     return '';
   });
   readonly mutation = injectMutation(() => ({
@@ -64,7 +67,7 @@ export class ValidationConfigurationEditor {
       this.client.setQueryData(['validation-configuration'], saved);
       this.draft.set(this.normalize(saved));
       this.dirty.set(false);
-      this.notice.set('Configuración guardada en el servidor.');
+      this.notice.set('Configuración guardada.');
       await this.client.invalidateQueries({ queryKey: ['validation-configuration'] });
     },
   }));
@@ -136,7 +139,7 @@ export class ValidationConfigurationEditor {
       this.dirty.set(false);
       this.field.set('');
       this.mutation.reset();
-      this.notice.set('Configuración actualizada desde el servidor.');
+      this.notice.set('Configuración guardada cargada.');
     } catch (error) {
       this.refreshError.set(error instanceof Error ? error.message : 'No se pudo actualizar la configuración.');
     } finally { this.refreshing.set(false); }

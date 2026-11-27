@@ -1,0 +1,104 @@
+.validation-configuration {
+  min-width: 0;
+}
+.validation-configuration button, .validation-configuration input {
+  min-height: 44px;
+}
+.validation-configuration input:focus-visible, .validation-configuration .configuration-fields:focus-visible {
+  outline: 2px solid var(--museum-primary-700);
+  outline-offset: 3px;
+}
+
+.configuration-state {
+  color: var(--museum-text-muted);
+}
+
+/* Divisor de columnas (no tarjeta anidada dentro del panel principal). */
+.configuration-sources-panel {
+  border-inline-end: 1px solid var(--museum-line);
+}
+
+@media (max-width: 800px) {
+  .configuration-sources-panel {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--museum-line);
+  }
+}
+
+.configuration-panel h3 {
+  margin-top: 0;
+}
+
+.configuration-source {
+  display: grid;
+  gap: var(--museum-space-2);
+  text-align: left;
+  padding: var(--museum-space-4);
+}
+.configuration-source span {
+  color: var(--museum-text-muted);
+}
+.configuration-source[aria-pressed=true] {
+  background: var(--museum-primary-50);
+  border-color: var(--museum-primary-700);
+  box-shadow: inset 0 0 0 1px var(--museum-primary-700);
+}
+.configuration-source[aria-pressed=true] span {
+  color: var(--museum-primary-700);
+}
+
+.configuration-fields {
+  list-style: none;
+  padding: var(--museum-space-1);
+  margin: 0;
+  max-height: 390px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.configuration-fields li {
+  border-bottom: 1px solid var(--museum-line);
+}
+.configuration-fields li button {
+  flex-shrink: 0;
+}
+
+.configuration-fields .literal {
+  overflow-wrap: anywhere;
+}
+
+/* Estado del campo: obligatorio tintado, opcional neutro; Quitar es secundaria y sin caja. */
+.configuration-field-actions button[aria-pressed=true] {
+  background: var(--museum-surface-selected);
+  border-color: var(--pine);
+  color: var(--pine);
+  font-weight: 600;
+}
+
+.configuration-field-actions button:not([aria-pressed]) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--museum-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.configuration-field-actions button:not([aria-pressed]):hover:not(:disabled) {
+  background: transparent;
+  color: var(--museum-error-text);
+}
+
+.configuration-field-actions button[aria-pressed] {
+  min-width: 8rem;
+}
+
+.configuration-savebar {
+  border-top: 1px solid var(--museum-line);
+  padding-top: var(--museum-space-6);
+}
+
+@media (max-width: 800px) {
+  .configuration-fields {
+    max-height: none;
+  }
+}

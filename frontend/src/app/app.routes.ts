@@ -1,6 +1,9 @@
 import { Routes } from '@angular/router';
 import { MuseumLayout } from './layouts/museum-layout/museum-layout';
 import { AnalysisPage } from './features/importer/pages/analysis-page/analysis-page';
+import { ErrorPage } from './layouts/status-pages/error-page';
+import { NotFoundPage } from './layouts/status-pages/not-found-page';
+import { collectionNavigation, unsavedCollection } from './features/collections/guards/unsaved-collection';
 import { unsavedConfiguration } from './features/record-sources/guards/unsaved-configuration';
 
 export const routes: Routes = [{
@@ -13,6 +16,14 @@ export const routes: Routes = [{
     { path: 'catalogo',
       loadComponent: () => import('./features/catalog/pages/catalog-page/catalog-page').then(module => module.CatalogPage),
       title: 'Catálogo Darwin Core · Museo' },
-    { path: '**', redirectTo: 'analisis' },
+    { path: 'collections',
+      loadComponent: () => import('./features/collections/pages/collections-page/collections-page').then(module => module.CollectionsPage),
+      title: 'Colecciones · Museo', canDeactivate: [unsavedCollection] },
+    { path: 'collections/:id',
+      loadComponent: () => import('./features/collections/pages/collections-page/collections-page').then(module => module.CollectionsPage),
+      title: 'Detalle de colección · Museo', canDeactivate: [unsavedCollection], canActivate: [collectionNavigation] },
+    // Sin carga diferida: deben mostrarse aunque falle la descarga de otra sección.
+    { path: 'error', component: ErrorPage, title: 'Error · Museo' },
+    { path: '**', component: NotFoundPage, title: 'Página no encontrada · Museo' },
   ],
 }];

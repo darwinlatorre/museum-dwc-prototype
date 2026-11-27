@@ -20,13 +20,56 @@ describe('Rutas públicas del museo', () => {
       { provide: CatalogMetadata, useValue: {} }, { provide: RecordSourcesMetadata, useValue: {} }] });
   });
   afterEach(() => { TestBed.resetTestingModule(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
-  it('redirige raíz y desconocidas a análisis con título y enlaces activos accesibles', async () => {
+  it('pliega el menú con icono sin desmontar análisis ni perder la preferencia al navegar', async () => {
+    const harness = await RouterTestingHarness.create('/analisis');
+    const blocks = await harness.fixture.getDeferBlocks(); await blocks[0].render(DeferBlockState.Complete);
+    await harness.fixture.whenStable(); const root = harness.routeNativeElement!;
+    const importer = root.querySelector('app-import'); expect(importer).toBeTruthy();
+    const toggle = root.querySelector<HTMLButtonElement>('button[aria-controls="museum-navigation"]');
+    expect(toggle).toBeTruthy(); expect(toggle!.textContent?.trim()).toBe('');
+    const sidebar = root.querySelector<HTMLElement>('#museum-navigation')!;
+    expect(toggle!.getAttribute('aria-expanded')).toBe('true');
+    toggle!.click(); await harness.fixture.whenStable();
+    expect(sidebar.hidden).toBe(true); expect(toggle!.getAttribute('aria-label')).toBe('Mostrar navegación');
+    expect(document.activeElement).toBe(toggle); expect(root.querySelector('app-import')).toBe(importer);
+    await harness.navigateByUrl('/catalogo');
+    expect(sidebar.hidden).toBe(true); expect(root.querySelector('app-import')).toBe(importer);
+    toggle!.click(); await harness.fixture.whenStable(); expect(sidebar.hidden).toBe(false);
+    expect(toggle!.getAttribute('aria-expanded')).toBe('true');
+  });
+  it('usa todo el ancho disponible y retira la nota explicativa lateral, no el aviso de confianza', async () => {
+    const harness = await RouterTestingHarness.create('/catalogo'); await harness.fixture.whenStable();
+    const root = harness.routeNativeElement!;
+    expect(root.querySelector('.sidebar-note')).toBeNull();
+    expect(root.querySelector('footer')?.textContent).toContain('personas de confianza');
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n').replace(/\[_ng(?:content|host)-[^\]]+\]/g, '');
+    expect(css).toMatch(/main\s*\{[^}]*max-width:\s*none/s);
+    expect(css).not.toMatch(/main\s*\{[^}]*max-width:\s*1500px/s);
+    expect(css).toMatch(/\.sidebar\[hidden\]\s*\{[^}]*display:\s*none/s);
+  });
+  it('redirige la raíz a análisis con título y enlaces activos accesibles', async () => {
     const harness = await RouterTestingHarness.create('/');
     expect(TestBed.inject(Router).url).toBe('/analisis');
     expect(document.title).toContain('Análisis');
     expect(harness.routeNativeElement?.querySelector('a[aria-current=page]')?.getAttribute('href')).toBe('/analisis');
-    await harness.navigateByUrl('/desconocida');
-    expect(TestBed.inject(Router).url).toBe('/analisis');
+  });
+  it('muestra «Página no encontrada» dentro del layout sin cambiar la URL desconocida', async () => {
+    const harness = await RouterTestingHarness.create('/desconocida');
+    const root = harness.routeNativeElement!;
+    expect(TestBed.inject(Router).url).toBe('/desconocida');
+    expect(document.title).toContain('Página no encontrada');
+    expect(root.querySelector('nav[aria-label="Navegación principal"]')).not.toBeNull();
+    expect(root.querySelector('h2')?.textContent?.trim()).toBe('Página no encontrada');
+    expect(root.querySelector('.status-page-code')?.textContent?.trim()).toBe('404');
+    expect(root.querySelector<HTMLAnchorElement>('.status-page a.button-primary')?.getAttribute('href')).toBe('/analisis');
+  });
+  it('muestra la pantalla de error reutilizable con acción para reintentar', async () => {
+    const harness = await RouterTestingHarness.create('/error');
+    const root = harness.routeNativeElement!;
+    expect(document.title).toContain('Error');
+    expect(root.querySelector('h2')?.textContent?.trim()).toBe('No pudimos mostrar esta página');
+    expect([...root.querySelectorAll('.status-page button')].map(button => button.textContent?.trim())).toContain('Reintentar');
+    expect(root.querySelector<HTMLAnchorElement>('.status-page a')?.getAttribute('href')).toBe('/analisis');
   });
   it('abre catálogo directamente y conserva la instancia de análisis al cambiar de sección', async () => {
     const harness = await RouterTestingHarness.create('/catalogo');

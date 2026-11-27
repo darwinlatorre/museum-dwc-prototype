@@ -8,6 +8,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import co.edu.unicauca.backend.catalog.domain.identity.CatalogHash;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.CatalogParser;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.tdwg.CatalogSource;
 
@@ -369,7 +370,7 @@ class CatalogSyncTests {
     }
 
     String publicSnapshotHash() throws Exception {
-        return CatalogParser.hash(json.writeValueAsString(metadata()) + "\n" + getCatalog());
+        return CatalogHash.hash(json.writeValueAsString(metadata()) + "\n" + getCatalog());
     }
 
     @Test

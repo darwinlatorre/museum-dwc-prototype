@@ -1,0 +1,29 @@
+/*
+ * Orden de capas único (también declarado en providePrimeNG cssLayer):
+ *   theme, base      tokens, reset propio y elementos nativos sin clase
+ *   primeng          estilos de componentes PrimeNG
+ *   components       primitivas del museo y estilos de funcionalidad (ganan a PrimeNG sin !important)
+ *   utilities        Tailwind: distribución y espaciado en plantillas (ganan a todo lo anterior)
+ * No cargar estos módulos como styleUrl encapsulado: incluyen overlays PrimeNG.
+ * Sin preflight de Tailwind: la base del museo es la única normalización.
+ */
+@layer theme, base, primeng, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import './app/shared/design-system/tailwind-theme.css';
+@import 'tailwindcss-primeui';
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@import './app/shared/design-system/tokens.css' layer(base);
+@import './app/shared/design-system/base.css' layer(base);
+@import './app/shared/design-system/elements.css' layer(base);
+
+@import './app/shared/design-system/forms.css' layer(components);
+@import './app/shared/design-system/layout.css' layer(components);
+@import './app/shared/design-system/feedback.css' layer(components);
+@import './app/shared/design-system/tables.css' layer(components);
+@import './app/shared/design-system/primeng.css' layer(components);
+@import './app/features/catalog/pages/catalog/catalog.css' layer(components);
+@import './app/features/record-sources/pages/validation-configuration/validation-configuration.css' layer(components);
+@import './app/features/importer/importer.css' layer(components);
+@import './app/features/collections/pages/collections-page/collections-page.css' layer(components);

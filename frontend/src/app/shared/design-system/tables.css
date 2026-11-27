@@ -1,0 +1,237 @@
+.p-datatable {
+  border: 1px solid var(--line);
+  border-radius: var(--museum-radius-lg);
+  overflow: hidden;
+}
+
+.p-datatable a {
+  display: block;
+  font-size: 0.85rem;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  /* URI oficial en una línea: sin cortes a mitad de palabra; completa en title. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:is(.p-datatable, .museum-data-table) thead th {
+  font-size: 0.85rem !important;
+  color: var(--muted) !important;
+  background: var(--museum-table-heading) !important;
+}
+
+/* Cabeceras de fila: alineadas como datos, sin heredar la superficie del encabezado. */
+:where(.p-datatable, .museum-data-table) tbody th {
+  text-align: start;
+  vertical-align: top;
+}
+
+.p-datatable-tbody > tr > th {
+  padding: var(--p-datatable-body-cell-padding);
+  border: 0 solid var(--p-datatable-body-cell-border-color);
+  border-bottom-width: 1px;
+  color: var(--museum-text);
+}
+
+:is(.p-datatable, .museum-data-table) td {
+  vertical-align: top !important;
+}
+
+/* Solo tablas nativas: las de PrimeNG conservan --p-datatable-body-cell-padding (capa primeng). */
+.museum-data-table:where(table) td {
+  padding: var(--museum-space-2) var(--museum-space-3);
+}
+
+.museum-data-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+}
+
+.museum-data-table :is(th, td).museum-table-actions {
+  background: var(--museum-primary-50);
+  border-inline-start: 2px solid var(--museum-primary-200);
+}
+
+.museum-data-table th.museum-table-actions {
+  vertical-align: middle;
+  background: var(--museum-primary-100) !important;
+  color: var(--museum-heading) !important;
+}
+
+.museum-sort-heading > button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--museum-space-1);
+  width: 100%;
+  min-width: 0;
+  padding: var(--museum-space-1) 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  font-weight: inherit;
+}
+
+.museum-sort-heading > button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.museum-sort-heading > button > svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.museum-sort-heading > button:focus-visible {
+  outline-offset: -2px;
+}
+
+/* One layout contract for projected PrimeNG and native leaf columns. */
+:where(.museum-resizable-heading) {
+  position: relative;
+}
+
+.museum-resizable-root {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+table.museum-resizable-root {
+  display: table;
+  max-width: none;
+}
+
+.museum-resizable-root .p-datatable-table-container {
+  max-width: 100%;
+  overflow: auto;
+}
+
+table.museum-resizable-root.museum-resizable-table,
+.museum-resizable-root table.museum-resizable-table {
+  table-layout: fixed;
+  min-width: 0;
+  max-width: none;
+}
+
+table.museum-resizable-root.museum-resizable-table :is(th, td),
+.museum-resizable-root table.museum-resizable-table :is(th, td) {
+  min-width: 0;
+  max-width: none;
+  overflow-wrap: anywhere;
+}
+
+table.museum-resizable-root.museum-resizable-table td > button,
+.museum-resizable-root table.museum-resizable-table td > button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+table.museum-resizable-root.museum-resizable-table .museum-table-actions .actions,
+.museum-resizable-root table.museum-resizable-table .museum-table-actions .actions {
+  flex-wrap: wrap;
+}
+
+.museum-resizable-root .museum-resizable-heading > button {
+  display: inline-flex;
+  vertical-align: middle;
+  width: calc(100% - 12px);
+}
+
+.museum-resizable-heading > museum-column-width {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 12px;
+  z-index: 1;
+}
+
+.museum-resizable-root .museum-resize-handle {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 12px;
+  min-width: 12px;
+  height: 100%;
+  min-height: 44px;
+  padding: 0;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  border: 0;
+  border-inline-end: 1px solid var(--museum-line);
+  border-radius: 0;
+  color: var(--museum-primary-700);
+  background: transparent;
+}
+
+/* Divisor visible: al pasar o con foco se engrosa en pino para indicar que se puede arrastrar. */
+.museum-resize-handle:hover, .museum-resize-handle:focus-visible {
+  background: var(--museum-primary-50);
+  border-inline-end: 2px solid var(--pine);
+}
+
+@media (pointer: coarse) {
+  .museum-resizable-root .museum-resizable-heading > button {
+    width: calc(100% - 44px);
+  }
+  .museum-resizable-heading > museum-column-width {
+    width: 44px;
+  }
+  .museum-resizable-root .museum-resize-handle {
+    width: 44px;
+    min-width: 44px;
+  }
+}
+.museum-column-width {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(28rem, 100vw - 2rem);
+  height: fit-content;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  z-index: 20;
+  padding: var(--museum-space-4);
+  border: 1px solid var(--museum-line);
+  border-radius: var(--museum-radius-md);
+  color: var(--museum-text);
+  background: var(--museum-surface);
+}
+
+.museum-column-width[hidden] {
+  display: none;
+}
+
+.museum-column-width label {
+  display: grid;
+  gap: var(--museum-space-2);
+}
+
+.museum-column-width input {
+  min-width: 0;
+  width: 100%;
+}
+
+.museum-width-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--museum-space-2);
+  margin-top: var(--museum-space-3);
+}
+
+.museum-column-width button {
+  min-height: 44px;
+}
+
+.museum-sort-heading[aria-sort=ascending],
+.museum-sort-heading[aria-sort=descending] {
+  color: var(--museum-primary-700) !important;
+}

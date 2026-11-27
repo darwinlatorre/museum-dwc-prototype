@@ -1,16 +1,12 @@
 <div class="section-heading">
   <div>
-    <h2>Catálogo Darwin Core</h2>
-    <p>
-      Vocabulario oficial, no una lista de campos obligatorios. La configuración global define los requisitos.
-      Las definiciones, categorías y estados se conservan en el idioma de la fuente
-      oficial TDWG (inglés).
-    </p>
+    <h2 aria-describedby="catalog-context-help">Catálogo Darwin Core</h2>
+    <p id="catalog-context-help" hidden>Vocabulario oficial TDWG. La configuración global define los requisitos. Definiciones originales en inglés.</p>
   </div>
-  <div class="catalog-actions">
+  <div class="catalog-actions flex shrink-0 items-center gap-3 max-tablet:w-full max-tablet:flex-row max-tablet:flex-wrap max-tablet:items-center max-tablet:justify-between">
     <span class="count">{{ terms().length }} términos</span>
-    <button class="catalog-sync-button" type="button" [disabled]="sync.isPending()"
-      [attr.aria-busy]="sync.isPending()" aria-describedby="catalog-sync-status"
+    <button class="button-primary catalog-sync-button" type="button" [disabled]="sync.isPending()"
+      [attr.aria-busy]="sync.isPending()" [attr.aria-describedby]="sync.isPending() || notice() ? 'catalog-sync-status' : null"
       (click)="synchronize()">
       <span class="sync-indicator" [class.is-spinning]="sync.isPending()" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -22,18 +18,18 @@
     </button>
   </div>
 </div>
-<div id="catalog-sync-status" class="catalog-sync-status" role="status" aria-live="polite" aria-atomic="true"
+<div id="catalog-sync-status" [hidden]="!sync.isPending() && !notice()" class="catalog-sync-status" role="status" aria-live="polite" aria-atomic="true"
   [class.sync-failure]="!sync.isPending() && (sync.isError() || sync.data()?.outcome === 'FAILED')"
   [class.sync-success]="!sync.isPending() && sync.data()?.outcome === 'SUCCESS'">
   {{ sync.isPending() ? 'Consultando TDWG. Puede seguir consultando y filtrando el catálogo.'
-    : notice() || 'Vocabulario oficial TDWG. Actualizar no modifica la configuración de validación ni los archivos.' }}
+    : notice() || 'Actualizar no modifica la configuración de validación ni los archivos.' }}
 </div>
 <div class="toolbar">
   <label
     >Buscar en todos los atributos<input
       type="search"
       [formField]="filters.search"
-      placeholder="Nombre, definición, URI, categoría o estado"
+      placeholder="Nombre, definición, enlace, categoría o estado"
   /></label>
   <label
     >Categoría<select [formField]="filters.category">
@@ -51,8 +47,8 @@
   </select></label>
   <button type="button" (click)="reset()">Restablecer filtros</button>
 </div>
-<p-table
-  [value]="filtered()"
+<p-table museumResizableTable class="museum-data-table"
+  [value]="filtered()" [first]="first()" (onPage)="first.set($event.first)"
   [paginator]="true"
   [rows]="15"
   [rowsPerPageOptions]="[15, 30, 50]"
@@ -62,17 +58,17 @@
 >
   <ng-template #header
     ><tr>
-      <th>Término / URI</th>
-      <th>Definición (original en inglés)</th>
-      <th>Categoría (fuente)</th>
-      <th>Estado (fuente)</th>
+      <th museumResizableColumn="name" resizeLabel="Término / enlace oficial" [initialColumnWidth]="260" museumSortHeader label="Término / enlace oficial" [direction]="order()?.column === 'name' ? order()!.direction : null" (sortRequested)="sort('name')"></th>
+      <th museumResizableColumn="definition" resizeLabel="Definición (original en inglés)" [initialColumnWidth]="400" museumSortHeader label="Definición (original en inglés)" [direction]="order()?.column === 'definition' ? order()!.direction : null" (sortRequested)="sort('definition')"></th>
+      <th museumResizableColumn="category" resizeLabel="Categoría (fuente)" [initialColumnWidth]="180" museumSortHeader label="Categoría (fuente)" [direction]="order()?.column === 'category' ? order()!.direction : null" (sortRequested)="sort('category')"></th>
+      <th museumResizableColumn="status" resizeLabel="Estado (fuente)" [initialColumnWidth]="160" museumSortHeader label="Estado (fuente)" [direction]="order()?.column === 'status' ? order()!.direction : null" (sortRequested)="sort('status')"></th>
     </tr></ng-template
   >
   <ng-template #body let-term
     ><tr>
       <td>
         <strong>{{ term.name }}</strong
-        ><a [href]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
+        ><a [href]="term.uri" [title]="term.uri" target="_blank" rel="noopener noreferrer">{{ term.uri }}</a>
       </td>
       <td class="definition" lang="en">{{ term.definition }}</td>
       <td>{{ categoryLabel(term.category) }}</td>

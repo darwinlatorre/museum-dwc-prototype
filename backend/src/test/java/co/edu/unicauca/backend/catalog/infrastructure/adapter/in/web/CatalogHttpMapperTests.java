@@ -15,28 +15,6 @@ class CatalogHttpMapperTests {
     private final CatalogHttpMapper mapper = Mappers.getMapper(CatalogHttpMapper.class);
 
     @Test
-    void statusMapsEveryFieldWithoutExposingDomainRecords() {
-        Instant time = Instant.parse("2026-01-01T00:00:00Z");
-        var active = new CatalogStatus.Active("rev", "hash", 4, time, 414, 2, 3, 1, Map.of("terms.csv", "source-hash"));
-        var source = new CatalogStatus(active, 7, time.plusSeconds(5), "Fallo anterior");
-        var response = mapper.toResponse(source);
-        assertThat(response.active().revision()).isEqualTo("rev");
-        assertThat(response.active().hash()).isEqualTo("hash");
-        assertThat(response.active().snapshotVersion()).isEqualTo(4);
-        assertThat(response.active().activatedAt()).isEqualTo(time);
-        assertThat(response.active().termCount()).isEqualTo(414);
-        assertThat(response.active().added()).isEqualTo(2);
-        assertThat(response.active().modified()).isEqualTo(3);
-        assertThat(response.active().deprecated()).isEqualTo(1);
-        assertThat(response.active().sourceHashes()).isEqualTo(Map.of("terms.csv", "source-hash"));
-        assertThat(response.attempts()).isEqualTo(7);
-        assertThat(response.lastAttempt()).isEqualTo(time.plusSeconds(5));
-        assertThat(response.lastFailure()).isEqualTo("Fallo anterior");
-        var json = JsonMapper.builder().build();
-        assertThat(json.writeValueAsString(response)).isEqualTo(json.writeValueAsString(source));
-    }
-
-    @Test
     void generatedMapperKeepsExactPublicJsonShape() {
         var active = CatalogStatus.Active.builder().revision("rev").hash("hash").snapshotVersion(4)
             .termCount(414).added(2).modified(3).deprecated(1).sourceHashes(Map.of("source", "hash")).build();

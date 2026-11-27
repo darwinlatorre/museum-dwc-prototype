@@ -4,9 +4,13 @@ import { injectMutation, QueryClient } from '@tanstack/angular-query-experimenta
 import { TableModule } from 'primeng/table';
 import { CatalogMetadata } from '../../services/catalog-metadata';
 import type { Term } from '../../models/catalog-term';
+import { ResizableTable, ResizableColumn } from '../../../../shared/ui/table-resize/table-resize';
+import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { nextTableOrder, sortTableRows, type TableOrder } from '../../../../shared/lib/table-sort';
+type CatalogColumn = 'name' | 'definition' | 'category' | 'status';
 @Component({
   selector: 'app-catalog',
-  imports: [FormField, TableModule],
+  imports: [FormField, TableModule, TableHeader, ResizableTable, ResizableColumn],
   templateUrl: './catalog.html',
 })
 export class Catalog {
@@ -38,17 +42,26 @@ export class Catalog {
     if (!category || category === this.absentCategory) return 'Sin categoría';
     return category.split(/[/#]/).filter(Boolean).at(-1) || category;
   }
+  readonly order = signal<TableOrder<CatalogColumn> | null>(null);
+  readonly first = signal(0);
+  sort(column: CatalogColumn) {
+    this.order.update(current => nextTableOrder(current, column)); this.first.set(0);
+  }
   reset() {
+    this.first.set(0);
     this.model.set({ search: '', category: '', status: '' });
   }
   categories = computed(() => [...new Set(this.terms().map((t) => t.category || this.absentCategory))].sort());
   statuses = computed(() => [...new Set(this.terms().map((t) => t.status))].sort());
-  filtered = computed(() =>
-    this.terms().filter(
+  filtered = computed(() => {
+    const rows = this.terms().filter(
       (t) =>
         (!this.model().category || (t.category || this.absentCategory) === this.model().category) &&
         (!this.model().status || t.status === this.model().status) &&
         Object.values(t).join(' ').toLowerCase().includes(this.model().search.toLowerCase()),
-    ),
-  );
+    );
+    const order = this.order();
+    return order ? sortTableRows(rows, term => order.column === 'category'
+      ? (term.category ? this.categoryLabel(term.category) : null) : term[order.column], order.direction) : rows;
+  });
 }

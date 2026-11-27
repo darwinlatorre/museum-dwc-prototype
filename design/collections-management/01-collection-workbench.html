@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colecciones · Mesa de trabajo</title>
+<style>
+:root {
+  --pine:#194c3a; --ink:#203a34; --muted:#526960; --heading:#1b3930;
+  --page:#f3f6f5; --surface:white; --line:#dce5e0; --soft:#edf6f2;
+  --nav:#163e31; --nav-text:#e8f1eb; --table:#f1f5f2; --link:#23634d;
+  --error-bg:#fff1ed; --error:#732b22; --error-border:#ae4030;
+  font-family:'Segoe UI',Frutiger,'Helvetica Neue',sans-serif;
+  font-size:14px; color:var(--ink); background:var(--page);
+}
+* { box-sizing:border-box; }
+body { margin:0; }
+h1,h2,h3 { color:var(--heading); }
+h1 { font-size:1.75rem; letter-spacing:-.04em; }
+h2 { font-size:1.35rem; margin-top:0; }
+h3 { font-size:1.05rem; }
+p { line-height:1.6; color:var(--muted); max-width:80ch; }
+a { color:var(--link); }
+button,input,textarea,select { font:inherit; color:var(--ink); background:var(--surface); }
+button,input,textarea,select,summary { min-height:44px; }
+button,input,textarea,select { border:1px solid var(--pine); border-radius:5px; padding:.6rem .7rem; }
+button,summary { cursor:pointer; }
+button:hover,summary:hover { background:var(--soft); }
+button:disabled { opacity:.5; cursor:not-allowed; }
+:focus-visible { outline:2px solid var(--pine); outline-offset:3px; }
+label { display:block; font-weight:600; margin:.75rem 0; }
+label input:not([type="checkbox"]),label textarea,label select { display:block; width:100%; margin-top:.5rem; }
+label:has(input[type="checkbox"]) { display:flex; align-items:center; gap:.75rem; min-height:44px; }
+input[type="checkbox"] { flex-shrink:0; width:18px; min-height:18px; height:18px; accent-color:var(--pine); }
+summary { padding:.75rem; color:var(--pine); font-weight:600; }
+.skip { position:absolute; top:-100px; padding:1rem; background:var(--surface); }
+.skip:focus { top:0; }
+header { background:var(--nav); color:var(--nav-text); padding:1rem 2rem; }
+header a { color:var(--nav-text); margin-right:1.5rem; display:inline-block; padding:.75rem 0; }
+header strong { margin-right:2rem; }
+main { max-width:1440px; padding:2rem; margin:auto; min-width:0; }
+.layout { display:grid; grid-template-columns:240px minmax(0,1fr); gap:1.5rem; align-items:start; }
+.panel { min-width:0; padding:1.5rem; background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.collections { list-style:none; padding:0; }
+.collections a { display:block; padding:1rem .75rem; border-bottom:1px solid var(--line); }
+.collections a[aria-current] { background:var(--soft); border-left:4px solid var(--pine); }
+.collections small { display:block; margin-top:.5rem; color:var(--muted); }
+.actions { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+.notice { background:var(--soft); border-left:4px solid var(--pine); padding:1rem; }
+.error { background:var(--error-bg); color:var(--error); border-left:4px solid var(--error-border); padding:1rem; }
+.sheet { overflow:auto; max-height:340px; border:1px solid var(--line); margin:1rem 0; }
+table { border-collapse:separate; border-spacing:0; width:100%; }
+.sheet table { min-width:960px; }
+caption { text-align:left; padding:1rem; color:var(--muted); }
+th,td { text-align:left; vertical-align:top; padding:.75rem; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+th { background:var(--table); color:var(--muted); }
+.sheet thead th { position:sticky; top:0; z-index:2; }
+.sheet tbody th { position:sticky; left:0; z-index:1; }
+td { white-space:pre-wrap; }
+.literal { white-space:pre-wrap; overflow-wrap:anywhere; }
+form { border-top:1px solid var(--line); padding:1rem 0; }
+.fields { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.review { margin-top:1.5rem; }
+.status { padding:.75rem 0; color:var(--pine); }
+@media(max-width:800px) {
+  main { padding:1rem; }
+  header { padding:1rem; }
+  .layout,.fields { grid-template-columns:1fr; }
+  .panel { padding:1rem; }
+  .collections { display:flex; flex-wrap:wrap; }
+  .collections li { flex:1 1 180px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  * { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header><strong>Museo de Historia Natural</strong><nav aria-label="Principal"><a href="#collections" aria-current="page">Colecciones</a><a href="#finalizar">Finalizar análisis</a></nav></header>
+<main id="main">
+<h1>Colecciones</h1>
+<p>Dirección 01 · Mesa de trabajo. Datos sintéticos; ninguna acción envía o guarda datos.</p>
+<div class="layout">
+<aside id="collections" class="panel" aria-labelledby="list-title">
+<h2 id="list-title">Mis colecciones</h2>
+<p>3 colecciones · Orden: nombre</p>
+<ul class="collections">
+<li><a href="#collection" aria-current="true">Anfibios del Cauca<small>3 registros activos · 1 en papelera</small></a></li>
+<li><a href="#other">Herbario CAUP<small>Sin registros</small></a></li>
+<li><a href="#other">Insectos de Popayán<small>128 registros activos</small></a></li>
+</ul>
+<details id="other"><summary>Otras colecciones · Vista prevista</summary><p>Herbario CAUP: aún no hay registros. Importe un archivo o agregue el primero. Al volver se conserva colección, página y foco.</p></details>
+</aside>
+<section class="panel" id="collection" aria-labelledby="collection-title">
+<h2 id="collection-title">Anfibios del Cauca</h2>
+<p>3 activos · Colección biológica · Revisión 7</p>
+<div class="actions"><a href="#new">Agregar registro</a><a href="#import">Importar a esta colección</a><a href="#trash">Papelera (1)</a></div>
+<p id="sheet-help">Hoja de datos · Desplace para ver todas las columnas. Tab entra al área; use las flechas para desplazarla. Los valores se muestran completos, sin elipsis.</p>
+<div class="sheet" role="region" aria-label="Registros activos" aria-describedby="sheet-help" tabindex="0">
+<table><caption>Registros 1–3 de 3 · Orden: occurrenceID</caption>
+<thead><tr><th scope="col">Fila</th><th scope="col">occurrenceID</th><th scope="col">scientificName</th><th scope="col">eventDate</th><th scope="col">locality</th><th scope="col">Acción</th></tr></thead>
+<tbody>
+<tr><th scope="row">1</th><td>MHNUC-000042</td><td>Atelopus eusebianus</td><td>2024-06-12</td><td>  Quebrada San Juan, margen oriental
+Sector de bosque ripario  </td><td><a href="#edit">Editar MHNUC-000042</a></td></tr>
+<tr><th scope="row">2</th><td>MHNUC-000043</td><td>Pristimantis palmeri</td><td>2024-06-13</td><td>Reserva Munchique</td><td><a href="#other-record">Ver detalle de MHNUC-000043</a></td></tr>
+<tr><th scope="row">3</th><td>MHNUC-000044</td><td>Rhinella marina</td><td>2024-06-14</td><td>Popayán</td><td><a href="#other-record">Ver detalle de MHNUC-000044</a></td></tr>
+</tbody></table></div>
+<div class="actions" aria-label="Paginación"><button disabled>Anterior</button><span>Página 1 de 1</span><button disabled>Siguiente</button></div>
+<details id="other-record"><summary>Detalle de otros registros · Vista prevista</summary><p>La aplicación abrirá los valores completos del registro seleccionado; este boceto desarrolla la edición de MHNUC-000042. Cerrar devolverá el foco al origen conservando página y posición.</p></details>
+<details id="edit"><summary>Editar MHNUC-000042 · Guardado explícito</summary>
+<form><div class="fields"><label>occurrenceID<input value="MHNUC-000042" required></label><label>scientificName<input value="Atelopus eusebianus"></label><label>eventDate<input value="2024-06-12"></label><label>locality<textarea rows="3">  Quebrada San Juan, margen oriental
+Sector de bosque ripario  </textarea></label></div>
+<p>Los espacios y ceros iniciales se conservan. Ningún cambio se guarda al salir de una celda.</p>
+<div class="actions"><button type="submit">Guardar cambios</button><button type="reset">Restablecer borrador</button></div>
+</form>
+<details><summary>Validación y conflicto · Estados previstos</summary><p class="error">occurrenceID MHNUC-000043 ya existe en esta colección. No se guardaron cambios. Corrija el identificador.</p><p class="error">La colección cambió desde la revisión 7. Su borrador se conserva; recargue la revisión antes de guardar.</p></details>
+<details><summary>Retirar MHNUC-000042</summary><p>Pasará a la papelera; no se borrará definitivamente.</p><button type="button" data-demo>Confirmar retiro</button></details>
+</details>
+<details id="new"><summary>Agregar registro</summary><form><div class="fields"><label>occurrenceID<input required placeholder="MHNUC-000045"></label><label>scientificName<input placeholder="Pristimantis palmeri"></label></div><p>Fuente: Colección biológica · Campos restantes y valores libres disponibles en el editor completo.</p><button type="submit">Guardar nuevo registro</button></form></details>
+<details id="trash"><summary>Papelera · 1 registro</summary><p>MHNUC-000041 · Atelopus eusebianus</p><button type="button" data-demo>Restaurar MHNUC-000041</button><p class="error">Estado previsto: no se puede restaurar; occurrenceID MHNUC-000041 ya existe entre los activos. Ningún registro se modificó.</p><p>La restauración revalida. No hay borrado definitivo ni eliminación de colecciones.</p></details>
+</section>
+</div>
+<section class="panel review" id="import" aria-labelledby="import-title"><h2 id="import-title">Importar a Anfibios del Cauca</h2><label>Archivo CSV o XLSX<input type="file" accept=".csv,.xlsx"></label><p>Se analiza en el navegador. Seleccionar el archivo no envía archivos ni registros. El destino existente conserva sus registros.</p><a href="#finalizar">Ver ejemplo de Finalizar</a></section>
+<section class="panel review" id="finalizar" aria-labelledby="finish-title">
+<h2 id="finish-title">Finalizar · Anfibios del Cauca</h2>
+<p>Resumen de ejemplo · 24 registros · 0 errores · 2 advertencias · 0 duplicados</p>
+<details><summary>2 advertencias · Revisar antes de confirmar</summary><p>Filas 8 y 19: precisión de coordenadas. Se conserva el texto del usuario; no se normaliza automáticamente.</p></details>
+<details><summary>Errores y duplicados · Estado bloqueado</summary><p class="error">1 error: fila 6, decimalLatitude fuera de rango. 2 duplicados: filas 9/10 entre sí y fila 12 contra esta colección. Finalizar bloqueado: no se guarda ninguna fila.</p><p>Corrija y repita el análisis. Otras colecciones son independientes. Los avisos de duplicados del diagnóstico no borran datos.</p></details>
+<form><label><input type="checkbox" required> Revisé las 2 advertencias y confirmo enviar los 24 registros a Anfibios del Cauca.</label><p>Se envían registros, no el archivo. El servidor revalida todo el lote: si falla una fila, no se guarda ninguna.</p><button type="submit">Confirmar y enviar 24 registros</button></form>
+<details><summary>Envío · Estados previstos</summary><p>Enviando y revalidando… Evite un segundo envío; acción bloqueada hasta obtener resultado.</p><p class="error">Lote rechazado: se detectó un duplicado nuevo en esta colección. 0 de 24 guardados. Los datos locales se conservan para corregir y reintentar.</p><p class="notice">Importación completada: 24 de 24 guardados. Abrir colección actualizada.</p></details>
+</section>
+<details class="review"><summary>Carga, búsqueda y recuperación · Estados previstos</summary><p>Cargando registros… Se mantiene el encabezado y se indica qué página está pendiente.</p><p>No hay coincidencias para «MHNUC-99». Conserve la consulta y ofrezca Limpiar búsqueda.</p><p class="error">No se pudo cargar la revisión actual. Los datos visibles son anteriores; reintentar no elimina el borrador.</p></details>
+<p class="status" id="feedback" role="status" aria-live="polite">Boceto local · Controles de demostración, sin persistencia.</p>
+</main>
+<script>
+document.querySelectorAll('form').forEach(form => {
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    document.getElementById('feedback').textContent = 'Demostración: no se ha enviado ni guardado nada. El borrador permanece visible.';
+  });
+});
+document.querySelectorAll('[data-demo]').forEach(button => {
+  button.addEventListener('click', () => {
+    document.getElementById('feedback').textContent = 'Demostración: ninguna modificación realizada. Consulte el estado previsto junto a la acción.';
+  });
+});
+// Los enlaces internos abren el detalle nativo antes de navegar, sin overlays.
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', () => {
+    const target = document.getElementById(link.getAttribute('href').slice(1));
+    if (target && target.tagName === 'DETAILS') {
+      target.open = true;
+      target.querySelector('summary').focus();
+    }
+  });
+});
+</script>
+</body>
+</html>

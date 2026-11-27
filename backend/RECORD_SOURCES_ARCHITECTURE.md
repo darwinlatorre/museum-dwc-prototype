@@ -19,8 +19,8 @@ Código y pruebas pertenecen a `recordsources`; `scripts/check_architecture.py` 
 | `application/port/out` | Lectura, bloqueo, reemplazo e inserción idempotente |
 | `application/service` | Bloquear, comparar revisión, combinar opcionales legados, validar, incrementar y guardar |
 | `infrastructure/adapter/in/web` | HTTP, Bean Validation y mapper req/res separado |
-| `infrastructure/adapter/json` | Contrato estricto común a HTTP, semillas y JSONB; sin coerción numérica |
-| `infrastructure/adapter/out/database` | Entidad JPA, repositorio y mapper de persistencia con codec `@Context` |
+| `infrastructure/adapter/json` | Contrato JSON común a HTTP, semillas y JSONB, con Bean Validation; la tipificación estricta (sin coerción) la aplica `shared/infrastructure/config/StrictJsonBeanConfig` |
+| `infrastructure/adapter/out/database` | Entidad JPA, repositorio y mapper de persistencia; Jackson llega al mapper mediante `@Context` |
 | `infrastructure/adapter/in/bootstrap` | Recurso local validado; nunca valores derivados de perfiles históricos |
 | `infrastructure/transaction` | Una transacción por caso de uso, no por acceso al repositorio |
 | `infrastructure/config` | `ConfigurationBeanConfig`: composición explícita y mappers generados |
@@ -33,11 +33,11 @@ El núcleo no importa Spring, Jakarta, Jackson, JPA, Commons CSV ni DTO HTTP. So
 
 La transacción de actualización mantiene `PESSIMISTIC_WRITE` desde `lockGlobal()` hasta `saveAndFlush()`. Se compara la revisión antes de validar el contenido en aplicación. Un cliente obsoleto recibe 409 sin escribir; dos clientes con la misma revisión tienen exactamente un ganador. La revisión explícita no es `@Version`. El mapper usa `@MappingTarget` sobre la entidad administrada e ignora `id`.
 
-La presencia de `optionalFields` se detecta en el codec JSON y el mapper HTTP la convierte a `ConfigurationUpdate`, un comando Java puro. El dominio siempre contiene listas concretas, nunca null para representar omisión. `update(ValidationConfiguration)` sigue siendo un reemplazo explícito completo para consumidores Java; ambas entradas del decorador envuelven el caso de uso entero.
+La presencia de `optionalFields` la detecta `ConfigurationJson.ContextFields`, basado en setters: ausente queda `null` y un `null` explícito se rechaza con `@JsonSetter(nulls = Nulls.FAIL)`. El mapper HTTP aplica `ConfigurationValidation` a la forma de la solicitud (contextos/campos únicos, límite combinado) antes del caso de uso, así que una forma inválida es 400 aunque la revisión esté obsoleta, y la convierte a `ConfigurationUpdate`, un comando Java puro. El dominio siempre contiene listas concretas, nunca null para representar omisión; el decorador transaccional envuelve el caso de uso entero.
 
 Tras bloquear y comparar revisión, aplicación valida la entrada y conserva opcionales de los contextos omitidos, retirando solo coincidencias textuales exactas promovidas a obligatorias. Valida también el resultado combinado antes de incrementar y guardar. Listas explícitas vacías eliminan los opcionales; solapamientos explícitos y exceso del límite combinado se rechazan sin efectos. No se usa lectura previa al bloqueo para este merge.
 
-El codec común lee semillas y JSONB antiguos sin `optionalFields` como listas vacías. GET solo decodifica: no reescribe la fila. MapStruct mantiene listas separadas en HTTP y persistencia; las respuestas incluyen siempre `optionalFields`. El campo se guarda en el JSONB existente, sin V5 ni cambios de entidad, esquema o semillas. Solo `requiredFields` representa obligatoriedad para el analizador del navegador.
+El mismo contrato `ConfigurationJson` lee semillas y JSONB antiguos sin `optionalFields` como listas vacías (`ConfigurationJsonMapper`, reutilizado por los mappers HTTP y de persistencia). GET solo decodifica y vuelve a aplicar `ConfigurationValidation`: no reescribe la fila. MapStruct mantiene listas separadas en HTTP y persistencia; las respuestas incluyen siempre `optionalFields`. El campo se guarda en el JSONB existente, sin V5 ni cambios de entidad, esquema o semillas. Solo `requiredFields` representa obligatoriedad para el analizador del navegador.
 
 Bootstrap valida el documento completo con revisión cero e inserta por HQL `on conflict (id) do nothing`, con flush dentro de la misma transacción. No hace merge ni sustituye configuración existente. La exclusión única de PostgreSQL resuelve el arranque concurrente aun antes de existir la fila; no se usa un inexistente bloqueo de fila como sustituto de esa restricción.
 
@@ -49,7 +49,7 @@ V1/V2 permanecen byte a byte. V3 crea una fila global estable (`id smallint=1`) 
 
 1. Revisar V3/V4 y `ConfigurationMigrationTests`: actualización desde V1/V2 con publicaciones, comparación de catálogo e historial y configuración editada antes/después de V4.
 2. Revisar decorador, repositorio y `ValidationConfigurationIntegrationTests`: carrera de PUT, estado sin efectos ante rechazo, rollback después de flush y reinicio real.
-3. Revisar `ConfigurationMapperTests`/`ConfigurationUseCaseTests`: código generado, identidad administrada, JSON estricto y preservación de texto.
+3. Revisar `ConfigurationMapperTests`/`ConfigurationUseCaseTests`: identidad administrada y preservación de texto; el JSON estricto lo cubren las pruebas HTTP de integración.
 4. Revisar la matriz en el recurso y `scripts/test_seeds.py`: 30/22/10/15/8, disposición opcional solo para colección y evidencia oficial intacta.
 
 Contrato detallado y comandos: [README](README.md). Las pruebas usan exclusivamente PostgreSQL desechable; ningún test versionado depende de historia Git ni snapshots de trabajo.

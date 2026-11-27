@@ -1,0 +1,417 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
+import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, Injector, OnDestroy, signal } from '@angular/core';
+import type { Signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormArray, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, ROUTER_OUTLET_DATA, RouterLink } from '@angular/router';
+import { QueryClient } from '@tanstack/angular-query-experimental';
+import { DwcPicker } from '../../../../shared/ui/dwc-picker/dwc-picker';
+import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { ResizableColumn, ResizableTable } from '../../../../shared/ui/table-resize/table-resize';
+import type { RecordSort } from '../../data-access/collections-api';
+import { label as contextLabel } from '../../../../core/i18n/localization';
+import { CollectionsApi } from '../../data-access/collections-api';
+import { CollectionNavigation } from '../../guards/unsaved-collection';
+import { CollectionApiError } from '../../models/collection';
+import { ANIMAL_EMOJIS } from '../../models/collection-emoji';
+import type { CollectionInfo, CollectionRecord, Page, TrashFilter } from '../../models/collection';
+import type { CollectionsMetadata } from '../../models/collections-metadata';
+import type { Issue } from '../../../importer/models/analysis-result';
+
+type Editor = { kind: 'add' | 'edit'; record?: CollectionRecord; headers: string[]; mapping: Record<string, string>;
+  revision: number; configurationRevision: number; catalogVersion: number };
+type Confirmation = { kind: 'trash' | 'restore'; record: CollectionRecord };
+
+@Component({
+  selector: 'app-collections-page', imports: [RouterLink, ReactiveFormsModule, DwcPicker, TableHeader, ResizableTable, ResizableColumn, I18nPluralPipe],
+  templateUrl: './collections-page.html',
+  host: { '(window:beforeunload)': 'beforeUnload($event)' },
+})
+export class CollectionsPage implements OnDestroy {
+  readonly plurals = PLURALS;
+  private readonly api = inject(CollectionsApi);
+  private readonly client = inject(QueryClient);
+  private readonly route = inject(ActivatedRoute);
+  private readonly navigation = inject(CollectionNavigation);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  readonly metadata = inject(ROUTER_OUTLET_DATA) as Signal<CollectionsMetadata>;
+  readonly id = signal<string | null>(null);
+  readonly collection = signal<CollectionInfo | undefined>(undefined);
+  readonly list = signal<Page<CollectionInfo> | undefined>(undefined);
+  readonly records = signal<Page<CollectionRecord> | undefined>(undefined);
+  readonly page = signal(0);
+  readonly sort = signal<RecordSort>({ field: null, direction: 'asc' });
+  readonly displayedSort = signal<RecordSort>({ field: null, direction: 'asc' });
+  readonly size = signal(25);
+  readonly filter = signal<TrashFilter>('ACTIVE');
+  readonly loading = signal(false);
+  readonly recordLoading = signal(false);
+  readonly message = signal('');
+  readonly readError = signal('');
+  readonly issues = signal<Issue[]>([]);
+  readonly editor = signal<Editor | undefined>(undefined);
+  readonly confirmation = signal<Confirmation | undefined>(undefined);
+  readonly search = signal('');
+  readonly field = signal('');
+  readonly warnings = signal(false);
+  readonly blocked = signal(false);
+  readonly uncertain = signal(false);
+  readonly reconciled = signal(false);
+  readonly busy = signal(false);
+  readonly schemas = signal<CollectionRecord[]>([]);
+  readonly values = new FormArray<FormControl<string>>([]);
+  readonly contextLabel = contextLabel;
+  readonly hideEmpty = signal(true);
+  readonly inlineIndex = signal<number | undefined>(undefined);
+  readonly columns = computed(() => {
+    const records = this.records()?.items ?? [];
+    const all = [...new Set(records.flatMap(record => this.fields(record)))];
+    // Only the loaded page determines presentation; whitespace is retained as data.
+    return this.hideEmpty() ? all.filter(column => records.some(record => {
+      const index = this.fields(record).indexOf(column);
+      return index >= 0 && ((record.values[index] ?? '') !== ''
+        || (this.editor()?.record?.id === record.id && this.inlineIndex() === index));
+    })) : all;
+  });
+  readonly columnPage = signal(0);
+  readonly visibleColumns = computed(() => this.columns().slice(this.columnPage() * 25, (this.columnPage() + 1) * 25));
+  readonly inlineRecovery = computed(() => {
+    const editor = this.editor(), index = this.inlineIndex();
+    if (!editor || index === undefined) return false;
+    return !this.visibleColumns().includes(this.fields(editor)[index])
+      || !this.records()?.items.some(record => record.id === editor.record?.id)
+      || this.blocked() || this.uncertain() || this.metadataChanged()
+      || !!this.message() || this.issues().length > 0;
+  });
+  private readonly cellValues = computed(() => new Map((this.records()?.items ?? []).map(record =>
+    [record.id, new Map(this.fields(record).map((field, index) => [field, record.values[index]]))])));
+  readonly total = computed(() => (this.id() ? this.records() : this.list())?.totalElements ?? 0);
+  readonly pages = computed(() => Math.max(1, Math.ceil(this.total() / this.size())));
+  readonly metadataChanged = computed(() => {
+    const editor = this.editor();
+    return !!editor && (editor.configurationRevision !== this.metadata().configuration()?.revision
+      || editor.catalogVersion !== this.metadata().snapshot()?.snapshotVersion);
+  });
+  readonly canWrite = computed(() => !this.metadataChanged() && !this.busy() && !this.loading() && !this.recordLoading() && !this.blocked() && !this.uncertain()
+    && this.metadata()?.available() && (!this.issues().some(issue => issue.severity === 'ERROR'))
+    && (!this.issues().some(issue => issue.severity === 'WARNING') || this.warnings()));
+  private session = new AbortController();
+  private pageController?: AbortController;
+  private recordController?: AbortController;
+  private pageOperation = 0;
+  private recordOperation = 0;
+  private origin?: HTMLElement;
+  private cellOrigin?: { recordId: string; column: string };
+  private returnFocus() {
+    const cell = this.cellOrigin;
+    const target = cell ? [...this.element.nativeElement.querySelectorAll<HTMLElement>('td[data-cell]')]
+      .find(element => element.dataset['record'] === cell.recordId && element.dataset['column'] === cell.column)?.querySelector<HTMLElement>('button') : this.origin;
+    (target?.isConnected ? target : this.element.nativeElement.querySelector<HTMLElement>('#collections-title'))?.focus();
+  }
+  private dirty = false;
+  private destroyed = false;
+  constructor() {
+    this.navigation.current = this;
+    this.values.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.dirty = true; this.issues.set([]); this.warnings.set(false);
+    });
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      this.session.abort(); this.session = new AbortController();
+      this.cancelReads(); this.id.set(params.get('id')); this.page.set(0); this.filter.set('ACTIVE');
+      this.collection.set(undefined); this.records.set(undefined); this.list.set(undefined); this.clearEditor();
+      this.sort.set({ field: null, direction: 'asc' }); this.displayedSort.set(this.sort()); this.columnPage.set(0);
+      this.uncertain.set(this.navigation.uncertainCollections.has(this.id() ?? '')); this.reconciled.set(false); this.confirmation.set(undefined);
+      this.message.set(this.uncertain() ? 'No sabemos si los cambios se guardaron. Actualice y compruebe los registros antes de continuar.' : '');
+      void this.load();
+    });
+    inject(DestroyRef).onDestroy(() => { this.destroyed = true; });
+  }
+  fields(record: Pick<CollectionRecord, 'headers' | 'mapping'>) {
+    return record.headers.map(header => Object.hasOwn(record.mapping, header) && record.mapping[header] ? record.mapping[header] : header);
+  }
+  cell(record: CollectionRecord, column: string) {
+    return this.cellValues().get(record.id)?.get(column) ?? '—';
+  }
+  text(event: Event) { return (event.target as HTMLInputElement).value; }
+  private cancelReads() {
+    this.pageController?.abort(); this.recordController?.abort(); this.pageOperation++; this.recordOperation++;
+    this.recordLoading.set(false);
+  }
+  async load() {
+    const id = this.id(), session = this.session;
+    this.loading.set(true); this.readError.set('');
+    try {
+      if (id) {
+        const collection = await this.api.detail(id, session.signal);
+        if (session !== this.session || session.signal.aborted) return;
+        this.collection.set(collection);
+      }
+      await this.loadPage();
+    } catch (error) { if (!session.signal.aborted) this.readError.set(this.errorText(error)); }
+    finally { if (session === this.session) this.loading.set(false); }
+  }
+  async loadPage() {
+    this.pageController?.abort(); const controller = this.pageController = new AbortController();
+    const operation = ++this.pageOperation, id = this.id(), sort = this.sort();
+    this.loading.set(true); this.readError.set('');
+    try {
+      if (id) {
+        const result = await this.api.records(id, this.page(), this.size(), this.filter(), controller.signal, sort);
+        if (operation === this.pageOperation) {
+          this.records.set(result); this.displayedSort.set(sort);
+          this.columnPage.update(page => Math.min(page, Math.max(0, Math.ceil(this.columns().length / 25) - 1)));
+        }
+      } else {
+        const result = await this.client.fetchQuery({ queryKey: ['collections', this.page(), this.size()], retry: false, staleTime: 0,
+          queryFn: () => this.api.list(this.page(), this.size(), controller.signal) });
+        if (operation === this.pageOperation) this.list.set(result);
+      }
+    } catch (error) { if (operation === this.pageOperation && !controller.signal.aborted) this.readError.set(this.errorText(error)); }
+    finally { if (operation === this.pageOperation) this.loading.set(false); }
+  }
+  sortBy(field: string | null) {
+    if (this.busy() || this.uncertain() || this.confirmation() || !this.discard()) return;
+    this.cancelReads();
+    const previous = this.sort();
+    this.sort.set({ field, direction: previous.field === field && previous.direction === 'asc' ? 'desc' : 'asc' });
+    this.page.set(0); void this.loadPage();
+  }
+  sortDirection(field: string | null) {
+    return this.displayedSort().field === field ? this.displayedSort().direction : null;
+  }
+  toggleEmpty() { this.hideEmpty.update(value => !value); this.columnPage.set(0); }
+  returnToCell() {
+    const editor = this.editor(), index = this.inlineIndex();
+    if (!editor || index === undefined) return;
+    this.columnPage.set(Math.max(0, Math.floor(this.columns().indexOf(this.fields(editor)[index]) / 25)));
+    this.focusEditor();
+  }
+  cellIndex(record: CollectionRecord, column: string) { return this.fields(record).indexOf(column); }
+  inlineKey(event: KeyboardEvent) {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (!this.busy() && !this.uncertain()) { this.clearEditor(); afterNextRender(() => this.returnFocus(), { injector: this.injector }); } }
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); void this.save(); }
+  }
+  changeColumns(direction: number) {
+    this.columnPage.update(page => Math.max(0, Math.min(Math.max(0, Math.ceil(this.columns().length / 25) - 1), page + direction)));
+  }
+  changePage(page: number) {
+    if (this.busy() || (!this.uncertain() && !this.discard())) return;
+    this.page.set(page); this.records.set(undefined); this.list.set(undefined); void this.loadPage();
+  }
+  changeSize(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    if (!this.uncertain() && !this.discard()) { select.value = String(this.size()); return; }
+    this.size.set(Number(select.value)); this.page.set(0); this.records.set(undefined); this.list.set(undefined); void this.loadPage();
+  }
+  changeFilter(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    if (!this.uncertain() && !this.discard()) { select.value = this.filter(); return; }
+    this.filter.set(select.value as TrashFilter); this.page.set(0); this.records.set(undefined); void this.loadPage();
+  }
+  async edit(record: CollectionRecord, event: Event, column?: string) {
+    if (column !== undefined && this.editor()?.record?.id === record.id && this.inlineIndex() === this.cellIndex(record, column)) return;
+    if (this.busy() || this.recordLoading() || this.uncertain() || (column !== undefined && (record.trashed || this.cellIndex(record, column) < 0)) || !this.discard()) return;
+    this.cellOrigin = column === undefined ? undefined : { recordId: record.id, column };
+    const target = event.currentTarget as HTMLElement;
+    this.origin = target.matches('td') ? target.querySelector<HTMLElement>('button') ?? target : target;
+    this.recordController?.abort(); const controller = this.recordController = new AbortController(), operation = ++this.recordOperation;
+    this.recordLoading.set(true); this.message.set('');
+    try {
+      const current = await this.api.record(this.id()!, record.id, controller.signal);
+      if (operation !== this.recordOperation) return;
+      this.startEditor('edit', current.headers, current.mapping, current, column === undefined ? undefined : this.cellIndex(current, column));
+    } catch (error) { if (!controller.signal.aborted) this.message.set(this.errorText(error)); }
+    finally { if (operation === this.recordOperation) this.recordLoading.set(false); }
+  }
+  add(event: Event) {
+    if (!this.discard() || !this.collection() || !this.metadata()?.available() || this.uncertain()) return;
+    this.cellOrigin = undefined; this.origin = event.currentTarget as HTMLElement;
+    this.schemas.set(this.records()?.items ?? []);
+    this.startEditor('add', this.required(), {});
+  }
+  private required() {
+    return this.metadata().configuration()?.contexts.find(context => context.context === this.collection()?.context)?.requiredFields ?? [];
+  }
+  private startEditor(kind: 'add' | 'edit', headers: string[], mapping: Record<string, string>, record?: CollectionRecord, inlineIndex?: number) {
+    const configuration = this.metadata().configuration(), snapshot = this.metadata().snapshot();
+    if (!configuration || !snapshot || !this.collection()) { this.message.set('Actualice las reglas antes de editar.'); return; }
+    this.clearEditor();
+    this.editor.set({ kind, record, headers: [...headers], mapping: { ...mapping }, revision: this.collection()!.revision,
+      configurationRevision: configuration.revision, catalogVersion: snapshot.snapshotVersion });
+    (record?.values ?? headers.map(() => '')).forEach(value => this.values.push(new FormControl(value, { nonNullable: true }), { emitEvent: false }));
+    this.inlineIndex.set(inlineIndex); this.dirty = kind === 'add'; this.focusEditor();
+  }
+  chooseSchema(event: Event) {
+    const selected = this.schemas().find(record => record.id === this.text(event));
+    if (!selected || !this.editor() || !window.confirm('¿Reemplazar los campos y textos del nuevo registro por estos campos vacíos?')) return;
+    // A manual record has no imported source: use the selected effective fields as its concrete headers.
+    this.startEditor('add', [...new Set([...this.fields(selected), ...this.required()])], {});
+  }
+  async trashSchemas() {
+    const session = this.session;
+    this.recordLoading.set(true);
+    try {
+      const page = await this.api.records(this.id()!, 0, 25, 'TRASHED', session.signal);
+      if (session !== this.session) return;
+      this.schemas.set(page.items); this.message.set('Campos de los primeros 25 registros en papelera. Para ver otros, cierre el formulario y cambie de página en Papelera o Todos.');
+    } catch (error) { if (!session.signal.aborted) this.message.set(this.errorText(error)); }
+    finally { if (session === this.session) this.recordLoading.set(false); }
+  }
+  addField() {
+    const editor = this.editor(), field = this.field();
+    if (!editor || editor.kind !== 'add' || !field || this.fields(editor).includes(field) || editor.headers.includes(field) || this.busy() || this.uncertain()) return;
+    this.editor.set({ ...editor, headers: [...editor.headers, field] });
+    this.values.push(new FormControl('', { nonNullable: true })); this.field.set(''); this.dirty = true;
+  }
+  fieldVisible(index: number) {
+    const editor = this.editor(); return !!editor && (editor.headers[index] + ' ' + this.fields(editor)[index]).toLowerCase().includes(this.search().toLowerCase());
+  }
+  private consent() {
+    const editor = this.editor();
+    return { expectedRevision: editor?.revision ?? this.collection()!.revision,
+      configurationRevision: editor?.configurationRevision ?? this.metadata().configuration()!.revision,
+      catalogVersion: editor?.catalogVersion ?? this.metadata().snapshot()!.snapshotVersion, warningsConfirmed: this.warnings() };
+  }
+  async save() {
+    const editor = this.editor();
+    if (!editor || !this.canWrite() || editor.record?.trashed) return;
+    const values = this.values.getRawValue();
+    await this.mutate(() => editor.kind === 'edit'
+      ? this.api.edit(this.id()!, editor.record!.id, { ...this.consent(), values }, this.session.signal)
+      : this.api.add(this.id()!, { ...this.consent(), headers: editor.headers, mapping: editor.mapping,
+        row: { sourceRow: 1, values, originalValues: [...values] } }, this.session.signal));
+  }
+  confirmAction(kind: 'trash' | 'restore', record: CollectionRecord, event: Event) {
+    if (!this.discard() || this.uncertain() || this.busy()) return;
+    this.cellOrigin = undefined; this.origin = event.currentTarget as HTMLElement; this.issues.set([]); this.warnings.set(false); this.message.set('');
+    this.confirmation.set({ kind, record });
+    afterNextRender(() => {
+      const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('.collection-confirm-dialog');
+      if (dialog?.showModal) dialog.showModal();
+      else dialog?.setAttribute('open', '');
+      dialog?.querySelector<HTMLButtonElement>('button')?.focus();
+    }, { injector: this.injector });
+  }
+  closeConfirmation() {
+    if (this.busy() || this.uncertain()) return;
+    this.confirmation.set(undefined); this.issues.set([]);
+    // El diálogo modal aún vuelve inerte el fondo hasta que Angular lo retira.
+    afterNextRender(() => this.origin?.focus(), { injector: this.injector });
+  }
+  async applyAction() {
+    const action = this.confirmation();
+    if (!action || !this.canWrite()) return;
+    await this.mutate(() => action.kind === 'trash'
+      ? this.api.trash(this.id()!, action.record.id, this.collection()!.revision, this.session.signal)
+      : this.api.restore(this.id()!, action.record.id, this.consent(), this.session.signal));
+  }
+  readonly animals = ANIMAL_EMOJIS;
+  /** Cambia el emoji con la misma ruta de mutación (revisión, resultado incierto y recarga). */
+  async chooseEmoji(emoji: string | null, event: Event) {
+    (event.currentTarget as HTMLElement).closest<HTMLElement>('[popover]')?.hidePopover?.();
+    const collection = this.collection();
+    if (!collection || (collection.emoji ?? null) === emoji || this.busy() || this.uncertain() || this.editor() || !this.discard()) return;
+    // El emoji cambia a la vista en la cabecera: no hace falta el aviso «Cambios guardados.».
+    await this.mutate(() => this.api.emoji(collection.id, emoji, collection.revision, this.session.signal), '');
+  }
+  private async mutate(send: () => Promise<CollectionInfo>, success = 'Cambios guardados.') {
+    // Invalidate older reads before accepting the authoritative mutation response.
+    const session = this.session;
+    this.cancelReads(); this.busy.set(true); this.message.set('');
+    try {
+      const result = await send();
+      if (this.destroyed || session !== this.session || session.signal.aborted) return;
+      this.collection.set(result); this.client.setQueryData(['collections', result.id], result);
+      void this.client.invalidateQueries({ queryKey: ['collections'], refetchType: 'none' });
+      this.clearEditor(); this.confirmation.set(undefined); this.message.set(success);
+      await this.loadPage();
+      afterNextRender(() => this.returnFocus(), { injector: this.injector });
+    } catch (error) {
+      if (this.destroyed || session !== this.session || session.signal.aborted) return;
+      if (!(error instanceof CollectionApiError) || error.unknownOutcome) {
+        this.confirmation.set(undefined);
+        this.navigation.uncertainCollections.add(this.id()!);
+        this.uncertain.set(true); this.reconciled.set(false);
+        // Keep the draft but release the modal so every page can be checked before acknowledgement.
+        const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('.collection-editor-dialog');
+        if (dialog?.open) { dialog.close?.(); dialog.setAttribute('open', ''); }
+        this.message.set('Resultado desconocido: puede que los cambios se hayan guardado. No los enviaremos otra vez. Actualice y compruebe los registros antes de continuar.');
+      } else {
+        this.message.set(`${error.message} No se guardaron cambios de esta solicitud.`); this.issues.set(error.problem.issues ?? []);
+        this.blocked.set(['REVISION_CONFLICT', 'CONFIGURATION_CHANGED', 'CATALOG_CHANGED', 'AUTHORITY_UNAVAILABLE', 'RECORD_TRASHED', 'RECORD_ACTIVE'].includes(error.problem.code ?? ''));
+      }
+    } finally { if (session === this.session) this.busy.set(false); }
+  }
+  async refreshDraft() {
+    if (this.busy()) return;
+    const session = this.session, editor = this.editor(), action = this.confirmation(), operation = this.recordOperation;
+    let expectedEditor = editor, expectedAction = action;
+    const current = () => session === this.session && !session.signal.aborted && expectedEditor === this.editor()
+      && expectedAction === this.confirmation() && operation === this.recordOperation;
+    this.loading.set(true); this.readError.set('');
+    try {
+      const info = await this.api.detail(this.id()!, session.signal);
+      if (!current()) return;
+      if (!await this.metadata().refresh()) throw new Error('No se pudieron actualizar las reglas. Sus cambios se conservan.');
+      if (!current()) return;
+      const recordId = editor?.record?.id ?? action?.record.id;
+      const record = recordId ? await this.api.record(info.id, recordId, session.signal) : undefined;
+      if (!current()) return;
+      this.collection.set(info);
+      if (editor) this.editor.set({ ...editor, record: record ?? editor.record, revision: info.revision,
+        configurationRevision: this.metadata().configuration()!.revision, catalogVersion: this.metadata().snapshot()!.snapshotVersion });
+      if (action && record && (action.kind === 'restore' ? !record.trashed : record.trashed)) {
+        this.confirmation.set(undefined); this.origin?.focus();
+      }
+      this.blocked.set(!!editor && !!record?.trashed); this.issues.set([]); this.warnings.set(false);
+      expectedEditor = this.editor(); expectedAction = this.confirmation();
+      await this.loadPage();
+      if (!current()) return;
+      if (this.readError()) throw new Error(this.readError());
+      this.reconciled.set(this.uncertain());
+      this.message.set(this.uncertain() ? 'Compruebe los registros guardados en todas las páginas necesarias. No vuelva a enviar estos cambios.' : 'Sus cambios se conservan. Puede volver a guardarlos para comprobarlos con las reglas actuales.');
+    } catch (error) { if (current()) { this.readError.set(this.errorText(error)); this.blocked.set(true); } }
+    finally { if (session === this.session) this.loading.set(false); }
+  }
+  acknowledgeReconciliation() {
+    if (!this.reconciled()) return;
+    this.navigation.uncertainCollections.delete(this.id()!);
+    this.uncertain.set(false); this.reconciled.set(false); this.blocked.set(false); this.confirmation.set(undefined); this.clearEditor();
+    this.message.set('Comprobación confirmada. No volveremos a enviar los cambios anteriores.'); this.origin?.focus();
+  }
+  private clearEditor() {
+    this.inlineIndex.set(undefined); this.editor.set(undefined); this.values.clear({ emitEvent: false }); this.dirty = false; this.search.set(''); this.field.set('');
+    this.issues.set([]); this.warnings.set(false); this.blocked.set(false);
+  }
+  canLeave() {
+    if (this.busy()) return false;
+    return !(this.dirty || this.field() || this.uncertain()) || window.confirm(this.uncertain()
+      ? 'No sabemos si los cambios se guardaron. ¿Salir y comprobar los registros antes de continuar?' : 'Hay cambios sin guardar. ¿Descartar el borrador?');
+  }
+  private discard() {
+    if (this.busy() || this.uncertain() || !this.canLeave()) return false;
+    this.clearEditor(); return true;
+  }
+  cancelEditor() { if (this.discard()) afterNextRender(() => this.returnFocus(), { injector: this.injector }); }
+  escape(event: Event) { event.preventDefault(); this.cancelEditor(); }
+  beforeUnload(event: BeforeUnloadEvent) {
+    if (this.dirty || this.field() || this.busy() || this.uncertain()) { event.preventDefault(); event.returnValue = ''; }
+  }
+  private focusEditor() {
+    afterNextRender(() => {
+      if (this.inlineIndex() !== undefined) {
+        this.element.nativeElement.querySelector<HTMLElement>('.inline-cell textarea')?.focus(); return;
+      }
+      const dialog = this.element.nativeElement.querySelector<HTMLDialogElement>('.collection-editor-dialog');
+      if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
+      this.element.nativeElement.querySelector<HTMLElement>('#record-editor-title')?.focus();
+    }, { injector: this.injector });
+  }
+  private errorText(error: unknown) { return error instanceof Error ? error.message : 'No se pudo completar la lectura.'; }
+  ngOnDestroy() {
+    this.session.abort(); this.cancelReads();
+    if (this.navigation.current === this) this.navigation.current = undefined;
+  }
+}

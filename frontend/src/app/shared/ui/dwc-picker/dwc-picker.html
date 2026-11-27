@@ -1,5 +1,5 @@
 <div class="dwc-picker">
-  <div class="dwc-picker-field" #field>
+  <div class="dwc-picker-field">
     <p-select
       [options]="filteredNames()"
       [ngModel]="value()"
@@ -8,7 +8,6 @@
       [disabled]="disabled()"
       [editable]="true"
       [filter]="false"
-      [panelStyle]="{ width: field.getBoundingClientRect().width + 'px' }"
       panelStyleClass="dwc-picker-panel"
       [ariaLabel]="label()"
       [pt]="{ dropdown: { 'aria-label': 'Abrir ' + label() } }"

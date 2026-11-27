@@ -1,8 +1,6 @@
 package co.edu.unicauca.backend.catalog.infrastructure.config;
 
-import co.edu.unicauca.backend.catalog.application.port.in.CatalogOperations;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.mapper.CatalogHttpMapper;
-import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.web.service.CatalogWebService;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.out.database.mapper.CatalogPersistenceMapper;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.bootstrap.CatalogBootstrap;
 import co.edu.unicauca.backend.catalog.infrastructure.adapter.in.scheduling.CatalogRefresh;
@@ -33,9 +31,6 @@ public class CatalogBeanConfig {
         return new TdwgCatalogSource(source, parser);
     }
     @Bean CatalogHttpMapper catalogHttpMapper() { return Mappers.getMapper(CatalogHttpMapper.class); }
-    @Bean CatalogWebService catalogWebService(CatalogOperations operations, CatalogHttpMapper mapper) {
-        return new CatalogWebService(operations, mapper);
-    }
     @Bean CatalogPersistenceMapper catalogPersistenceMapper() {
         return Mappers.getMapper(CatalogPersistenceMapper.class);
     }

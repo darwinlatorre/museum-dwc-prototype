@@ -12,20 +12,19 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-@Mapper(config = BackendMapperConfig.class)
-public interface ConfigurationPersistenceMapper extends ConfigurationJsonMapper {
+@Mapper(config = BackendMapperConfig.class, uses = ConfigurationJsonMapper.class)
+public interface ConfigurationPersistenceMapper {
     @Mapping(target = "contexts", source = "contexts", qualifiedByName = "decode")
     ValidationConfiguration toDomain(ConfigurationEntity entity, @Context ObjectMapper json);
-
-    @Mapping(target = "id", constant = "1")
-    @Mapping(target = "contexts", source = "contexts", qualifiedByName = "encode")
-    ConfigurationEntity toEntity(ValidationConfiguration configuration, @Context ObjectMapper json);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "contexts", source = "contexts", qualifiedByName = "encode")
     void replace(@MappingTarget ConfigurationEntity entity, ValidationConfiguration configuration, @Context ObjectMapper json);
+
+    List<ContextFields> toDomain(List<ConfigurationJson.ContextFields> fields);
 
     @Named("encode")
     default String encode(List<ContextFields> contexts, @Context ObjectMapper json) {
@@ -34,8 +33,7 @@ public interface ConfigurationPersistenceMapper extends ConfigurationJsonMapper 
 
     @Named("decode")
     default List<ContextFields> decode(String value, @Context ObjectMapper json) {
-        // Reuse the same strict JSON boundary for seeds and durable metadata.
-        var document = ConfigurationJson.fromJson(json.readTree("{\"revision\":0,\"contexts\":" + value + "}"));
-        return toDomain(document).contexts();
+        // Same JSON contract as seeds and PUT bodies; legacy rows without optionalFields read as [].
+        return toDomain(json.readValue(value, new TypeReference<List<ConfigurationJson.ContextFields>>() {}));
     }
 }

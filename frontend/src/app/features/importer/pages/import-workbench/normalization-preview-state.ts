@@ -2,7 +2,7 @@ import { computed, signal } from '@angular/core';
 import type { Dataset } from '../../models/dataset';
 import type { Normalization } from '../../models/normalization';
 import { isPreviewResponse } from '../../models/normalization-preview';
-import type { PreviewMetadata, PreviewRequest, PreviewRow, PreviewWindow } from '../../models/normalization-preview';
+import type { PreviewMetadata, PreviewRequest, PreviewRow, PreviewSort, PreviewWindow } from '../../models/normalization-preview';
 
 /** Local worker lifetime; never a Query cache. Analysis has its own generation. */
 export class NormalizationPreviewState {
@@ -11,7 +11,7 @@ export class NormalizationPreviewState {
   readonly status = signal<'idle' | 'calculating' | 'ready' | 'cancelled' | 'error'>('idle');
   readonly error = signal('');
   readonly paging = signal(false);
-  readonly hideEmpty = signal(false);
+  readonly hideEmpty = signal(true);
   // Requested selection and confirmed window are deliberately separate while paging.
   readonly rowFilter = signal<'all' | 'changed'>('changed');
   readonly window = signal<PreviewWindow>({ offset: 0, limit: 10, columnIndices: [], rowFilter: 'changed' });
@@ -60,6 +60,7 @@ export class NormalizationPreviewState {
     this.revision.update(value => value + 1);
   }
   start(options: Normalization) {
+    if (!this.hideEmpty()) this.setHideEmpty(true);
     this.options = { ...options };
     if (!this.original || this.status() !== 'idle') return;
     this.calculate();
@@ -99,7 +100,7 @@ export class NormalizationPreviewState {
         worker.onmessage = ({ data }: MessageEvent<unknown>) => {
           if (worker !== this.worker || !isPreviewResponse(data) || data.session !== this.session || data.generation !== this.generation) return;
           if (data.kind === 'preview-ready' && data.id === this.calculationId && this.status() === 'calculating'
-            && data.window.rowFilter === this.requestedWindow.rowFilter) {
+            && this.matchesRequestedWindow(data.window)) {
             this.confirmed = true;
             this.metadata.set(data.metadata);
             this.rows.set(data.rows);
@@ -110,7 +111,7 @@ export class NormalizationPreviewState {
             const indices = this.selectedIndices();
             if (indices.join() !== data.window.columnIndices.join()) this.page({ columnIndices: indices });
           } else if (data.kind === 'preview-page' && data.id === this.pageId && this.status() === 'ready' && this.paging()
-            && data.window.rowFilter === this.requestedWindow.rowFilter) {
+            && this.matchesRequestedWindow(data.window)) {
             this.rows.set(data.rows);
             this.window.set(data.window);
             this.paging.set(false);
@@ -133,14 +134,32 @@ export class NormalizationPreviewState {
     this.error.set('');
     this.status.set('calculating');
     this.revision.update(value => value + 1);
-    const window: PreviewWindow = { offset: 0, limit: this.window().limit, columnIndices: this.original.headers.map((_, i) => i).slice(0, 50), rowFilter: this.rowFilter() };
+    const window: PreviewWindow = { offset: 0, limit: this.window().limit, columnIndices: this.original.headers.map((_, i) => i).slice(0, 50), rowFilter: this.rowFilter(),
+      ...(this.requestedWindow.sort ? { sort: this.requestedWindow.sort } : {}) };
     this.requestedWindow = window;
     const token = { id: this.calculationId, session: this.session, generation: this.generation };
     const request: PreviewRequest = init
       ? { ...token, kind: 'preview-init', original: this.original, mapping: this.mapping, options: this.options, window }
       : { ...token, kind: 'preview-update', options: this.options, window };
     try { this.worker!.postMessage(request); }
-    catch { this.fail('No se pudo enviar el cálculo al worker local. Los originales se conservan.'); }
+    catch { this.fail('No se pudo calcular la vista previa. Los originales se conservan.'); }
+  }
+  private matchesRequestedWindow(window: PreviewWindow) {
+    const requested = this.requestedWindow;
+    return window.offset === requested.offset && window.limit === requested.limit && window.rowFilter === requested.rowFilter &&
+      window.columnIndices.join() === requested.columnIndices.join() &&
+      (window.sort?.columnIndex ?? null) === (requested.sort?.columnIndex ?? null) &&
+      (window.sort?.direction ?? 'asc') === (requested.sort?.direction ?? 'asc');
+  }
+  sort(columnIndex: PreviewSort['columnIndex']) {
+    if (this.status() !== 'ready') return;
+    const current = this.requestedWindow.sort;
+    const direction = (current?.columnIndex ?? null) === columnIndex && (current?.direction ?? 'asc') === 'asc' ? 'desc' : 'asc';
+    this.page({ offset: 0, sort: { columnIndex, direction } });
+  }
+  sortDirection(columnIndex: PreviewSort['columnIndex']) {
+    const sort = this.window().sort;
+    return (sort?.columnIndex ?? null) === columnIndex ? sort?.direction ?? 'asc' : null;
   }
   private fail(message: string) {
     this.status.set('error');

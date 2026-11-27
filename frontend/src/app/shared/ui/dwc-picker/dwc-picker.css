@@ -1,0 +1,22 @@
+/* Capa components: las utilidades Tailwind de la plantilla ganan sin !important. */
+@layer components {
+  :host {
+    display: block;
+    min-width: 0;
+  }
+
+  .dwc-picker {
+    display: flex;
+    align-items: start;
+    gap: 0.5rem;
+  }
+
+  .dwc-picker-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  p-select {
+    width: 100%;
+  }
+}

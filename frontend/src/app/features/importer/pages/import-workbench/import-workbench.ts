@@ -1,14 +1,17 @@
+import { I18nPluralPipe } from '@angular/common';
+import { PLURALS } from '../../../../core/i18n/plurals';
 import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import type { Change, Normalization } from '../../models/normalization';
 import type { Context } from '../../models/context';
 import { type Dataset, LIMITS } from '../../models/dataset';
 import type { Issue } from '../../models/analysis-result';
 import type { ValidationConfiguration } from '../../../record-sources/models/validation-configuration';
 import type { Term } from '../../../catalog/models/catalog-term';
-import type { WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
+import type { DuplicateCounts, WorkerRequest, WorkerResponse } from '../../models/worker-protocol';
+import type { SourceRecord } from '../../../collections/models/collection';
+import { ImportConfirmation } from '../../components/import-confirmation/import-confirmation';
 import { NormalizationPreviewState } from './normalization-preview-state';
 import { NormalizationPreview } from '../../components/normalization-preview/normalization-preview';
 import { missingCells, missingFields } from '../../engine/required-fields';
@@ -16,14 +19,21 @@ import { ColumnMapping } from '../../components/column-mapping/column-mapping';
 import { RecordContext } from '../../components/record-context/record-context';
 import { csvReport, jsonReport } from '../../engine/export';
 import { label } from '../../../../core/i18n/localization';
+import { ResizableTable, ResizableColumn } from '../../../../shared/ui/table-resize/table-resize';
+import { TableHeader } from '../../../../shared/ui/table-header/table-header';
+import { nextTableOrder, sortTableRows, type TableOrder } from '../../../../shared/lib/table-sort';
+type SummaryColumn = 'field' | 'missing' | 'situation';
+type DetailColumn = 'row' | 'before' | 'after';
+type IssueColumn = 'severity' | 'field' | 'row' | 'description' | 'context';
 
 @Component({
   selector: 'app-import',
-  imports: [FormField, TableModule, ButtonModule, ColumnMapping, RecordContext, NormalizationPreview],
+  imports: [FormField, TableModule, TableHeader, ResizableTable, ResizableColumn, ColumnMapping, RecordContext, NormalizationPreview, ImportConfirmation, I18nPluralPipe],
   templateUrl: './import-workbench.html',
   host: { '(window:resize)': 'scrollActiveStep()' },
 })
 export class ImportWorkbench implements OnDestroy {
+  readonly plurals = PLURALS;
   label = label;
   active = input(true);
   normalizationVisible = output<boolean>();
@@ -34,6 +44,31 @@ export class ImportWorkbench implements OnDestroy {
   configuration = input.required<ValidationConfiguration>();
   configurationAvailable = input(true);
   terms = input.required<Term[]>();
+  catalogVersion = input<number | null>(null);
+  catalogAvailable = input(true);
+  refreshMetadata = output<void>();
+  importLocked = signal(false);
+  analysisRevision = signal(0);
+  duplicates = signal<DuplicateCounts>({ equalRows: { groups: 0, affectedRows: 0 }, occurrenceIds: { groups: 0, affectedRows: 0 } });
+  private readonly appliedResult = signal<{ session: number; generation: number; id: number } | undefined>(undefined);
+  private readonly normalizationApplied = computed(() => {
+    const result = this.appliedResult();
+    return result !== undefined && result.session === this.session && result.generation === this.generation && result.id === this.validationId;
+  });
+  readonly importReady = computed(() => this.normalizationApplied() && this.issues() !== undefined && !this.busy() && this.configurationAvailable() && this.catalogAvailable() && this.catalogVersion() !== null);
+  private preparation?: { id: number; offset: number; rows: SourceRecord[]; resolve: (rows: SourceRecord[]) => void; reject: (reason: Error) => void };
+  readonly prepareImport = (): Promise<SourceRecord[]> => {
+    if (!this.importReady() || !this.worker) return Promise.reject(new Error('Vuelva a analizar los datos antes de importar.'));
+    return new Promise((resolve, reject) => {
+      this.preparation = { id: ++this.messageId, offset: 0, rows: [], resolve, reject };
+      this.requestPreparation();
+    });
+  };
+  private requestPreparation() {
+    const pending = this.preparation;
+    if (!pending || !this.worker) return;
+    this.worker.postMessage({ kind: 'prepare', id: pending.id, session: this.session, generation: this.generation, offset: pending.offset } satisfies WorkerRequest);
+  }
   stages = [
     'Seleccionar archivo',
     'Contexto',
@@ -65,16 +100,28 @@ export class ImportWorkbench implements OnDestroy {
   private diagnosticOptions = signal<Normalization>({ trim: false, emptyMarkers: false });
   filter = signal({ text: '', severity: '', context: '' });
   filterForm = form(this.filter);
-  filtered = computed(() =>
-    (this.issues() ?? []).filter(
+  readonly summaryOrder = signal<TableOrder<SummaryColumn> | null>(null);
+  readonly detailOrder = signal<TableOrder<DetailColumn>>({ column: 'row', direction: 'asc' });
+  readonly issueOrder = signal<TableOrder<IssueColumn>>({ column: 'row', direction: 'asc' });
+  readonly summaryFirst = signal(0);
+  readonly detailFirst = signal(0);
+  readonly issueFirst = signal(0);
+  sortSummary(column: SummaryColumn) { this.summaryOrder.update(order => nextTableOrder(order, column)); this.summaryFirst.set(0); }
+  sortDetail(column: DetailColumn) { this.detailOrder.update(order => nextTableOrder(order, column)); this.detailFirst.set(0); }
+  sortIssues(column: IssueColumn) { this.issueOrder.update(order => nextTableOrder(order, column)); this.issueFirst.set(0); }
+  filtered = computed(() => {
+    const rows = (this.issues() ?? []).filter(
       (i) =>
         (!this.filter().severity || i.severity === this.filter().severity) &&
         (!this.filter().context || i.context === this.filter().context) &&
         `${i.field} ${i.row ?? ''} ${i.description} ${label(i.context)} ${i.configurationRevision}`
           .toLowerCase()
           .includes(this.filter().text.toLowerCase()),
-    ),
-  );
+    );
+    const order = this.issueOrder();
+    return sortTableRows(rows, issue => order.column === 'row' ? issue.row ?? 0
+      : order.column === 'context' ? label(issue.context) : issue[order.column], order.direction);
+  });
   issueContexts = computed(() => [...new Set((this.issues() ?? []).map(i => i.context))]);
   errors = computed(() => (this.issues() ?? []).filter((i) => i.severity === 'ERROR').length);
   warnings = computed(() => (this.issues() ?? []).filter((i) => i.severity === 'WARNING').length);
@@ -83,15 +130,20 @@ export class ImportWorkbench implements OnDestroy {
   missingSummary = computed(() => {
     const data = this.data();
     const context = this.context();
-    return data && context ? missingFields(data, this.mapping(), this.configuration(), context, this.diagnosticOptions()) : [];
+    const rows = data && context ? missingFields(data, this.mapping(), this.configuration(), context, this.diagnosticOptions()) : [];
+    const order = this.summaryOrder();
+    return order ? sortTableRows(rows, item => order.column === 'situation'
+      ? (item.columnAbsent ? 'Columna ausente' : 'Valores vacíos') : item[order.column], order.direction) : rows;
   });
   missingField = signal<string | undefined>(undefined);
   missingDetail = computed(() => {
     const data = this.data();
     const field = this.missingField();
-    return data && field && this.issues() !== undefined &&
+    const rows = data && field && this.issues() !== undefined &&
       this.missingSummary().some(item => item.field === field && !item.columnAbsent)
       ? missingCells(data, this.mapping(), field, this.diagnosticOptions()) : [];
+    const order = this.detailOrder();
+    return sortTableRows(rows, cell => cell[order.column], order.direction);
   });
   showAllIssues = signal(false);
   detailHasChanges = computed(() => this.missingDetail().some(cell => cell.before !== cell.after));
@@ -104,11 +156,13 @@ export class ImportWorkbench implements OnDestroy {
       return;
     }
     this.detailOpener = event.currentTarget as HTMLButtonElement;
+    this.detailFirst.set(0);
     this.showAllIssues.set(false);
     this.missingField.set(field);
     this.focusDetail.set(true);
   }
   openAllIssues(event: Event) {
+    this.issueFirst.set(0);
     this.detailOpener = event.currentTarget as HTMLButtonElement;
     this.missingField.set(undefined);
     this.showAllIssues.set(true);
@@ -122,6 +176,7 @@ export class ImportWorkbench implements OnDestroy {
   }
   private resultStep = 3;
   canVisit(index: number) {
+    if (this.importLocked() && index !== 5) return false;
     if (index < 0 || index >= this.stages.length) return false;
     if (index === 0) return true;
     if (!this.data()) return false;
@@ -129,16 +184,18 @@ export class ImportWorkbench implements OnDestroy {
     if (!this.context() || !this.configurationAvailable()) return false;
     if (index === 2) return true;
     if (!this.mappingValid()) return false;
-    return this.issues() !== undefined;
+    return this.issues() !== undefined && (index !== 5 || (this.normalizationApplied() && !this.busy()));
   }
   visit(index: number) {
     if (this.canVisit(index)) {
+      if (index === 4 && this.step() !== 4) this.previewState.start(this.options());
       this.step.set(index);
-      if (index === 4) this.previewState.start(this.options());
     }
   }
   private worker?: Worker;
   private generation = 0;
+  private session = 0;
+  private validationId = 0;
   constructor() {
     effect(() => {
       const options = this.options();
@@ -150,6 +207,8 @@ export class ImportWorkbench implements OnDestroy {
       this.configuration();
       this.configurationAvailable();
       this.terms();
+      this.catalogVersion();
+      this.catalogAvailable();
       this.invalidate();
     });
     effect(() => {
@@ -187,9 +246,14 @@ export class ImportWorkbench implements OnDestroy {
   ngOnDestroy() {
     this.previewState.destroy();
     this.worker?.terminate();
+    this.preparation?.reject(new Error('Preparación cancelada.'));
   }
   invalidate() {
+    this.appliedResult.set(undefined);
     this.generation++;
+    this.analysisRevision.update(value => value + 1);
+    this.preparation?.reject(new Error('La sesión de análisis ya no está vigente.'));
+    this.preparation = undefined;
     this.worker?.terminate();
     this.worker = undefined;
     this.busy.set(false);
@@ -204,20 +268,40 @@ export class ImportWorkbench implements OnDestroy {
     this.invalidate();
     this.error.set('Procesamiento cancelado. No se enviaron datos al servidor.');
   }
-  private dispatch(request: WorkerRequest) {
-    this.worker?.terminate();
+  private dispatch(request: WorkerRequest, normalizing = false) {
+    const reuse = request.kind === 'validate' && !!this.worker;
+    if (!reuse) this.worker?.terminate();
     this.error.set('');
     this.busy.set(true);
-    const worker = new Worker(new URL('../../engine/analysis.worker', import.meta.url), {
-      type: 'module',
-    });
+    const worker = reuse ? this.worker! : new Worker(new URL('../../engine/analysis.worker', import.meta.url), { type: 'module' });
     this.worker = worker;
+    if (request.kind === 'validate') {
+      this.appliedResult.set(undefined);
+      if (!reuse) this.session++;
+      this.generation++;
+      request = { ...request, session: this.session, generation: this.generation, ...(reuse ? { data: undefined } : {}) };
+      this.validationId = request.id;
+      this.issues.set(undefined);
+      this.analysisRevision.update(value => value + 1);
+    }
     const generation = this.generation;
     worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
-      if (worker !== this.worker || data.id !== request.id || generation !== this.generation) return;
+      if (worker !== this.worker || generation !== this.generation) return;
+      const pending = this.preparation;
+      if (pending && data.id === pending.id) {
+        if (!('session' in data) || data.session !== this.session || data.generation !== this.generation) return;
+        if (data.kind === 'error') { pending.reject(new Error(data.message)); this.preparation = undefined; }
+        else if (data.kind === 'prepared' && data.offset === pending.offset && data.rows.length > 0 && data.rows.length <= 256) {
+          pending.rows.push(...data.rows);
+          pending.offset += data.rows.length;
+          if (data.done) { this.preparation = undefined; pending.resolve(pending.rows); }
+          else { pending.id = ++this.messageId; this.requestPreparation(); }
+        }
+        return;
+      }
+      if (data.id !== request.id || (data.kind === 'result' && (data.session !== this.session || data.generation !== this.generation || data.id !== this.validationId))) return;
       this.busy.set(false);
-      worker.terminate();
-      this.worker = undefined;
+      if (data.kind !== 'result') { worker.terminate(); this.worker = undefined; }
       if (data.kind === 'error') this.error.set(data.message);
       else if (data.kind === 'sheets') {
         this.sheets.set(data.sheets);
@@ -225,15 +309,21 @@ export class ImportWorkbench implements OnDestroy {
       } else if (data.kind === 'parsed') {
         this.data.set(data.data);
         this.step.set(1);
-      } else {
+      } else if (data.kind === 'result') {
+        this.duplicates.set(data.duplicates);
         this.issues.set(data.issues);
         this.changes.set(data.changes);
+        if (normalizing) this.appliedResult.set({ session: data.session, generation: data.generation, id: data.id });
         this.step.set(this.resultStep);
       }
     };
     worker.onerror = () => {
       if (worker === this.worker && generation === this.generation) {
         this.busy.set(false);
+        this.preparation?.reject(new Error('No se pudo preparar la importación. Los originales se conservan.'));
+        this.preparation = undefined;
+        this.appliedResult.set(undefined);
+        this.issues.set(undefined);
         this.error.set(
           'El proceso local no pudo analizar este archivo. Pruebe con un CSV más pequeño.',
         );
@@ -260,6 +350,11 @@ export class ImportWorkbench implements OnDestroy {
     }
     // Defer until reactive invalidation of previous inputs is complete.
     queueMicrotask(() => this.dispatch({ id: ++this.messageId, kind: 'parse', file }));
+  }
+  selectSheet() {
+    this.previewState.reset(undefined, {});
+    this.invalidate();
+    this.data.set(undefined);
   }
   loadSheet() {
     const file = this.file();
@@ -289,13 +384,15 @@ export class ImportWorkbench implements OnDestroy {
     this.dispatch({
       id: ++this.messageId,
       kind: 'validate',
+      session: this.session,
+      generation: this.generation,
       data,
       mapping: this.mapping(),
       configuration: this.configuration(),
       terms: this.terms(),
       context,
       options: this.diagnosticOptions(),
-    });
+    }, normalizing);
   }
   download(kind: 'json' | 'csv') {
     const issues = this.issues();

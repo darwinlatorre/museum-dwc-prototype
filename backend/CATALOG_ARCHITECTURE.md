@@ -11,7 +11,7 @@ El catálogo conserva su contrato HTTP y su instantánea única en PostgreSQL. E
 | `application.port.in` | Consultas y sincronización, con resultados `SUCCESS`, `FAILED` y `SUPERSEDED`. |
 | `application.port.out` | Fuente de candidatos completos y almacenamiento con operaciones atómicas. |
 | `application.service` | Secuencia de intentos, recuperación de errores y resolución de generaciones. |
-| `infrastructure.adapter.in.web` | Controller de rutas que delega en `service/CatalogWebService`; DTO en `dto/res` y conversiones en `mapper/CatalogHttpMapper`. |
+| `infrastructure.adapter.in.web` | `CatalogController` invoca `CatalogOperations` y convierte con `mapper/CatalogHttpMapper`; DTO en `dto/res`. |
 | `infrastructure.adapter.in.scheduling` | Temporización y diagnóstico; delega al mismo caso de uso que HTTP. |
 | `infrastructure.adapter.in.bootstrap` | Entrada de inicialización idempotente del bundle local. |
 | `infrastructure.adapter.out.database` | Adaptador transaccional con subpaquetes explícitos `entity`, `repository` y `mapper`. |
@@ -38,7 +38,7 @@ Las transacciones están en el adaptador de persistencia, no en el caso de uso. 
 
 ## Mappers, construcción y transporte
 
-`CatalogHttpMapper`, interfaz MapStruct, convierte estado/resultados a `CatalogStatusResponse`, `CatalogActiveResponse` y `CatalogSyncResponse`. Ningún DTO de salida expone registros de dominio. `CatalogWebService` coordina estas conversiones y comprueba el cuerpo vacío; el servicio de aplicación sigue siendo Java puro y no recibe objetos servlet ni DTO HTTP.
+`CatalogHttpMapper`, interfaz MapStruct, convierte estado/resultados a `CatalogStatusResponse`, `CatalogActiveResponse` y `CatalogSyncResponse`. Ningún DTO de salida expone registros de dominio. El controller comprueba el cuerpo vacío leyendo el `InputStream` de la solicitud; el servicio de aplicación sigue siendo Java puro y no recibe objetos servlet ni DTO HTTP.
 
 `CatalogPersistenceMapper`, interfaz MapStruct, genera conversiones estructurales y actualizaciones `@MappingTarget` sobre la misma entidad administrada. Recibe Jackson explícitamente mediante `@Context`; el análisis JSON y los hashes siguen siendo codecs explícitos. Ignora identidad, generación, último intento/fallo y procedencia de semilla según cada operación; la inicialización tampoco reinicia versión ni contadores de diferencias.
 

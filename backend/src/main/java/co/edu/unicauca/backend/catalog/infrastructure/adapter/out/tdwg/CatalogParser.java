@@ -22,6 +22,8 @@ import java.util.Set;
 public class CatalogParser {
     private static final Set<String> HEADERS = Set.of("term_localName", "term_isDefinedBy", "rdfs_comment",
         "tdwgutility_organizedInClass", "term_deprecated");
+    private static final CSVFormat FORMAT = CSVFormat.RFC4180.builder().setHeader().setSkipHeaderRecord(true)
+        .setIgnoreEmptyLines(false).setLenientEof(false).setTrailingData(false).get();
     private final ObjectMapper json;
 
     public CatalogCandidate parse(CatalogSource.SourceSet source) throws IOException {
@@ -35,11 +37,9 @@ public class CatalogParser {
         for (String path : CatalogSource.PATHS) {
             String document = source.documents().get(path);
             if (document.isEmpty() || document.length() > TdwgSource.MAX_BYTES) throw new IOException("Fuente TDWG vacía o demasiado grande.");
-            hashes.put(path, hash(document));
-            var format = CSVFormat.RFC4180.builder().setHeader().setSkipHeaderRecord(true)
-                .setIgnoreEmptyLines(false).setLenientEof(false).setTrailingData(false).get();
+            hashes.put(path, CatalogHash.hash(document));
             int count = 0;
-            try (var csv = format.parse(new StringReader(document))) {
+            try (var csv = FORMAT.parse(new StringReader(document))) {
                 if (!csv.getHeaderMap().keySet().containsAll(HEADERS)
                         || csv.getHeaderNames().size() != csv.getHeaderMap().size()) throw new IOException("Esquema CSV TDWG incompatible.");
                 for (var row : csv) {
@@ -63,9 +63,7 @@ public class CatalogParser {
         }
         String payload = json.writeValueAsString(terms);
         return CatalogCandidate.builder().revision(source.revision()).terms(terms).payload(payload)
-            .hash(hash(json.writeValueAsString(hashes))).rawSources(json.writeValueAsString(source.documents()))
+            .hash(CatalogHash.hash(json.writeValueAsString(hashes))).rawSources(json.writeValueAsString(source.documents()))
             .hashes(hashes).build();
     }
-
-    public static String hash(String value) { return CatalogHash.hash(value); }
 }
